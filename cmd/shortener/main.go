@@ -14,7 +14,7 @@ import (
 //	Main function
 func main() {
 
-	fmt.Printf("%s service have been started...\n", config.APP_NAME)
+	fmt.Printf("%s service have been started...\n", config.AppName)
 
 	mux := RegistreHandlers(handlers.HandlersList)
 
@@ -25,7 +25,7 @@ func main() {
 //--------------------------------------------------
 //	Servise run
 func run(mux *http.ServeMux) error{
-	return http.ListenAndServe(config.HOST, mux)
+	return http.ListenAndServe(config.Host, mux)
 }
 
 //--------------------------------------------------

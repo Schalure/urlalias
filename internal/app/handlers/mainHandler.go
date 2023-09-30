@@ -21,7 +21,7 @@ import (
 func mainHandler(writer http.ResponseWriter, request *http.Request) {
 
 	if request.Method == http.MethodGet {
-		longURL, err := database.GetLongUrl(request.RequestURI)
+		longURL, err := database.GetLongURL(request.RequestURI)
 		if err != nil{
 			http.Error(writer, err.Error(), http.StatusBadRequest)
 			log.Println(err.Error())
@@ -53,7 +53,7 @@ func mainHandler(writer http.ResponseWriter, request *http.Request) {
 		//	convert data to URL
 		log.Println(string(data[:]))
 
-		if aliasURL, err := aliasmaker.GetAliasUrl(string(data[:])); err != nil {
+		if aliasURL, err := aliasmaker.GetAliasURL(string(data[:])); err != nil {
 
 			http.Error(writer, error.Error(err), http.StatusBadRequest)
 			log.Println(err)
@@ -75,14 +75,14 @@ func checkMainHandlerMethodPost(r *http.Request) error {
 	contentType, ok := r.Header["Content-Type"]
 	if !ok {
 		err := errors.New("header \"Content-Type\" not found")
-		log.Printf(err.Error())
+		log.Println(err.Error())
 		return err
 	}
 
 	//	execut "Content-Type" value error
 	if len(contentType) != 1 || contentType[0] != "text/plain" {
-		err := errors.New(fmt.Sprintf("Error: value of \"Content-Type\" not right: %s. Content-Type mast be only \"text/plain\"\n", contentType))
-		log.Printf(err.Error())
+		err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
+		log.Println(err.Error())
 		return err
 	}
 

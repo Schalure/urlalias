@@ -9,8 +9,8 @@ import (
 )
 
 const(
-	alias_len int = 9
-	trys_to_make_alias int = 5
+	aliasKeyLen int = 9
+	trysToMakeAliasKey int = 5
 )
 
 //--------------------------------------------------
@@ -20,7 +20,7 @@ const(
 //	Output:
 //		alias string - short alias to "longURL"
 //		err error -
-func GetAliasUrl(longURL string) (string, error){
+func GetAliasURL(longURL string) (string, error){
 
 	//	Check to valid URL
 	if _, err := url.ParseRequestURI(longURL); err != nil{
@@ -32,19 +32,19 @@ func GetAliasUrl(longURL string) (string, error){
 	if !ok{
 		var err error = nil
 		//	try to make URL
-		for i := 0; i < trys_to_make_alias + 1; i++{
+		for i := 0; i < trysToMakeAliasKey + 1; i++{
 
 			aliasKey = createAliasKey(longURL)
 
 			if err := database.SavePair(longURL, aliasKey); err == nil{
 				break;
 			}
-			if i == trys_to_make_alias{
+			if i == trysToMakeAliasKey{
 				return "", err
 			}
 		}
 	}
-	return "http://" + config.HOST + aliasKey, nil
+	return "http://" + config.Host + aliasKey, nil
 }
 
 //--------------------------------------------------
@@ -56,7 +56,7 @@ func GetAliasUrl(longURL string) (string, error){
 func createAliasKey(longURL string) string{
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-	alliasKey := make([]byte, alias_len)
+	alliasKey := make([]byte, aliasKeyLen)
 
 	for i := range alliasKey{
 		alliasKey[i] = charset[rand.Intn(len(charset))]

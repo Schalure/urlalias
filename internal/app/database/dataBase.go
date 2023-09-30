@@ -27,12 +27,12 @@ func GetAliasKey(longURL string) (string, bool){
 	return "", false
 }
 
-func GetLongUrl(aliasKey string) (string, error){
+func GetLongURL(aliasKey string) (string, error){
 	
-	if longUrl , ok := dataBase[aliasKey]; !ok{
-		return "", errors.New(fmt.Sprintf("Сan't find the URL by key: %s", aliasKey))
+	if longURL , ok := dataBase[aliasKey]; !ok{
+		return "", fmt.Errorf("can't find the url by key: %s", aliasKey)
 	}else{
-		return longUrl, nil
+		return longURL, nil
 	}
 }
 
@@ -43,10 +43,10 @@ func GetLongUrl(aliasKey string) (string, error){
 //		alias string - alias to valid URL
 //	Output:
 //		err error - can not save the repeated value of short url
-func SavePair(longURL, shortUrl string) error {
+func SavePair(longURL, shortURL string) error {
 	
-	if _, ok := dataBase[shortUrl]; !ok{
-		dataBase[shortUrl] = longURL
+	if _, ok := dataBase[shortURL]; !ok{
+		dataBase[shortURL] = longURL
 		return nil
 	}
 	return errors.New("can't save the repeated value of short url")

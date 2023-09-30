@@ -29,7 +29,7 @@ func mainHandler(writer http.ResponseWriter, request *http.Request) {
 		}
 		log.Println(longURL)
 		writer.Header().Add("Location", longURL)
-		writer.WriteHeader(http.StatusCreated)
+		writer.WriteHeader(http.StatusTemporaryRedirect)
 		writer.Write([]byte(""))
 	}
 
@@ -80,7 +80,7 @@ func checkMainHandlerMethodPost(r *http.Request) error {
 	}
 
 	//	execut "Content-Type" value error
-	if len(contentType) != 1 || contentType[0] != "text/plain" {
+	if /*len(contentType) != 1 || */contentType[0] != "text/plain" {
 		err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
 		log.Println(err.Error())
 		return err

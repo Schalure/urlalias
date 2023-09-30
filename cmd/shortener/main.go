@@ -7,13 +7,14 @@ import (
 	"net/http"
 
 	"github.com/Schalure/urlalias/internal/app"
+	"github.com/Schalure/urlalias/internal/app/config"
 )
 
 //--------------------------------------------------
 //	Main function
 func main() {
 
-	fmt.Println("github.com/Schalure/urlalias service have been started...")
+	fmt.Printf("%s service have been started...\n", config.APP_NAME)
 
 	mux := RegistreHandlers(app.HandlersList)
 
@@ -24,7 +25,7 @@ func main() {
 //--------------------------------------------------
 //	Servise run
 func run(mux *http.ServeMux) error{
-	return http.ListenAndServe("192.168.1.88:8080", mux)
+	return http.ListenAndServe(config.HOST, mux)
 }
 
 //--------------------------------------------------

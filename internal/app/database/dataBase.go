@@ -34,10 +34,10 @@ func GetAliasFromDB(longURL string) (string, bool){
 func SavePairToDB(longURL, shortUrl string) error {
 	
 	if _, ok := dataBase[shortUrl]; !ok{
-		return errors.New("can't save the repeated value of short url")
+		dataBase[shortUrl] = longURL
+		return nil
 	}
+	return errors.New("can't save the repeated value of short url")
 
-	dataBase[shortUrl] = longURL
-	return nil
 }
 

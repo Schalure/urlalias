@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"net/url"
 
+	"github.com/Schalure/urlalias/internal/app/config"
 	"github.com/Schalure/urlalias/internal/app/database"
 )
 
@@ -58,5 +59,6 @@ func createAlias(longURL string) string{
 	for i := range allias{
 		allias[i] = charset[rand.Intn(len(charset))]
 	}
-	return string(allias);
+
+	return "http://" + config.HOST + "/" + string(allias)
 }

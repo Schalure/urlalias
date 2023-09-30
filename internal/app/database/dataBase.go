@@ -1,6 +1,9 @@
 package database
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 //	Map to save pair
 //		key - "shortURL
@@ -14,7 +17,7 @@ var dataBase = map[string] string {}
 //	Output:
 //		urlInfo URLInfo - short alias, and other info about "longURL"
 //		ok bool - true: alias was found, false - alias was not found
-func GetAliasFromDB(longURL string) (string, bool){
+func GetAliasKey(longURL string) (string, bool){
 
 	for k, v := range dataBase{
 		if(v == longURL){
@@ -24,6 +27,15 @@ func GetAliasFromDB(longURL string) (string, bool){
 	return "", false
 }
 
+func GetLongUrl(aliasKey string) (string, error){
+	
+	if longUrl , ok := dataBase[aliasKey]; !ok{
+		return "", errors.New(fmt.Sprintf("Сan't find the URL by key: %s", aliasKey))
+	}else{
+		return longUrl, nil
+	}
+}
+
 //--------------------------------------------------
 //	Save pair "longURL, alias" to DB
 //	Input:
@@ -31,7 +43,7 @@ func GetAliasFromDB(longURL string) (string, bool){
 //		alias string - alias to valid URL
 //	Output:
 //		err error - can not save the repeated value of short url
-func SavePairToDB(longURL, shortUrl string) error {
+func SavePair(longURL, shortUrl string) error {
 	
 	if _, ok := dataBase[shortUrl]; !ok{
 		dataBase[shortUrl] = longURL

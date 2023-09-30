@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Schalure/urlalias/internal/app"
 	"github.com/Schalure/urlalias/internal/app/config"
+	"github.com/Schalure/urlalias/internal/app/handlers"
 )
 
 //--------------------------------------------------
@@ -16,7 +16,7 @@ func main() {
 
 	fmt.Printf("%s service have been started...\n", config.APP_NAME)
 
-	mux := RegistreHandlers(app.HandlersList)
+	mux := RegistreHandlers(handlers.HandlersList)
 
 	//	Run server
 	log.Fatal(run(mux))

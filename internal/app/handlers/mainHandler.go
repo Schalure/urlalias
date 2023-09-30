@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -70,7 +68,7 @@ func mainHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func checkMainHandlerMethodPost(r *http.Request) error {
-
+/*
 	//	execut header "Content-Type" error
 	contentType, ok := r.Header["Content-Type"]
 	if !ok {
@@ -80,12 +78,12 @@ func checkMainHandlerMethodPost(r *http.Request) error {
 	}
 
 	//	execut "Content-Type" value error
-	if /*len(contentType) != 1 || */contentType[0] != "text/plain" {
+	if len(contentType) != 1 || contentType[0] != "text/plain" {
 		err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
 		log.Println(err.Error())
 		return err
 	}
-
+*/
 	return nil
 }
 

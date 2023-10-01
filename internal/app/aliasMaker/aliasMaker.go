@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/Schalure/urlalias/internal/app/config"
-	"github.com/Schalure/urlalias/internal/app/database"
+	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
 const(
@@ -28,7 +28,7 @@ func GetAliasURL(longURL string) (string, error){
 	}
 
 
-	aliasKey, ok := database.GetAliasKey(longURL)
+	aliasKey, ok := storage.GetAliasKey(longURL)
 	if !ok{
 		var err error = nil
 		//	try to make URL
@@ -36,7 +36,7 @@ func GetAliasURL(longURL string) (string, error){
 
 			aliasKey = createAliasKey(longURL)
 
-			if err := database.SavePair(longURL, aliasKey); err == nil{
+			if err := storage.SavePair(longURL, aliasKey); err == nil{
 				break;
 			}
 			if i == trysToMakeAliasKey{

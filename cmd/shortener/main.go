@@ -37,10 +37,5 @@ func RegistreHandlers(handlersList map[string] http.HandlerFunc) *http.ServeMux{
 	for k, v := range handlersList{
 		mux.HandleFunc(k,v)
 	}
-
 	return mux
 }
-
-
-
-

@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	aliasmaker "github.com/Schalure/urlalias/internal/app/aliasMaker"
-	"github.com/Schalure/urlalias/internal/app/database"
+	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
 // --------------------------------------------------
@@ -19,7 +19,7 @@ import (
 func mainHandler(writer http.ResponseWriter, request *http.Request) {
 
 	if request.Method == http.MethodGet {
-		longURL, err := database.GetLongURL(request.RequestURI)
+		longURL, err := storage.GetLongURL(request.RequestURI)
 		if err != nil{
 			http.Error(writer, err.Error(), http.StatusBadRequest)
 			log.Println(err.Error())

@@ -10,7 +10,7 @@ import (
 	"github.com/Schalure/urlalias/internal/app/handlers"
 )
 
-//--------------------------------------------------
+// ------------------------------------------------------------
 //	Main function
 func main() {
 
@@ -22,14 +22,22 @@ func main() {
 	log.Fatal(run(mux))
 }
 
-//--------------------------------------------------
-//	Servise run
+// ------------------------------------------------------------
+//	Servise run.	
+//	Input:
+//		mux *http.ServeMux
+//	Output:
+//		err error - if servise have become panic or fatal error
 func run(mux *http.ServeMux) error{
 	return http.ListenAndServe(config.Host, mux)
 }
 
-//--------------------------------------------------
-//	Add handlers to mux
+// ------------------------------------------------------------
+//	Add handlers to mux	
+//	Input:
+//		handlersList map[string] http.HandlerFunc - list of handlers signatur and handler functions
+//	Output:
+//		mux *http.ServeMux - handler router
 func RegistreHandlers(handlersList map[string] http.HandlerFunc) *http.ServeMux{
 
 	mux := http.NewServeMux()

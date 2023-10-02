@@ -1,6 +1,6 @@
 package config
 
-const(
+const (
 	AppName = string("github.com/Schalure/urlalias")
-	Host = string("localhost:8080")
+	Host    = string("localhost:8080")
 )

@@ -5,9 +5,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 
 	aliasmaker "github.com/Schalure/urlalias/internal/app/aliasMaker"
-	"github.com/Schalure/urlalias/internal/app/storage"
+	"github.com/Schalure/urlalias/internal/app/config"
+	"github.com/Schalure/urlalias/models"
 )
 
 // ------------------------------------------------------------
@@ -15,16 +17,17 @@ import (
 //	Input:
 //		writer http.ResponseWriter
 //		request *http.Request
-func mainHandler(w http.ResponseWriter, r *http.Request) {
-
-	switch r.Method {
-	case http.MethodGet:
-		mainHandlerMethodPost(w, r)
-	case http.MethodPost:
-		mainHandlerMethodGet(w, r)
-	default:
-		http.Error(w, fmt.Errorf("error: unknown request method: %s", r.Method).Error(), http.StatusBadRequest)
-		log.Printf("error: unknown request method: %s\n", r.Method)
+func MainHandler(repo models.RepositoryURL) http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			mainHandlerMethodGet(w, r, repo)
+		case http.MethodPost:
+			mainHandlerMethodPost(w, r, repo)
+		default:
+			http.Error(w, fmt.Errorf("error: unknown request method: %s", r.Method).Error(), http.StatusBadRequest)
+			log.Printf("error: unknown request method: %s\n", r.Method)
+		}
 	}
 }
 
@@ -34,19 +37,18 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 //	Input:
 //		w http.ResponseWriter
 //		r *http.Request
-func mainHandlerMethodGet(db map[string]string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		longURL, err := storage.GetLongURL(r.RequestURI)
+func mainHandlerMethodGet(w http.ResponseWriter, r *http.Request, repo models.RepositoryURL){
+
+		node, err := repo.FindByShortKey(r.RequestURI)  // storage.GetLongURL(r.RequestURI)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			log.Println(err.Error())
 			return
 		}
-		log.Println(longURL)
-		w.Header().Add("Location", longURL)
+		log.Println(node.LongURL)
+		w.Header().Add("Location", node.LongURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 		w.Write([]byte(""))
-	}
 }
 
 // ------------------------------------------------------------
@@ -55,54 +57,88 @@ func mainHandlerMethodGet(db map[string]string) http.HandlerFunc {
 //	Input:
 //		w http.ResponseWriter
 //		r *http.Request
-func mainHandlerMethodPost(w http.ResponseWriter, r *http.Request) {
-	if err := checkMainHandlerMethodPost(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Println(err.Error())
-		return
-	}
+func mainHandlerMethodPost(w http.ResponseWriter, r *http.Request, repo models.RepositoryURL){
 
-	//	get url
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, error.Error(err), http.StatusBadRequest)
-		log.Printf("Error: Can't read reqyest body: %s\n", r.Body)
-		return
-	}
+		// if err := checkMainHandlerMethodPost(r); err != nil {
+		// 	http.Error(w, err.Error(), http.StatusBadRequest)
+		// 	log.Println(err.Error())
+		// 	return
+		// }
 
-	//	convert data to URL
-	log.Println(string(data[:]))
+		//	get url
+		data, err := io.ReadAll(r.Body)
+		if err != nil {
+			log.Println(error.Error(err))
+			http.Error(w, error.Error(err), http.StatusBadRequest)
+			return
+		}
 
-	if aliasURL, err := aliasmaker.GetAliasURL(string(data[:])); err != nil {
+		//	Check to valid URL
+		u, err := url.ParseRequestURI(string(data[:]))
+		if err != nil{
+			log.Println(error.Error(err))
+			http.Error(w, error.Error(err), http.StatusBadRequest)
+			return
+		}	
+		log.Println(u)
 
-		http.Error(w, error.Error(err), http.StatusBadRequest)
-		log.Println(err)
-		return
-	} else {
 
-		log.Println(aliasURL)
+		us := u.String()
+		node, err := repo.FindByLongURL(us)
+		if err != nil{
+			//	try to create alias key
+			for i := 0; i < aliasmaker.TrysToMakeAliasKey + 1; i++{
+				if i == aliasmaker.TrysToMakeAliasKey{
+					log.Println("Can not create alias key")
+					http.Error(w, fmt.Errorf("can not create alias key from \"%s\"", u.String()).Error(), http.StatusBadRequest)	
+					return		
+				}
+				aliasKey := aliasmaker.CreateAliasKey()
+				node, err = repo.Save(models.AliasURLModel{ID: 0, ShortKey: aliasKey, LongURL: u.String()})
+				if err == nil{
+					break
+				}
+			}
+		}
+		aliasURL := config.Host + node.ShortKey
+		log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
+
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(aliasURL))
-	}
+		w.Write([]byte(aliasURL))		
 }
 
-func checkMainHandlerMethodPost(r *http.Request) error {
-	/*
-		//	execut header "Content-Type" error
-		contentType, ok := r.Header["Content-Type"]
-		if !ok {
-			err := errors.New("header \"Content-Type\" not found")
-			log.Println(err.Error())
-			return err
-		}
 
-		//	execut "Content-Type" value error
-		if len(contentType) != 1 || contentType[0] != "text/plain" {
-			err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
-			log.Println(err.Error())
-			return err
-		}
-	*/
-	return nil
-}
+
+
+
+
+// 	
+
+
+
+// 		w.Header().Set("Content-Type", "text/plain")
+// 		w.WriteHeader(http.StatusCreated)
+// 		w.Write([]byte(aliasURL))
+// 	}
+// }
+
+// func checkMainHandlerMethodPost(r *http.Request) error {
+// 	/*
+// 		//	execut header "Content-Type" error
+// 		contentType, ok := r.Header["Content-Type"]
+// 		if !ok {
+// 			err := errors.New("header \"Content-Type\" not found")
+// 			log.Println(err.Error())
+// 			return err
+// 		}
+
+// 		//	execut "Content-Type" value error
+// 		if len(contentType) != 1 || contentType[0] != "text/plain" {
+// 			err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
+// 			log.Println(err.Error())
+// 			return err
+// 		}
+// 	*/
+// 	return nil
+// }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Schalure/urlalias/internal/app/config"
 	"github.com/Schalure/urlalias/internal/app/handlers"
+	"github.com/Schalure/urlalias/repositories"
 )
 
 // ------------------------------------------------------------
@@ -16,7 +17,7 @@ func main() {
 
 	fmt.Printf("%s service have been started...\n", config.AppName)
 
-	mux := RegistreHandlers(handlers.HandlersList)
+	mux := RegistreHandlers()
 
 	//	Run server
 	log.Fatal(run(mux))
@@ -38,12 +39,13 @@ func run(mux *http.ServeMux) error{
 //		handlersList map[string] http.HandlerFunc - list of handlers signatur and handler functions
 //	Output:
 //		mux *http.ServeMux - handler router
-func RegistreHandlers(handlersList map[string] http.HandlerFunc) *http.ServeMux{
+func RegistreHandlers() *http.ServeMux{
 
 	mux := http.NewServeMux()
 
-	for k, v := range handlersList{
-		mux.HandleFunc(k,v)
-	}
+	storage := repositories.NewStorageURL()
+
+	mux.HandleFunc("/", handlers.MainHandler(storage))
+
 	return mux
 }

@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	aliasmaker "github.com/Schalure/urlalias/internal/app/aliasMaker"
 	"github.com/Schalure/urlalias/internal/app/config"
@@ -59,11 +61,11 @@ func mainHandlerMethodGet(w http.ResponseWriter, r *http.Request, repo models.Re
 //		r *http.Request
 func mainHandlerMethodPost(w http.ResponseWriter, r *http.Request, repo models.RepositoryURL){
 
-		// if err := checkMainHandlerMethodPost(r); err != nil {
-		// 	http.Error(w, err.Error(), http.StatusBadRequest)
-		// 	log.Println(err.Error())
-		// 	return
-		// }
+		if err := checkMainHandlerMethodPost(r); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			log.Println(err.Error())
+			return
+		}
 
 		//	get url
 		data, err := io.ReadAll(r.Body)
@@ -100,7 +102,7 @@ func mainHandlerMethodPost(w http.ResponseWriter, r *http.Request, repo models.R
 				}
 			}
 		}
-		aliasURL := config.Host + node.ShortKey
+		aliasURL := "http://" + config.Host + node.ShortKey
 		log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
 
 		w.Header().Set("Content-Type", "text/plain")
@@ -109,36 +111,24 @@ func mainHandlerMethodPost(w http.ResponseWriter, r *http.Request, repo models.R
 }
 
 
+func checkMainHandlerMethodPost(r *http.Request) error {
 
+	//	execut header "Content-Type" error
+	contentType, ok := r.Header["Content-Type"]
+	if !ok {
+		err := errors.New("header \"Content-Type\" not found")
+		log.Println(err.Error())
+		return err
+	}
 
+	//	execut "Content-Type" value error
+	for _, value := range contentType{
+		if strings.Contains(value, "text/plain"){
+			return nil
+		}
+	}
 
-
-// 	
-
-
-
-// 		w.Header().Set("Content-Type", "text/plain")
-// 		w.WriteHeader(http.StatusCreated)
-// 		w.Write([]byte(aliasURL))
-// 	}
-// }
-
-// func checkMainHandlerMethodPost(r *http.Request) error {
-// 	/*
-// 		//	execut header "Content-Type" error
-// 		contentType, ok := r.Header["Content-Type"]
-// 		if !ok {
-// 			err := errors.New("header \"Content-Type\" not found")
-// 			log.Println(err.Error())
-// 			return err
-// 		}
-
-// 		//	execut "Content-Type" value error
-// 		if len(contentType) != 1 || contentType[0] != "text/plain" {
-// 			err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
-// 			log.Println(err.Error())
-// 			return err
-// 		}
-// 	*/
-// 	return nil
-// }
+	err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
+	log.Println(err.Error())
+	return err
+}

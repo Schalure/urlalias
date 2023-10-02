@@ -68,7 +68,9 @@ func Test_mainHandlerMethodGet(t *testing.T) {
             h(recorder, request)
 
 			result := recorder.Result()
-
+            err := result.Body.Close()
+            require.NoError(t, err)
+			
 			//	check status code
 			assert.Equal(t, tt.want.code, result.StatusCode)
 
@@ -142,7 +144,10 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 
 			//	check response
 			data, err := io.ReadAll(recorder.Body)
-			require.Nil(t, err)
+            require.NoError(t, err)
+            err = result.Body.Close()
+            require.NoError(t, err)
+
 			assert.Equal(t, tt.want.response, string(data))
 
 			assert.Contains(t, recorder.Header().Get("Content-type"), tt.want.contentType)

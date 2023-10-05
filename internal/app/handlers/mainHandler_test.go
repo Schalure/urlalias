@@ -64,7 +64,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := http.HandlerFunc(MainHandler(stor))
+			h := http.HandlerFunc(MainHandlerMethodGet(stor))
             h(recorder, request)
 
 			result := recorder.Result()
@@ -134,7 +134,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := http.HandlerFunc(MainHandler(stor))
+			h := http.HandlerFunc(MainHandlerMethodPost(stor))
             h(recorder, request)
 
 			result := recorder.Result()

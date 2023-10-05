@@ -41,7 +41,9 @@ import (
 //		r *http.Request
 func MainHandlerMethodGet(repo models.RepositoryURL) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request) {
-		node, err := repo.FindByShortKey(r.RequestURI)  // storage.GetLongURL(r.RequestURI)
+
+		shortKey := r.RequestURI
+		node, err := repo.FindByShortKey(shortKey[1:])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			log.Println(err.Error())
@@ -50,7 +52,6 @@ func MainHandlerMethodGet(repo models.RepositoryURL) http.HandlerFunc{
 		log.Println(node.LongURL)
 		w.Header().Add("Location", node.LongURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
-		w.Write([]byte(""))
 	}
 }
 
@@ -62,6 +63,7 @@ func MainHandlerMethodGet(repo models.RepositoryURL) http.HandlerFunc{
 //		r *http.Request
 func MainHandlerMethodPost(repo models.RepositoryURL) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		if err := checkMainHandlerMethodPost(r); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			log.Println(err.Error())
@@ -103,7 +105,7 @@ func MainHandlerMethodPost(repo models.RepositoryURL) http.HandlerFunc{
 				}
 			}
 		}
-		aliasURL := "http://" + config.Host + node.ShortKey
+		aliasURL := "http://" + config.Host + "/" + node.ShortKey
 		log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
 
 		w.Header().Set("Content-Type", "text/plain")

@@ -18,7 +18,11 @@ func main() {
 
 	fmt.Printf("%s service have been started...\n", config.AppName)
 
-	router := RegistreHandlers()
+	//	initialize storage
+	storage := repositories.NewStorageURL()
+
+	//	initialize router and handlers
+	router := RegistreHandlers(storage)
 
 	//	Run server
 	log.Fatal(run(router))
@@ -35,21 +39,17 @@ func run(router chi.Router) error{
 }
 
 // ------------------------------------------------------------
-//	Add handlers to mux	
-//	Input:
-//		handlersList map[string] http.HandlerFunc - list of handlers signatur and handler functions
+//	Add handlers to router	
 //	Output:
-//		mux *http.ServeMux - handler router
-func RegistreHandlers() *chi.Mux{
+//		router *chi.Mux - handler router
+func RegistreHandlers(storage *repositories.StorageURL) *chi.Mux{
 
 	//	create new router
 	router := chi.NewRouter()
 
-	//	create storage
-	storage := repositories.NewStorageURL()
-
-	router.Get("/", handlers.MainHandlerMethodGet(storage))
-	router.Post("/{shortkey}", handlers.MainHandlerMethodPost(storage))
+	//	add handlers
+	router.Get("{shortkey}", handlers.MainHandlerMethodGet(storage))
+	router.Post("", handlers.MainHandlerMethodPost(storage))
 
 	return router
 }

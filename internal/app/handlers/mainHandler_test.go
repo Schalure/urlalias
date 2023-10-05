@@ -18,8 +18,8 @@ import (
 func Test_mainHandlerMethodGet(t *testing.T) {
 
 	listOfURL := []models.AliasURLModel{
-		{ID: 0, LongURL: "https://ya.ru", ShortKey: "/123456789"},
-		{ID: 1, LongURL: "https://google.com", ShortKey: "/987654321"},
+		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
+		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 	}
 
 	//	create storage
@@ -60,7 +60,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, tt.request.requestURI, nil)
+			request := httptest.NewRequest(http.MethodGet, "/" + tt.request.requestURI, nil)
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
@@ -85,8 +85,8 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 func Test_mainHandlerMethodPost(t *testing.T) {
 
 	listOfURL := []models.AliasURLModel{
-		{ID: 0, LongURL: "https://ya.ru", ShortKey: "/123456789"},
-		{ID: 1, LongURL: "https://google.com", ShortKey: "/987654321"},
+		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
+		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
 	}
 
@@ -123,7 +123,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			want: struct{code int; contentType string; response string}{
 				code: http.StatusCreated,
 				contentType: "text/plain",
-				response: "http://" + config.Host + listOfURL[0].ShortKey,
+				response: "http://" + config.Host + "/" + listOfURL[0].ShortKey,
 			},
 		},
 	}

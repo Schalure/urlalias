@@ -19,19 +19,19 @@ import (
 //	Input:
 //		writer http.ResponseWriter
 //		request *http.Request
-func MainHandler(repo models.RepositoryURL) http.HandlerFunc{
-	return func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			mainHandlerMethodGet(w, r, repo)
-		case http.MethodPost:
-			mainHandlerMethodPost(w, r, repo)
-		default:
-			http.Error(w, fmt.Errorf("error: unknown request method: %s", r.Method).Error(), http.StatusBadRequest)
-			log.Printf("error: unknown request method: %s\n", r.Method)
-		}
-	}
-}
+// func MainHandler(repo models.RepositoryURL) http.HandlerFunc{
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		switch r.Method {
+// 		case http.MethodGet:
+// 			mainHandlerMethodGet(w, r, repo)
+// 		case http.MethodPost:
+// 			mainHandlerMethodPost(w, r, repo)
+// 		default:
+// 			http.Error(w, fmt.Errorf("error: unknown request method: %s", r.Method).Error(), http.StatusBadRequest)
+// 			log.Printf("error: unknown request method: %s\n", r.Method)
+// 		}
+// 	}
+// }
 
 // ------------------------------------------------------------
 //	"/" GET request handler.
@@ -39,9 +39,11 @@ func MainHandler(repo models.RepositoryURL) http.HandlerFunc{
 //	Input:
 //		w http.ResponseWriter
 //		r *http.Request
-func mainHandlerMethodGet(w http.ResponseWriter, r *http.Request, repo models.RepositoryURL){
+func MainHandlerMethodGet(repo models.RepositoryURL) http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request) {
 
-		node, err := repo.FindByShortKey(r.RequestURI)  // storage.GetLongURL(r.RequestURI)
+		shortKey := r.RequestURI
+		node, err := repo.FindByShortKey(shortKey[1:])
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			log.Println(err.Error())
@@ -50,7 +52,7 @@ func mainHandlerMethodGet(w http.ResponseWriter, r *http.Request, repo models.Re
 		log.Println(node.LongURL)
 		w.Header().Add("Location", node.LongURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
-		w.Write([]byte(""))
+	}
 }
 
 // ------------------------------------------------------------
@@ -59,7 +61,8 @@ func mainHandlerMethodGet(w http.ResponseWriter, r *http.Request, repo models.Re
 //	Input:
 //		w http.ResponseWriter
 //		r *http.Request
-func mainHandlerMethodPost(w http.ResponseWriter, r *http.Request, repo models.RepositoryURL){
+func MainHandlerMethodPost(repo models.RepositoryURL) http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request) {
 
 		if err := checkMainHandlerMethodPost(r); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -102,12 +105,13 @@ func mainHandlerMethodPost(w http.ResponseWriter, r *http.Request, repo models.R
 				}
 			}
 		}
-		aliasURL := "http://" + config.Host + node.ShortKey
+		aliasURL := "http://" + config.Host + "/" + node.ShortKey
 		log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(aliasURL))		
+	}
 }
 
 

@@ -50,7 +50,7 @@ func CreateAliasKey() string{
 		alliasKey[i] = charset[rand.Intn(len(charset))]
 	}
 
-	return "/" + string(alliasKey)
+	return string(alliasKey)
 }
 
 //--------------------------------------------------

@@ -9,6 +9,7 @@ import (
 	"github.com/Schalure/urlalias/internal/app/config"
 	"github.com/Schalure/urlalias/internal/app/handlers"
 	"github.com/Schalure/urlalias/repositories"
+	"github.com/go-chi/chi"
 )
 
 // ------------------------------------------------------------
@@ -17,10 +18,14 @@ func main() {
 
 	fmt.Printf("%s service have been started...\n", config.AppName)
 
-	mux := RegistreHandlers()
+	//	initialize storage
+	storage := repositories.NewStorageURL()
+
+	//	initialize router and handlers
+	router := RegistreHandlers(storage)
 
 	//	Run server
-	log.Fatal(run(mux))
+	log.Fatal(run(router))
 }
 
 // ------------------------------------------------------------
@@ -29,23 +34,22 @@ func main() {
 //		mux *http.ServeMux
 //	Output:
 //		err error - if servise have become panic or fatal error
-func run(mux *http.ServeMux) error{
-	return http.ListenAndServe(config.Host, mux)
+func run(router chi.Router) error{
+	return http.ListenAndServe(config.Host, router)
 }
 
 // ------------------------------------------------------------
-//	Add handlers to mux	
-//	Input:
-//		handlersList map[string] http.HandlerFunc - list of handlers signatur and handler functions
+//	Add handlers to router	
 //	Output:
-//		mux *http.ServeMux - handler router
-func RegistreHandlers() *http.ServeMux{
+//		router *chi.Mux - handler router
+func RegistreHandlers(storage *repositories.StorageURL) *chi.Mux{
 
-	mux := http.NewServeMux()
+	//	create new router
+	router := chi.NewRouter()
 
-	storage := repositories.NewStorageURL()
+	//	add handlers
+	router.Get("/{shortkey}", handlers.MainHandlerMethodGet(storage))
+	router.Post("/", handlers.MainHandlerMethodPost(storage))
 
-	mux.HandleFunc("/", handlers.MainHandler(storage))
-
-	return mux
+	return router
 }

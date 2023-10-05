@@ -48,8 +48,8 @@ func RegistreHandlers(storage *repositories.StorageURL) *chi.Mux{
 	router := chi.NewRouter()
 
 	//	add handlers
-	router.Get("{shortkey}", handlers.MainHandlerMethodGet(storage))
-	router.Post("", handlers.MainHandlerMethodPost(storage))
+	router.Get("/{shortkey}", handlers.MainHandlerMethodGet(storage))
+	router.Post("/", handlers.MainHandlerMethodPost(storage))
 
 	return router
 }

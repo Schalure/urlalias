@@ -16,7 +16,7 @@ const (
 // сразу используем глобальные переменные
 var (
     Host = flag.String("a", "localhost:8080", "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
-    ResponseBaseAddres = flag.String("b", "localhost", "Response base addres for alias URL.\n\tFor example: 192.168.1.2")
+    ResponseBaseAddres = flag.String("b", "localhost:8080", "Response base addres for alias URL.\n\tFor example: 192.168.1.2")
 )
 
 

@@ -86,7 +86,7 @@ func MainHandlerMethodPost(repo models.RepositoryURL) http.HandlerFunc{
 				}
 			}
 		}
-		aliasURL := "http://" + *config.ResponseBaseAddres + "/" + node.ShortKey
+		aliasURL := *config.ResponseBaseAddres + "/" + node.ShortKey
 		log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
 
 		w.Header().Set("Content-Type", "text/plain")

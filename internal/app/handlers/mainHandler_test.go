@@ -123,7 +123,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			want: struct{code int; contentType string; response string}{
 				code: http.StatusCreated,
 				contentType: "text/plain",
-				response: "http://" + *config.ResponseBaseAddres + "/" + listOfURL[0].ShortKey,
+				response: *config.ResponseBaseAddres + "/" + listOfURL[0].ShortKey,
 			},
 		},
 	}

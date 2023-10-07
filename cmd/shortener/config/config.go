@@ -18,7 +18,7 @@ const (
 // сразу используем глобальные переменные
 var (
     Host = flag.String("a", "localhost:8080", "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
-    ResponseBaseAddres = flag.String("b", "localhost:8080", "Response base addres for alias URL.\n\tFor example: 192.168.1.2")
+    ResponseBaseAddres = flag.String("b", "http://localhost:8080", "Response base addres for alias URL.\n\tFor example: 192.168.1.2")
 )
 
 
@@ -33,7 +33,8 @@ func MustInit(){
 		log.Panicf("Server IP addres and port in not right format: %s. For example: 192.168.1.2:80\n", *Host)
 	}
 
-	if err := checkNetAddres(*ResponseBaseAddres); err != nil{
+	var strs = strings.SplitAfterN(*ResponseBaseAddres, "//", 2)
+	if err := checkNetAddres(strs[1]); err != nil{
 		log.Panicf("Response base addres in not right format: %s. For example: 192.168.1.2:80\n", *ResponseBaseAddres)
 	}
 

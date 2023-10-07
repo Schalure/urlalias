@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Schalure/urlalias/internal/app/config"
+	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/models"
 	"github.com/Schalure/urlalias/repositories"
 	"github.com/stretchr/testify/assert"
@@ -123,14 +123,14 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			want: struct{code int; contentType string; response string}{
 				code: http.StatusCreated,
 				contentType: "text/plain",
-				response: "http://" + config.Host + "/" + listOfURL[0].ShortKey,
+				response: "http://" + *config.ResponseBaseAddres + "/" + listOfURL[0].ShortKey,
 			},
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, config.Host, strings.NewReader(tt.request.requestURI))
+			request := httptest.NewRequest(http.MethodPost, *config.Host, strings.NewReader(tt.request.requestURI))
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()

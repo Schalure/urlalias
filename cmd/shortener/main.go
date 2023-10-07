@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Schalure/urlalias/internal/app/config"
+	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/handlers"
 	"github.com/Schalure/urlalias/repositories"
 	"github.com/go-chi/chi"
@@ -17,6 +17,9 @@ import (
 func main() {
 
 	fmt.Printf("%s service have been started...\n", config.AppName)
+
+	//	Read application options
+	config.MustInit()
 
 	//	initialize storage
 	storage := repositories.NewStorageURL()
@@ -35,7 +38,7 @@ func main() {
 //	Output:
 //		err error - if servise have become panic or fatal error
 func run(router chi.Router) error{
-	return http.ListenAndServe(config.Host, router)
+	return http.ListenAndServe(*config.Host, router)
 }
 
 // ------------------------------------------------------------

@@ -9,29 +9,10 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/Schalure/urlalias/cmd/shortener/config"
 	aliasmaker "github.com/Schalure/urlalias/internal/app/aliasMaker"
-	"github.com/Schalure/urlalias/internal/app/config"
 	"github.com/Schalure/urlalias/models"
 )
-
-// ------------------------------------------------------------
-//	"/" request handler.
-//	Input:
-//		writer http.ResponseWriter
-//		request *http.Request
-// func MainHandler(repo models.RepositoryURL) http.HandlerFunc{
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		switch r.Method {
-// 		case http.MethodGet:
-// 			mainHandlerMethodGet(w, r, repo)
-// 		case http.MethodPost:
-// 			mainHandlerMethodPost(w, r, repo)
-// 		default:
-// 			http.Error(w, fmt.Errorf("error: unknown request method: %s", r.Method).Error(), http.StatusBadRequest)
-// 			log.Printf("error: unknown request method: %s\n", r.Method)
-// 		}
-// 	}
-// }
 
 // ------------------------------------------------------------
 //	"/" GET request handler.
@@ -105,7 +86,7 @@ func MainHandlerMethodPost(repo models.RepositoryURL) http.HandlerFunc{
 				}
 			}
 		}
-		aliasURL := "http://" + config.Host + "/" + node.ShortKey
+		aliasURL := "http://" + *config.ResponseBaseAddres + "/" + node.ShortKey
 		log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
 
 		w.Header().Set("Content-Type", "text/plain")

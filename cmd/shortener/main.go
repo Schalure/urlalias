@@ -38,7 +38,7 @@ func main() {
 //	Output:
 //		err error - if servise have become panic or fatal error
 func run(router chi.Router) error{
-	return http.ListenAndServe(*config.Host, router)
+	return http.ListenAndServe(config.Config.Host, router)
 }
 
 // ------------------------------------------------------------

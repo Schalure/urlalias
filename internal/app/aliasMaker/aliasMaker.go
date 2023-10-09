@@ -4,8 +4,8 @@ import (
 	"math/rand"
 )
 
-const(
-	aliasKeyLen int = 9
+const (
+	aliasKeyLen        int = 9
 	TrysToMakeAliasKey int = 5
 )
 
@@ -37,16 +37,17 @@ const(
 // 	return "http://" + config.Host + aliasKey, nil
 // }
 
-//--------------------------------------------------
+// --------------------------------------------------
+//
 //	Make short alias from URL
 //	Output:
 //		alias string - short alias to "longURL"
-func CreateAliasKey() string{
+func CreateAliasKey() string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 	alliasKey := make([]byte, aliasKeyLen)
 
-	for i := range alliasKey{
+	for i := range alliasKey {
 		alliasKey[i] = charset[rand.Intn(len(charset))]
 	}
 

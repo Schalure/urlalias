@@ -42,5 +42,3 @@ func main() {
 func run(router *chi.Mux) error {
 	return http.ListenAndServe(config.Config.Host(), router)
 }
-
-

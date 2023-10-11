@@ -64,7 +64,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, "/" + tt.request.requestURI, nil)
+			request := httptest.NewRequest(http.MethodGet, "/"+tt.request.requestURI, nil)
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()

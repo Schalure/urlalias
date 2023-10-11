@@ -16,7 +16,7 @@ import (
 const (
 	AppName        = string("github.com/Schalure/urlalias") //	Application name
 	hostDefault    = string("localhost:8080")               //	Host default value
-	baseURLDefault = string("http://localhost:8080")             //	Base URL default value
+	baseURLDefault = string("http://localhost:8080")        //	Base URL default value
 	hostEnvKey     = string("SERVER_ADDRESS")               //	key for "host" in environment variables
 	baseURLEnvKey  = string("BASE_URL")                     //	key for "baseURL" in environment variables
 )
@@ -91,7 +91,7 @@ func checkBaseURL(baseURLFromOpt string) error {
 	if len(strs) != 2 {
 		return fmt.Errorf("ip addres in not right format: %s. for example: http://192.168.1.2:port", baseURLFromOpt)
 	} else {
-		if strs[0] != "http://" && strs[0] != "https://"{
+		if strs[0] != "http://" && strs[0] != "https://" {
 			return fmt.Errorf("base url in not right format: %s. for example: http://192.168.1.2:port", baseURLFromOpt)
 		}
 		args := strings.Split(strs[1], ":")

@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Schalure/urlalias/cmd/shortener/config"
 	aliasmaker "github.com/Schalure/urlalias/internal/app/aliasMaker"
 	"github.com/Schalure/urlalias/models"
 )
@@ -21,20 +20,17 @@ import (
 //	Input:
 //		w http.ResponseWriter
 //		r *http.Request
-func MainHandlerMethodGet(repo models.RepositoryURL) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		shortKey := r.RequestURI
-		node, err := repo.FindByShortKey(shortKey[1:])
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			log.Println(err.Error())
-			return
-		}
-		log.Println(node.LongURL)
-		w.Header().Add("Location", node.LongURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
+func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request){
+	shortKey := r.RequestURI
+	node, err := h.storege.FindByShortKey(shortKey[1:])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Println(err.Error())
+		return
 	}
+	log.Println(node.LongURL)
+	w.Header().Add("Location", node.LongURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 // ------------------------------------------------------------
@@ -44,57 +40,56 @@ func MainHandlerMethodGet(repo models.RepositoryURL) http.HandlerFunc {
 //	Input:
 //		w http.ResponseWriter
 //		r *http.Request
-func MainHandlerMethodPost(repo models.RepositoryURL, config config.Configuration) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request){
 
-		if err := checkMainHandlerMethodPost(r); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			log.Println(err.Error())
-			return
-		}
+	if err := checkMainHandlerMethodPost(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Println(err.Error())
+		return
+	}
 
-		//	get url
-		data, err := io.ReadAll(r.Body)
-		if err != nil {
-			log.Println(error.Error(err))
-			http.Error(w, error.Error(err), http.StatusBadRequest)
-			return
-		}
+	//	get url
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Println(error.Error(err))
+		http.Error(w, error.Error(err), http.StatusBadRequest)
+		return
+	}
 
-		//	Check to valid URL
-		u, err := url.ParseRequestURI(string(data[:]))
-		if err != nil {
-			log.Println(error.Error(err))
-			http.Error(w, error.Error(err), http.StatusBadRequest)
-			return
-		}
-		log.Println(u)
+	//	Check to valid URL
+	u, err := url.ParseRequestURI(string(data[:]))
+	if err != nil {
+		log.Println(error.Error(err))
+		http.Error(w, error.Error(err), http.StatusBadRequest)
+		return
+	}
+	log.Println(u)
 
-		us := u.String()
-		node, err := repo.FindByLongURL(us)
-		if err != nil {
-			//	try to create alias key
-			for i := 0; i < aliasmaker.TrysToMakeAliasKey+1; i++ {
-				if i == aliasmaker.TrysToMakeAliasKey {
-					log.Println("Can not create alias key")
-					http.Error(w, fmt.Errorf("can not create alias key from \"%s\"", u.String()).Error(), http.StatusBadRequest)
-					return
-				}
-				aliasKey := aliasmaker.CreateAliasKey()
-				node, err = repo.Save(models.AliasURLModel{ID: 0, ShortKey: aliasKey, LongURL: u.String()})
-				if err == nil {
-					break
-				}
+	us := u.String()
+	node, err := h.storege.FindByLongURL(us)
+	if err != nil {
+		//	try to create alias key
+		for i := 0; i < aliasmaker.TrysToMakeAliasKey+1; i++ {
+			if i == aliasmaker.TrysToMakeAliasKey {
+				log.Println("Can not create alias key")
+				http.Error(w, fmt.Errorf("can not create alias key from \"%s\"", u.String()).Error(), http.StatusBadRequest)
+				return
+			}
+			aliasKey := aliasmaker.CreateAliasKey()
+			node, err = h.storege.Save(models.AliasURLModel{ID: 0, ShortKey: aliasKey, LongURL: u.String()})
+			if err == nil {
+				break
 			}
 		}
-		aliasURL := config.BaseURL() + "/" + node.ShortKey
-		log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
-
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(aliasURL))
 	}
+	aliasURL := Config.BaseURL + "/" + node.ShortKey
+	log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(aliasURL))
 }
+
 
 func checkMainHandlerMethodPost(r *http.Request) error {
 

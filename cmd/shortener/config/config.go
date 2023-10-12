@@ -2,6 +2,7 @@
 package config
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -23,37 +24,76 @@ const (
 
 // ------------------------------------------------------------
 //
-//	Configuration vars for application
-var (
-	Config Configuration
-)
+//	Struct of configuration vars
+type Config struct {
+	Host    string //	Server addres
+	BaseURL string //	Base URL for create alias
+}
+
 
 // ------------------------------------------------------------
 //
-//	Initialize config options.
-func Initialize() {
+//	This value is "true" when Configuration already initialized
+var alreadyInitialized bool
 
-	Config.initialize()
+//	Constructor of Config type
+//	Output:
+//		*Config
+//	IMPORTANT: Repeated method call will generate a fatal error and terminate the application
+func NewConfig() *Config {
 
-	//	get host from environment variables
-	if hostFromEnv, ok := os.LookupEnv(hostEnvKey); ok {
+	if alreadyInitialized {
+		log.Fatal("Repeated method call")
+	}
+	alreadyInitialized = true
+
+	c := Config{}
+	c.parseFlags()
+	c.parseEnv()
+
+	log.Printf("Server address: \"%s\", Base URL: \"%s\"", c.Host, c.BaseURL)
+	return &c
+}
+
+// ------------------------------------------------------------
+//
+//	Parse flags method of "Config" type
+func (c *Config) parseFlags() {
+
+	host := flag.String("a", hostDefault, "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
+	baseURL := flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
+	flag.Parse()
+
+	if err := checkServerAddres(*host); err == nil && *host != hostDefault{
+		c.Host = *host
+	}
+
+	if err := checkBaseURL(*baseURL); err == nil && *baseURL != baseURLDefault{
+		c.BaseURL = *baseURL
+	}
+}
+
+// ------------------------------------------------------------
+//
+//	Parse environment variables method of "Config" type
+func (c *Config) parseEnv() {
+
+	if host, ok := os.LookupEnv(hostEnvKey); ok {
 		if err := checkServerAddres(hostEnvKey); err == nil {
-			Config.host = hostFromEnv
+			c.Host = host
 		} else {
-			log.Printf("The environment variable \"%s\" is written in the wrong format: %s", hostEnvKey, hostFromEnv)
+			log.Printf("The environment variable \"%s\" is written in the wrong format: %s", hostEnvKey, host)
 		}
 	}
 
 	//	get baseURL from environment variables
-	if baseURLFromEnv, ok := os.LookupEnv(baseURLEnvKey); ok {
-		if err := checkBaseURL(baseURLFromEnv); err == nil {
-			Config.baseURL = baseURLFromEnv
+	if baseURL, ok := os.LookupEnv(baseURLEnvKey); ok {
+		if err := checkBaseURL(baseURL); err == nil {
+			c.BaseURL = baseURL
 		} else {
-			log.Printf("The environment variable \"%s\" is written in the wrong format: %s", baseURLEnvKey, baseURLFromEnv)
+			log.Printf("The environment variable \"%s\" is written in the wrong format: %s", baseURLEnvKey, baseURL)
 		}
-	}
-
-	log.Printf("Server address: \"%s\", Base URL: \"%s\"", Config.host, Config.baseURL)
+	}	
 }
 
 // ------------------------------------------------------------
@@ -64,16 +104,18 @@ func Initialize() {
 //	Output:
 //		err error
 func checkServerAddres(addres string) error {
-	args := strings.Split(addres, ":")
 
-	if args[0] != "localhost" {
-		if net.ParseIP(args[0]) == nil {
-			return fmt.Errorf("ip addres in not right format: %s. for example: 192.168.1.2:port", args[0])
-		}
+	args := strings.Split(addres, ":")
+	if len(args) != 2{
+		return fmt.Errorf("ip addres and port in not right format: %s. for example: 192.168.1.2:port", addres)
+	}
+
+	if args[0] != "localhost" && net.ParseIP(args[0]) == nil {
+		return fmt.Errorf("ip addres in not right format: %s. for example: 192.168.1.2:port", args[0])
 	}
 
 	if _, err := strconv.Atoi(args[1]); err != nil {
-		return fmt.Errorf("ort in not right format: %s. for example: addres:80", args[1])
+		return fmt.Errorf("port in not right format: %s. for example: addres:80", args[1])
 	}
 	return nil
 }
@@ -90,40 +132,24 @@ func checkBaseURL(baseURLFromOpt string) error {
 	var strs = strings.SplitAfterN(baseURLFromOpt, "//", 2)
 	if len(strs) != 2 {
 		return fmt.Errorf("ip addres in not right format: %s. for example: http://192.168.1.2:port", baseURLFromOpt)
-	} else {
-		if strs[0] != "http://" && strs[0] != "https://" {
-			return fmt.Errorf("base url in not right format: %s. for example: http://192.168.1.2:port", baseURLFromOpt)
-		}
-		args := strings.Split(strs[1], ":")
-
-		if args[0] != "localhost" {
-			if net.ParseIP(args[0]) == nil {
-				return fmt.Errorf("ip addres in not right format: %s. for example: http://192.168.1.2:port", baseURLFromOpt)
-			}
-		}
-
-		if _, err := strconv.Atoi(args[1]); err != nil {
-			return fmt.Errorf("ort in not right format: %s. for example: http://addres:80", baseURLFromOpt)
-		}
 	}
+
+	if strs[0] != "http://" && strs[0] != "https://" {
+		return fmt.Errorf("base url in not right format: %s. for example: http://192.168.1.2:port", baseURLFromOpt)
+	}
+
+	args := strings.Split(strs[1], ":")
+	if len(args) != 2{
+		return fmt.Errorf("ip addres and port in not right format: %s. for example: 192.168.1.2:port", strs[1])
+	}
+
+	if args[0] != "localhost" && net.ParseIP(args[0]) == nil {
+		return fmt.Errorf("ip addres in not right format: %s. for example: http://192.168.1.2:port", baseURLFromOpt)
+	}
+
+	if _, err := strconv.Atoi(args[1]); err != nil {
+		return fmt.Errorf("ort in not right format: %s. for example: http://addres:80", baseURLFromOpt)
+	}
+
 	return nil
 }
-
-// type Options struct {
-// 	Host    string `env:"SERVER_ADDRESS"` //	Server addres
-// 	BaseURL string `env:"BASE_URL"`       //	Base URL for create alias
-// }
-
-// func InitEnvOpt() *Options {
-
-// 	var opt Options
-
-// 	//	Get env vars
-// 	if err := env.Parse(&opt); err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	return &opt
-// }
-
-// Host: *flag.String("a", "localhost:8080", "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80"),
-// BaseURL: *flag.String("b", "http://localhost:8080", "Response base addres for alias URL.\n\tFor example: 192.168.1.2"),

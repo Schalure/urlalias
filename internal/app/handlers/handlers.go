@@ -1,24 +1,30 @@
 package handlers
 
 import (
-	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/repositories"
+	"github.com/Schalure/urlalias/models"
 	"github.com/go-chi/chi/v5"
 )
 
-// ------------------------------------------------------------
-//
-//	Add handlers to router
-//	Output:
-//		router *chi.Mux - handler router
-func MakeRouter(storage *repositories.StorageURL) *chi.Mux {
+type Handlers struct{
+	storege models.RepositoryURL
+}
 
-	//	create new router
-	router := chi.NewRouter()
+func NewHandlers(storage models.RepositoryURL) *Handlers{
+	return &Handlers{
+		storege: storage,
+	}
+}
 
-	//	add handlers
-	router.Get("/{shortkey}", MainHandlerMethodGet(storage))
-	router.Post("/", MainHandlerMethodPost(storage, config.Config))
+type Router struct{
+	handlers Handlers
+}
 
-	return router
+func NewRouter(handlers Handlers) *chi.Mux{
+
+	r := chi.NewRouter()
+
+	r.Get("/{shortkey}", handlers.mainHandlerGet)
+	r.Post("/", handlers.mainHandlerPost)
+
+	return r
 }

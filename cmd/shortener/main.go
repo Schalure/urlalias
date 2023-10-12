@@ -12,6 +12,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+var Config *config.Config
+
 // ------------------------------------------------------------
 //
 //	Main function
@@ -20,13 +22,13 @@ func main() {
 	fmt.Printf("%s service have been started...\n", config.AppName)
 
 	//	Read application options
-	config.Initialize()
+	Config = config.NewConfig()
 
 	//	initialize storage
 	storage := repositories.NewStorageURL()
 
 	//	initialize router and handlers
-	router := handlers.MakeRouter(storage)
+	router := handlers.NewRouter(*handlers.NewHandlers(storage))
 
 	//	Run server
 	log.Fatal(run(router))
@@ -40,5 +42,5 @@ func main() {
 //	Output:
 //		err error - if servise have become panic or fatal error
 func run(router *chi.Mux) error {
-	return http.ListenAndServe(config.Config.Host(), router)
+	return http.ListenAndServe(Config.Host, router)
 }

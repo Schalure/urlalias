@@ -20,7 +20,7 @@ import (
 //	Input:
 //		w http.ResponseWriter
 //		r *http.Request
-func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request){
+func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	shortKey := r.RequestURI
 	node, err := h.storege.FindByShortKey(shortKey[1:])
 	if err != nil {
@@ -40,7 +40,7 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request){
 //	Input:
 //		w http.ResponseWriter
 //		r *http.Request
-func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request){
+func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	if err := checkMainHandlerMethodPost(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -89,7 +89,6 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request){
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(aliasURL))
 }
-
 
 func checkMainHandlerMethodPost(r *http.Request) error {
 

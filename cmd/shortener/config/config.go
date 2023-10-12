@@ -25,62 +25,77 @@ const (
 // ------------------------------------------------------------
 //
 //	Struct of configuration vars
-type Config struct {
-	Host    string //	Server addres
-	BaseURL string //	Base URL for create alias
+type Configuration struct {
+	host    string //	Server addres
+	baseURL string //	Base URL for create alias
 }
 
+// Common config variable
+var config *Configuration = nil
 
 // ------------------------------------------------------------
 //
-//	This value is "true" when Configuration already initialized
-var alreadyInitialized bool
-
 //	Constructor of Config type
 //	Output:
 //		*Config
-//	IMPORTANT: Repeated method call will generate a fatal error and terminate the application
-func NewConfig() *Config {
+func NewConfig() *Configuration {
 
-	if alreadyInitialized {
-		log.Fatal("Repeated method call")
+	if config != nil {
+		return config
 	}
-	alreadyInitialized = true
 
-	c := Config{}
-	c.parseFlags()
-	c.parseEnv()
+	config = new(Configuration)
+	config.parseFlags()
+	config.parseEnv()
 
-	log.Printf("Server address: \"%s\", Base URL: \"%s\"", c.Host, c.BaseURL)
-	return &c
+	log.Printf("Server address: \"%s\", Base URL: \"%s\"", config.host, config.baseURL)
+	return config
+}
+
+// ------------------------------------------------------------
+//
+//	Getter "Configuration.host"
+//	Output:
+//		c.host string
+func (c *Configuration) Host() string {
+	return c.host
+}
+
+// ------------------------------------------------------------
+//
+//	Getter "Configuration.baseURL"
+//	Output:
+//		c.baseURL string
+func (c *Configuration) BaseURL() string {
+	return c.baseURL
 }
 
 // ------------------------------------------------------------
 //
 //	Parse flags method of "Config" type
-func (c *Config) parseFlags() {
+func (c *Configuration) parseFlags() {
 
 	host := flag.String("a", hostDefault, "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
 	baseURL := flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
 	flag.Parse()
 
-	if err := checkServerAddres(*host); err == nil && *host != hostDefault{
-		c.Host = *host
+	if err := checkServerAddres(*host); err == nil && *host != hostDefault {
+		c.host = *host
 	}
 
-	if err := checkBaseURL(*baseURL); err == nil && *baseURL != baseURLDefault{
-		c.BaseURL = *baseURL
+	if err := checkBaseURL(*baseURL); err == nil && *baseURL != baseURLDefault {
+		c.baseURL = *baseURL
 	}
 }
 
 // ------------------------------------------------------------
 //
 //	Parse environment variables method of "Config" type
-func (c *Config) parseEnv() {
+func (c *Configuration) parseEnv() {
 
 	if host, ok := os.LookupEnv(hostEnvKey); ok {
 		if err := checkServerAddres(hostEnvKey); err == nil {
-			c.Host = host
+			c.host = host
 		} else {
 			log.Printf("The environment variable \"%s\" is written in the wrong format: %s", hostEnvKey, host)
 		}
@@ -89,11 +104,11 @@ func (c *Config) parseEnv() {
 	//	get baseURL from environment variables
 	if baseURL, ok := os.LookupEnv(baseURLEnvKey); ok {
 		if err := checkBaseURL(baseURL); err == nil {
-			c.BaseURL = baseURL
+			c.baseURL = baseURL
 		} else {
 			log.Printf("The environment variable \"%s\" is written in the wrong format: %s", baseURLEnvKey, baseURL)
 		}
-	}	
+	}
 }
 
 // ------------------------------------------------------------
@@ -106,7 +121,7 @@ func (c *Config) parseEnv() {
 func checkServerAddres(addres string) error {
 
 	args := strings.Split(addres, ":")
-	if len(args) != 2{
+	if len(args) != 2 {
 		return fmt.Errorf("ip addres and port in not right format: %s. for example: 192.168.1.2:port", addres)
 	}
 
@@ -139,7 +154,7 @@ func checkBaseURL(baseURLFromOpt string) error {
 	}
 
 	args := strings.Split(strs[1], ":")
-	if len(args) != 2{
+	if len(args) != 2 {
 		return fmt.Errorf("ip addres and port in not right format: %s. for example: 192.168.1.2:port", strs[1])
 	}
 

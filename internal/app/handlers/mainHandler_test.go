@@ -133,18 +133,18 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			}{
 				code:        http.StatusCreated,
 				contentType: "text/plain",
-				response:    config.Config.BaseURL() + "/" + listOfURL[0].ShortKey,
+				response:    config.Configuration.BaseURL() + "/" + listOfURL[0].ShortKey,
 			},
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, config.Config.Host(), strings.NewReader(tt.request.requestURI))
+			request := httptest.NewRequest(http.MethodPost, config.Configuration.Host(), strings.NewReader(tt.request.requestURI))
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := http.HandlerFunc(MainHandlerMethodPost(stor, config.Config))
+			h := http.HandlerFunc(MainHandlerMethodPost(stor, config.Configuration))
 			h(recorder, request)
 
 			result := recorder.Result()

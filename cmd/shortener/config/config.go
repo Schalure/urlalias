@@ -45,7 +45,7 @@ func NewConfig() *Configuration {
 	}
 
 	config = new(Configuration)
- 	config.setDefuult()
+	config.setDefuult()
 	config.parseFlags()
 	config.parseEnv()
 
@@ -54,8 +54,9 @@ func NewConfig() *Configuration {
 }
 
 // ------------------------------------------------------------
+//
 //	Set default values
-func (c *Configuration) setDefuult(){
+func (c *Configuration) setDefuult() {
 	c.host = hostDefault
 	c.baseURL = baseURLDefault
 }
@@ -102,7 +103,7 @@ func (c *Configuration) parseFlags() {
 func (c *Configuration) parseEnv() {
 
 	if host, ok := os.LookupEnv(hostEnvKey); ok {
-		if err := checkServerAddres(hostEnvKey); err == nil {
+		if err := checkServerAddres(host); err == nil {
 			c.host = host
 		} else {
 			log.Printf("The environment variable \"%s\" is written in the wrong format: %s", hostEnvKey, host)

@@ -15,6 +15,7 @@ import (
 )
 
 // ------------------------------------------------------------
+//
 //	Test request
 //	Input:
 //		t *testing.T
@@ -24,9 +25,9 @@ import (
 //	Output:
 //		*http.Response - response object
 //		string - response body
-func testRequest(t *testing.T, ts *httptest.Server, method, contentType ,path string) (*http.Response, string) {
+func testRequest(t *testing.T, ts *httptest.Server, method, contentType, path string) (*http.Response, string) {
 
-	req, err := http.NewRequest(method, ts.URL+ "/" +path, nil)
+	req, err := http.NewRequest(method, ts.URL+"/"+path, nil)
 	require.NoError(t, err)
 	req.Header.Add("Content-type", contentType)
 
@@ -40,9 +41,9 @@ func testRequest(t *testing.T, ts *httptest.Server, method, contentType ,path st
 	return resp, string(respBody)
 }
 
-
 // ------------------------------------------------------------
-//	Test mainHandlerMethodGet: "/{shortKey}" 
+//
+//	Test mainHandlerMethodGet: "/{shortKey}"
 func Test_mainHandlerMethodGet(t *testing.T) {
 
 	var listOfURL = []repositories.AliasURLModel{
@@ -50,8 +51,8 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 	}
 	testStor := memstor.NewMemStorage()
-	for i, nodeURL := range listOfURL{
-		if err := testStor.Save(&repositories.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil{
+	for i, nodeURL := range listOfURL {
+		if err := testStor.Save(&repositories.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
@@ -89,12 +90,11 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 		},
 	}
 
-
 	//	Start test cases
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 
-			request := httptest.NewRequest(http.MethodGet, "/"+ testCase.request.requestURI, nil)
+			request := httptest.NewRequest(http.MethodGet, "/"+testCase.request.requestURI, nil)
 			request.Header.Add("Content-type", testCase.request.contentType)
 
 			recorder := httptest.NewRecorder()
@@ -123,8 +123,8 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 	}
 
 	testStor := memstor.NewMemStorage()
-	for i, nodeURL := range listOfURL{
-		if err := testStor.Save(&repositories.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil{
+	for i, nodeURL := range listOfURL {
+		if err := testStor.Save(&repositories.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
@@ -166,11 +166,10 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 		},
 	}
 
-
 	//	Start test cases
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, testConfig.Host(), strings.NewReader(tt.request.requestURI))
+			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.request.requestURI))
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()

@@ -76,9 +76,11 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			node.ShortKey = aliasmaker.CreateAliasKey()
-			if err = h.storage.Save(&repositories.AliasURLModel{ID: 0, ShortKey: node.ShortKey, LongURL: u.String()}); err == nil {
+			aliasKey := aliasmaker.CreateAliasKey()
+			if err = h.storage.Save(&repositories.AliasURLModel{ID: 0, ShortKey: aliasKey, LongURL: u.String()}); err == nil {
+				node = new(repositories.AliasURLModel)	
 				node.LongURL = us
+				node.ShortKey = aliasKey
 				break
 			}
 		}

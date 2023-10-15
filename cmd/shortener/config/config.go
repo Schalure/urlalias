@@ -45,11 +45,19 @@ func NewConfig() *Configuration {
 	}
 
 	config = new(Configuration)
+ 	config.setDefuult()
 	config.parseFlags()
 	config.parseEnv()
 
 	log.Printf("Server address: \"%s\", Base URL: \"%s\"", config.host, config.baseURL)
 	return config
+}
+
+// ------------------------------------------------------------
+//	Set default values
+func (c *Configuration) setDefuult(){
+	c.host = hostDefault
+	c.baseURL = baseURLDefault
 }
 
 // ------------------------------------------------------------
@@ -79,11 +87,11 @@ func (c *Configuration) parseFlags() {
 	baseURL := flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
 	flag.Parse()
 
-	if err := checkServerAddres(*host); err == nil && *host != hostDefault {
+	if err := checkServerAddres(*host); err == nil {
 		c.host = *host
 	}
 
-	if err := checkBaseURL(*baseURL); err == nil && *baseURL != baseURLDefault {
+	if err := checkBaseURL(*baseURL); err == nil {
 		c.baseURL = *baseURL
 	}
 }

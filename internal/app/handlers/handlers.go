@@ -6,14 +6,14 @@ import (
 )
 
 type Handlers struct {
-	storage *repositories.RepositoryURL
+	storage repositories.RepositoryURL
 	config  *config.Configuration
 }
 
 func NewHandlers(storage repositories.RepositoryURL, config *config.Configuration) *Handlers {
 
 	return &Handlers{
-		storage: &storage,
+		storage: storage,
 		config:  config,
 	}
 }

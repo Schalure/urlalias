@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	aliasmaker "github.com/Schalure/urlalias/internal/app/aliasMaker"
-	"github.com/Schalure/urlalias/models"
+	"github.com/Schalure/urlalias/internal/app/aliasmaker"
+	"github.com/Schalure/urlalias/internal/app/repositories"
 )
 
 // ------------------------------------------------------------
@@ -22,7 +22,7 @@ import (
 //		r *http.Request
 func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	shortKey := r.RequestURI
-	node, err := h.storege.FindByShortKey(shortKey[1:])
+	node, err := h.storage.FindByShortKey(shortKey[1:])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		log.Println(err.Error())
@@ -66,7 +66,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	log.Println(u)
 
 	us := u.String()
-	node, err := h.storege.FindByLongURL(us)
+	node, err := h.storage.FindByLongURL(us)
 	if err != nil {
 		//	try to create alias key
 		for i := 0; i < aliasmaker.TrysToMakeAliasKey+1; i++ {
@@ -75,14 +75,15 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, fmt.Errorf("can not create alias key from \"%s\"", u.String()).Error(), http.StatusBadRequest)
 				return
 			}
-			aliasKey := aliasmaker.CreateAliasKey()
-			node, err = h.storege.Save(models.AliasURLModel{ID: 0, ShortKey: aliasKey, LongURL: u.String()})
-			if err == nil {
+
+			node.ShortKey = aliasmaker.CreateAliasKey()
+			if err = h.storage.Save(&repositories.AliasURLModel{ID: 0, ShortKey: node.ShortKey, LongURL: u.String()}); err == nil{
+				node.LongURL = us
 				break
 			}
 		}
 	}
-	aliasURL := Config.BaseURL + "/" + node.ShortKey
+	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
 	log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
 
 	w.Header().Set("Content-Type", "text/plain")

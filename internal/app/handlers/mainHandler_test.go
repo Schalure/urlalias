@@ -8,28 +8,55 @@ import (
 	"testing"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/models"
-	"github.com/Schalure/urlalias/repositories"
+	"github.com/Schalure/urlalias/internal/app/repositories"
+	"github.com/Schalure/urlalias/internal/app/repositories/memstor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+// ------------------------------------------------------------
+//	Test request
+//	Input:
+//		t *testing.T
+//		ts *httptest.Server - test server
+//		method string - request method
+//		path string - path of request
+//	Output:
+//		*http.Response - response object
+//		string - response body
+func testRequest(t *testing.T, ts *httptest.Server, method, contentType ,path string) (*http.Response, string) {
+
+	req, err := http.NewRequest(method, ts.URL+ "/" +path, nil)
+	require.NoError(t, err)
+	req.Header.Add("Content-type", contentType)
+
+	resp, err := ts.Client().Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp, string(respBody)
+}
+
+
+// ------------------------------------------------------------
+//	Test mainHandlerMethodGet: "/{shortKey}" 
 func Test_mainHandlerMethodGet(t *testing.T) {
 
-	listOfURL := []models.AliasURLModel{
+	var listOfURL = []repositories.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 	}
-
-	//	create storage
-	stor := repositories.NewStorageURL()
-	if _, err := stor.Save(models.AliasURLModel{ID: 0, LongURL: listOfURL[0].LongURL, ShortKey: listOfURL[0].ShortKey}); err != nil {
-		require.NotNil(t, err)
-	}
-	if _, err := stor.Save(models.AliasURLModel{ID: 1, LongURL: listOfURL[1].LongURL, ShortKey: listOfURL[1].ShortKey}); err != nil {
-		require.NotNil(t, err)
+	testStor := memstor.NewMemStorage()
+	for i, nodeURL := range listOfURL{
+		if err := testStor.Save(&repositories.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil{
+			require.NotNil(t, err)
+		}
 	}
 
+	//	Test cases
 	testCases := []struct {
 		name    string
 		request struct {
@@ -62,13 +89,16 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 		},
 	}
 
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, "/"+tt.request.requestURI, nil)
-			request.Header.Add("Content-type", tt.request.contentType)
+
+	//	Start test cases
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+
+			request := httptest.NewRequest(http.MethodGet, "/"+ testCase.request.requestURI, nil)
+			request.Header.Add("Content-type", testCase.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := http.HandlerFunc(MainHandlerMethodGet(stor))
+			h := NewHandlers(testStor, config.NewConfig()).mainHandlerGet
 			h(recorder, request)
 
 			result := recorder.Result()
@@ -76,32 +106,30 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 			require.NoError(t, err)
 
 			//	check status code
-			assert.Equal(t, tt.want.code, result.StatusCode)
+			assert.Equal(t, testCase.want.code, result.StatusCode)
 
 			//	check response
-			assert.Equal(t, tt.want.response, result.Header.Get("Location"))
+			assert.Equal(t, testCase.want.response, result.Header.Get("Location"))
 		})
 	}
 }
 
 func Test_mainHandlerMethodPost(t *testing.T) {
 
-	config.Initialize()
-
-	listOfURL := []models.AliasURLModel{
+	listOfURL := []repositories.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
 	}
 
-	//	create storage
-	stor := repositories.NewStorageURL()
-	if _, err := stor.Save(models.AliasURLModel{ID: 0, LongURL: listOfURL[0].LongURL, ShortKey: listOfURL[0].ShortKey}); err != nil {
-		require.NotNil(t, err)
+	testStor := memstor.NewMemStorage()
+	for i, nodeURL := range listOfURL{
+		if err := testStor.Save(&repositories.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil{
+			require.NotNil(t, err)
+		}
 	}
-	if _, err := stor.Save(models.AliasURLModel{ID: 1, LongURL: listOfURL[1].LongURL, ShortKey: listOfURL[1].ShortKey}); err != nil {
-		require.NotNil(t, err)
-	}
+
+	testConfig := config.NewConfig()
 
 	testCases := []struct {
 		name    string
@@ -133,18 +161,20 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			}{
 				code:        http.StatusCreated,
 				contentType: "text/plain",
-				response:    config.Configuration.BaseURL() + "/" + listOfURL[0].ShortKey,
+				response:    testConfig.BaseURL() + "/" + listOfURL[0].ShortKey,
 			},
 		},
 	}
 
+
+	//	Start test cases
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, config.Configuration.Host(), strings.NewReader(tt.request.requestURI))
+			request := httptest.NewRequest(http.MethodPost, testConfig.Host(), strings.NewReader(tt.request.requestURI))
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := http.HandlerFunc(MainHandlerMethodPost(stor, config.Configuration))
+			h := NewHandlers(testStor, testConfig).mainHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()

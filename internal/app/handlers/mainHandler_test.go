@@ -16,33 +16,6 @@ import (
 
 // ------------------------------------------------------------
 //
-//	Test request
-//	Input:
-//		t *testing.T
-//		ts *httptest.Server - test server
-//		method string - request method
-//		path string - path of request
-//	Output:
-//		*http.Response - response object
-//		string - response body
-func testRequest(t *testing.T, ts *httptest.Server, method, contentType, path string) (*http.Response, string) {
-
-	req, err := http.NewRequest(method, ts.URL+"/"+path, nil)
-	require.NoError(t, err)
-	req.Header.Add("Content-type", contentType)
-
-	resp, err := ts.Client().Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-
-	return resp, string(respBody)
-}
-
-// ------------------------------------------------------------
-//
 //	Test mainHandlerMethodGet: "/{shortKey}"
 func Test_mainHandlerMethodGet(t *testing.T) {
 

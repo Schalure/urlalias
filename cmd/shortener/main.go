@@ -8,7 +8,7 @@ import (
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/handlers"
-	"github.com/Schalure/urlalias/internal/app/repositories/memstor"
+	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/go-chi/chi/v5"
 )
 

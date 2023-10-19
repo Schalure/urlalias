@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
-	"github.com/Schalure/urlalias/internal/app/repositories"
+	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
 // ------------------------------------------------------------
@@ -77,8 +77,8 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 			}
 
 			aliasKey := aliasmaker.CreateAliasKey()
-			if err = h.storage.Save(&repositories.AliasURLModel{ID: 0, ShortKey: aliasKey, LongURL: u.String()}); err == nil {
-				node = new(repositories.AliasURLModel)	
+			if err = h.storage.Save(&storage.AliasURLModel{ID: 0, ShortKey: aliasKey, LongURL: u.String()}); err == nil {
+				node = new(storage.AliasURLModel)	
 				node.LongURL = us
 				node.ShortKey = aliasKey
 				break

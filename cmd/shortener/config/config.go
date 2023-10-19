@@ -31,7 +31,7 @@ type Configuration struct {
 }
 
 // Common config variable
-var config *Configuration = nil
+var config *Configuration
 
 // ------------------------------------------------------------
 //
@@ -45,20 +45,16 @@ func NewConfig() *Configuration {
 	}
 
 	config = new(Configuration)
-	config.setDefuult()
+
+	//	Fill default values
+	config.host = hostDefault
+	config.baseURL = baseURLDefault
+
 	config.parseFlags()
 	config.parseEnv()
 
 	log.Printf("Server address: \"%s\", Base URL: \"%s\"", config.host, config.baseURL)
 	return config
-}
-
-// ------------------------------------------------------------
-//
-//	Set default values
-func (c *Configuration) setDefuult() {
-	c.host = hostDefault
-	c.baseURL = baseURLDefault
 }
 
 // ------------------------------------------------------------

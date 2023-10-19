@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/internal/app/repositories"
-	"github.com/Schalure/urlalias/internal/app/repositories/memstor"
+	"github.com/Schalure/urlalias/internal/app/storage"
+	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -46,13 +46,13 @@ func testRequest(t *testing.T, ts *httptest.Server, method, contentType, path st
 //	Test mainHandlerMethodGet: "/{shortKey}"
 func Test_mainHandlerMethodGet(t *testing.T) {
 
-	var listOfURL = []repositories.AliasURLModel{
+	var listOfURL = []storage.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 	}
 	testStor := memstor.NewMemStorage()
 	for i, nodeURL := range listOfURL {
-		if err := testStor.Save(&repositories.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := testStor.Save(&storage.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
@@ -116,7 +116,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 
 func Test_mainHandlerMethodPost(t *testing.T) {
 
-	listOfURL := []repositories.AliasURLModel{
+	listOfURL := []storage.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
@@ -124,7 +124,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 
 	testStor := memstor.NewMemStorage()
 	for i, nodeURL := range listOfURL {
-		if err := testStor.Save(&repositories.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := testStor.Save(&storage.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}

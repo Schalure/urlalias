@@ -9,7 +9,7 @@ package memstor
 import (
 	"fmt"
 
-	"github.com/Schalure/urlalias/internal/app/repositories"
+	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
 // Type for storage long URL and their alias keys
@@ -37,7 +37,7 @@ func NewMemStorage() *MemStorage {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *MemStorage) Save(urlAliasNode *repositories.AliasURLModel) error {
+func (s *MemStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 
 	if _, ok := s.stor[urlAliasNode.ShortKey]; ok {
 		return fmt.Errorf("the key \"%s\" is already in the database", urlAliasNode.ShortKey)
@@ -56,13 +56,13 @@ func (s *MemStorage) Save(urlAliasNode *repositories.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *MemStorage) FindByShortKey(shortKey string) (*repositories.AliasURLModel, error) {
+func (s *MemStorage) FindByShortKey(shortKey string) (*storage.AliasURLModel, error) {
 
 	longURL, ok := s.stor[shortKey]
 	if !ok {
 		return nil, fmt.Errorf("the urlAliasNode not found by key \"%s\"", shortKey)
 	}
-	return &repositories.AliasURLModel{ID: 0, ShortKey: shortKey, LongURL: longURL}, nil
+	return &storage.AliasURLModel{ID: 0, ShortKey: shortKey, LongURL: longURL}, nil
 }
 
 // ------------------------------------------------------------
@@ -74,11 +74,11 @@ func (s *MemStorage) FindByShortKey(shortKey string) (*repositories.AliasURLMode
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *MemStorage) FindByLongURL(longURL string) (*repositories.AliasURLModel, error) {
+func (s *MemStorage) FindByLongURL(longURL string) (*storage.AliasURLModel, error) {
 
 	for k, v := range s.stor {
 		if v == longURL {
-			return &repositories.AliasURLModel{ID: 0, ShortKey: k, LongURL: longURL}, nil
+			return &storage.AliasURLModel{ID: 0, ShortKey: k, LongURL: longURL}, nil
 		}
 	}
 	return nil, fmt.Errorf("the urlAliasNode not found by long URL \"%s\"", longURL)

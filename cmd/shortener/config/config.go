@@ -15,19 +15,28 @@ import (
 //
 //	Application constants
 const (
-	AppName        = string("github.com/Schalure/urlalias") //	Application name
-	hostDefault    = string("localhost:8080")               //	Host default value
-	baseURLDefault = string("http://localhost:8080")        //	Base URL default value
-	hostEnvKey     = string("SERVER_ADDRESS")               //	key for "host" in environment variables
-	baseURLEnvKey  = string("BASE_URL")                     //	key for "baseURL" in environment variables
+	AppName       = string("github.com/Schalure/urlalias") //	Application name
+	hostEnvKey    = string("SERVER_ADDRESS")               //	key for "host" in environment variables
+	baseURLEnvKey = string("BASE_URL")                     //	key for "baseURL" in environment variables
+
+)
+
+// ------------------------------------------------------------
+//
+//	Default values
+const (
+	hostDefault      = string("localhost:8080")        //	Host default value
+	baseURLDefault   = string("http://localhost:8080") //	Base URL default value
+	logToFileDefault = false                           //	How to save log default value
 )
 
 // ------------------------------------------------------------
 //
 //	Struct of configuration vars
 type Configuration struct {
-	host    string //	Server addres
-	baseURL string //	Base URL for create alias
+	host      string //	Server addres
+	baseURL   string //	Base URL for create alias
+	logToFile bool   //	true - save log to file, false - print log to console
 }
 
 // Common config variable
@@ -49,11 +58,12 @@ func NewConfig() *Configuration {
 	//	Fill default values
 	config.host = hostDefault
 	config.baseURL = baseURLDefault
+	config.logToFile = logToFileDefault
 
 	config.parseFlags()
 	config.parseEnv()
 
-	log.Printf("Server address: \"%s\", Base URL: \"%s\"", config.host, config.baseURL)
+	log.Printf("Server address: \"%s\", Base URL: \"%s\", Save log to file: \"%t\"", config.host, config.baseURL, config.logToFile)
 	return config
 }
 
@@ -77,11 +87,22 @@ func (c *Configuration) BaseURL() string {
 
 // ------------------------------------------------------------
 //
+//	Getter "Configuration.logSaver"
+//	Output:
+//		c.baseURL string
+func (c *Configuration) LogToFile() bool {
+	return bool(c.logToFile)
+}
+
+// ------------------------------------------------------------
+//
 //	Parse flags method of "Config" type
 func (c *Configuration) parseFlags() {
 
 	host := flag.String("a", hostDefault, "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
 	baseURL := flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
+	logToFile := flag.Bool("l", logToFileDefault, "Variant of logger: true - save log to file, false - print log to console")
+
 	flag.Parse()
 
 	if err := checkServerAddres(*host); err == nil {
@@ -91,6 +112,8 @@ func (c *Configuration) parseFlags() {
 	if err := checkBaseURL(*baseURL); err == nil {
 		c.baseURL = *baseURL
 	}
+
+	c.logToFile = *logToFile
 }
 
 // ------------------------------------------------------------

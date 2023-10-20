@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -71,7 +73,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 			request.Header.Add("Content-type", testCase.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(testStor, config.NewConfig()).mainHandlerGet
+			h := NewHandlers(testStor, config.NewConfig(), slog.New(slog.NewTextHandler(os.Stdout, nil))).mainHandlerGet
 			h(recorder, request)
 
 			result := recorder.Result()
@@ -146,7 +148,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(testStor, testConfig).mainHandlerPost
+			h := NewHandlers(testStor, testConfig, slog.New(slog.NewTextHandler(os.Stdout, nil))).mainHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -25,10 +24,11 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	node, err := h.storage.FindByShortKey(shortKey[1:])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Println(err.Error())
+		h.logger.Error("error", err.Error())
 		return
 	}
-	log.Println(node.LongURL)
+	h.logger.Info("Long URL", node.LongURL)
+
 	w.Header().Add("Location", node.LongURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
@@ -42,16 +42,16 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 //		r *http.Request
 func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
-	if err := checkMainHandlerMethodPost(r); err != nil {
+	if err := h.checkMainHandlerMethodPost(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Println(err.Error())
+		h.logger.Info("error", err.Error())
 		return
 	}
 
 	//	get url
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Println(error.Error(err))
+		h.logger.Info("error", err.Error())
 		http.Error(w, error.Error(err), http.StatusBadRequest)
 		return
 	}
@@ -59,11 +59,14 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	//	Check to valid URL
 	u, err := url.ParseRequestURI(string(data[:]))
 	if err != nil {
-		log.Println(error.Error(err))
+		h.logger.Info("error", err.Error())
 		http.Error(w, error.Error(err), http.StatusBadRequest)
 		return
 	}
-	log.Println(u)
+	h.logger.Info(
+		"Parsed URL",
+		"Long URL", u,
+	)
 
 	us := u.String()
 	node, err := h.storage.FindByLongURL(us)
@@ -71,14 +74,17 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		//	try to create alias key
 		for i := 0; i < aliasmaker.TrysToMakeAliasKey+1; i++ {
 			if i == aliasmaker.TrysToMakeAliasKey {
-				log.Println("Can not create alias key")
+				h.logger.Error(
+					"Can not create alias key",
+					"long url", u,
+				)
 				http.Error(w, fmt.Errorf("can not create alias key from \"%s\"", u.String()).Error(), http.StatusBadRequest)
 				return
 			}
 
 			aliasKey := aliasmaker.CreateAliasKey()
 			if err = h.storage.Save(&storage.AliasURLModel{ID: 0, ShortKey: aliasKey, LongURL: u.String()}); err == nil {
-				node = new(storage.AliasURLModel)	
+				node = new(storage.AliasURLModel)
 				node.LongURL = us
 				node.ShortKey = aliasKey
 				break
@@ -86,20 +92,24 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
-	log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
+	h.logger.Info(
+		"Serch/Create alias key",
+		"Long URL", node.LongURL,
+		"Alias URL", aliasURL,
+	)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(aliasURL))
 }
 
-func checkMainHandlerMethodPost(r *http.Request) error {
+func (h *Handlers) checkMainHandlerMethodPost(r *http.Request) error {
 
 	//	execut header "Content-Type" error
 	contentType, ok := r.Header["Content-Type"]
 	if !ok {
 		err := errors.New("header \"Content-Type\" not found")
-		log.Println(err.Error())
+		h.logger.Info(err.Error())
 		return err
 	}
 
@@ -111,6 +121,7 @@ func checkMainHandlerMethodPost(r *http.Request) error {
 	}
 
 	err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
-	log.Println(err.Error())
+	h.logger.Info(err.Error())
+
 	return err
 }

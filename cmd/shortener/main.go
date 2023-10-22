@@ -4,9 +4,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
-	"os"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/handlers"
@@ -54,17 +52,4 @@ func main() {
 //		err error - if servise have become panic or fatal error
 func run(serverAddres string, router *chi.Mux) error {
 	return http.ListenAndServe(serverAddres, router)
-}
-
-// ------------------------------------------------------------
-func NewLogger(c *config.Configuration) *slog.Logger {
-
-	var l *slog.Logger
-
-	if c.LogToFile() {
-		panic("Logging to file no inplemented!!!")
-	} else {
-		l = slog.New(slog.NewTextHandler(os.Stdout, nil))
-	}
-	return l
 }

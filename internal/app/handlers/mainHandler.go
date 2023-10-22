@@ -24,10 +24,16 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	node, err := h.storage.FindByShortKey(shortKey[1:])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Error("error", err.Error())
+		h.logger.Error(
+			"error", 
+			"err", err.Error(),
+		)
 		return
 	}
-	h.logger.Info("Long URL", node.LongURL)
+	h.logger.Info(
+		"Long URL", 
+		"URL", node.LongURL,
+	)
 
 	w.Header().Add("Location", node.LongURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
@@ -44,14 +50,20 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.checkMainHandlerMethodPost(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Info("error", err.Error())
+		h.logger.Info(
+			"error", 
+			"err", err.Error(),
+		)
 		return
 	}
 
 	//	get url
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.logger.Info("error", err.Error())
+		h.logger.Info(
+			"error",
+			"err", err.Error(),
+		)
 		http.Error(w, error.Error(err), http.StatusBadRequest)
 		return
 	}
@@ -59,7 +71,10 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	//	Check to valid URL
 	u, err := url.ParseRequestURI(string(data[:]))
 	if err != nil {
-		h.logger.Info("error", err.Error())
+		h.logger.Info(
+			"error", 
+			"err", err.Error(),
+		)
 		http.Error(w, error.Error(err), http.StatusBadRequest)
 		return
 	}

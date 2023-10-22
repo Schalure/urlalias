@@ -19,22 +19,22 @@ import (
 //	Main function
 func main() {
 
-	c := config.NewConfig()
+	conf := config.NewConfig()
 
-	aliasLogger := NewLogger(c)
+	aliasLogger := NewLogger(conf)
 
 	storage := memstor.NewMemStorage()
 
-	router := handlers.NewRouter(handlers.NewHandlers(storage, c, aliasLogger))
+	router := handlers.NewRouter(handlers.NewHandlers(storage, conf, aliasLogger))
 
 	aliasLogger.Info(fmt.Sprintf(
 		"%s service have been started...", config.AppName),
-		"Server address", c.Host(),
-		"Base URL", c.BaseURL(),
-		"Save log to file", c.LogToFile(),
+		"Server address", conf.Host(),
+		"Base URL", conf.BaseURL(),
+		"Save log to file", conf.LogToFile(),
 	)
 
-	log.Fatal(run(c.Host(), router))
+	log.Fatal(run(conf.Host(), router))
 }
 
 // ------------------------------------------------------------

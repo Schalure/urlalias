@@ -148,7 +148,8 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(testStor, testConfig, slog.New(slog.NewTextHandler(os.Stdout, nil))).mainHandlerPost
+			l := slog.New(slog.NewTextHandler(os.Stdout, nil))
+			h := NewHandlers(testStor, testConfig, l).mainHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()

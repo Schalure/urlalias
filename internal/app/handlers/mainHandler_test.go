@@ -2,10 +2,8 @@ package handlers
 
 import (
 	"io"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -14,12 +12,16 @@ import (
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 // ------------------------------------------------------------
 //
 //	Test mainHandlerMethodGet: "/{shortKey}"
 func Test_mainHandlerMethodGet(t *testing.T) {
+
+	loggger, suggar := newLogger()
+	defer loggger.Sync()
 
 	var listOfURL = []storage.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
@@ -73,7 +75,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 			request.Header.Add("Content-type", testCase.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(testStor, config.NewConfig(), slog.New(slog.NewTextHandler(os.Stdout, nil))).mainHandlerGet
+			h := NewHandlers(testStor, config.NewConfig(), suggar).mainHandlerGet
 			h(recorder, request)
 
 			result := recorder.Result()
@@ -90,6 +92,9 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 }
 
 func Test_mainHandlerMethodPost(t *testing.T) {
+
+	loggger, suggar := newLogger()
+	defer loggger.Sync()
 
 	listOfURL := []storage.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
@@ -148,8 +153,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			l := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			h := NewHandlers(testStor, testConfig, l).mainHandlerPost
+			h := NewHandlers(testStor, testConfig, suggar).mainHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()
@@ -168,4 +172,14 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			assert.Contains(t, recorder.Header().Get("Content-type"), tt.want.contentType)
 		})
 	}
+}
+
+func newLogger() (*zap.Logger, *zap.SugaredLogger){
+
+	logger, err := zap.NewDevelopment()
+    if err != nil {
+        // вызываем панику, если ошибка
+        panic("cannot initialize zap")
+    }
+	return logger, logger.Sugar()
 }

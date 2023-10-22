@@ -1,0 +1,68 @@
+# Query: Info
+# Flags: CaseSensitive WordMatch
+# ContextLines: 1
+
+Результаты: 9 - Файлы 2
+
+internal/app/handlers/mainHandler.go:
+   31  	}
+   32  	}
+   33: 	h.logger.Infow(
+
+   33  		"Long URL", 
+   34  		"Long URL", 
+
+   51  		http.Error(w, err.Error(), http.StatusBadRequest)
+   52  		http.Error(w, err.Error(), http.StatusBadRequest)
+   53: 		h.logger.Infow(
+
+   53  			"error", 
+   54  			"error", 
+
+   61  	if err != nil {
+   62  	if err != nil {
+   63: 		h.logger.Infow(
+
+   63  			"error",
+   64  			"error",
+
+   72  	if err != nil {
+   73  	if err != nil {
+   74: 		h.logger.Infow(
+
+   74  			"error", 
+   75  			"error", 
+
+   79  	}
+   80  	}
+   81: 	h.logger.Infow(
+
+   81  		"Parsed URL",
+   82  		"Parsed URL",
+
+  108  	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
+  109  	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
+  110: 	h.logger.Infow(
+
+  110  		"Serch/Create alias key",
+  111  		"Serch/Create alias key",
+
+  125  		err := errors.New("header \"Content-Type\" not found")
+  126  		err := errors.New("header \"Content-Type\" not found")
+  127: 		h.logger.Infow(err.Error())
+
+  127  		return err
+  128  		return err
+
+  137  	err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
+  138  	err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
+  139: 	h.logger.Infow(err.Error())
+  139  
+  140  
+
+internal/app/middleware/middleware.go:
+   98  
+   99  
+  100: 		m.logger.Infow(
+  100  			"Information about request and response",
+  101  			"Information about request and response",

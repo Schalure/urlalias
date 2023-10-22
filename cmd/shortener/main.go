@@ -12,6 +12,7 @@ import (
 	"github.com/Schalure/urlalias/internal/app/handlers"
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 // ------------------------------------------------------------
@@ -21,13 +22,20 @@ func main() {
 
 	conf := config.NewConfig()
 
-	aliasLogger := NewLogger(conf)
+	aliasLogger, err := zap.NewDevelopment()
+    if err != nil {
+        // вызываем панику, если ошибка
+        panic("cannot initialize zap")
+    }
+	defer aliasLogger.Sync()
+	suggarLogger := aliasLogger.Sugar()
+
 
 	storage := memstor.NewMemStorage()
 
-	router := handlers.NewRouter(handlers.NewHandlers(storage, conf, aliasLogger))
+	router := handlers.NewRouter(handlers.NewHandlers(storage, conf, suggarLogger))
 
-	aliasLogger.Info(fmt.Sprintf(
+	suggarLogger.Infow(fmt.Sprintf(
 		"%s service have been started...", config.AppName),
 		"Server address", conf.Host(),
 		"Base URL", conf.BaseURL(),

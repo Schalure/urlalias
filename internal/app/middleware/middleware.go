@@ -1,15 +1,16 @@
 package middleware
 
 import (
-	"log/slog"
 	"net/http"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type (
 	//	Middleware type
 	Middleware struct {
-		Logger *slog.Logger
+		logger *zap.SugaredLogger
 	}
 
 	//	Date from response
@@ -65,10 +66,10 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 //		logger *slog.Logger
 //	Output:
 //		*Middleware
-func NewMiddleware(logger *slog.Logger) *Middleware {
+func NewMiddleware(logger *zap.SugaredLogger) *Middleware {
 
 	return &Middleware{
-		Logger: logger,
+		logger: logger,
 	}
 }
 
@@ -96,7 +97,7 @@ func (m *Middleware) WhithLogging(h http.Handler) http.Handler {
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
 
-		m.Logger.Info(
+		m.logger.Infow(
 			"Information about request and response",
 			"Request URI", r.RequestURI,
 			"Request method", r.Method,

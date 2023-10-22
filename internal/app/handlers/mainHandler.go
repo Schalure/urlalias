@@ -24,13 +24,13 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	node, err := h.storage.FindByShortKey(shortKey[1:])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Error(
+		h.logger.Errorw(
 			"error", 
 			"err", err.Error(),
 		)
 		return
 	}
-	h.logger.Info(
+	h.logger.Infow(
 		"Long URL", 
 		"URL", node.LongURL,
 	)
@@ -50,7 +50,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.checkMainHandlerMethodPost(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Info(
+		h.logger.Infow(
 			"error", 
 			"err", err.Error(),
 		)
@@ -60,7 +60,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	//	get url
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.logger.Info(
+		h.logger.Infow(
 			"error",
 			"err", err.Error(),
 		)
@@ -71,14 +71,14 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	//	Check to valid URL
 	u, err := url.ParseRequestURI(string(data[:]))
 	if err != nil {
-		h.logger.Info(
+		h.logger.Infow(
 			"error", 
 			"err", err.Error(),
 		)
 		http.Error(w, error.Error(err), http.StatusBadRequest)
 		return
 	}
-	h.logger.Info(
+	h.logger.Infow(
 		"Parsed URL",
 		"Long URL", u,
 	)
@@ -89,7 +89,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		//	try to create alias key
 		for i := 0; i < aliasmaker.TrysToMakeAliasKey+1; i++ {
 			if i == aliasmaker.TrysToMakeAliasKey {
-				h.logger.Error(
+				h.logger.Errorw(
 					"Can not create alias key",
 					"long url", u,
 				)
@@ -107,7 +107,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
-	h.logger.Info(
+	h.logger.Infow(
 		"Serch/Create alias key",
 		"Long URL", node.LongURL,
 		"Alias URL", aliasURL,

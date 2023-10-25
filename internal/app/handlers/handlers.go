@@ -5,16 +5,11 @@ import (
 	"net/url"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/internal/app/storage"
+	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"go.uber.org/zap"
 )
 
-// Access interface to storage
-type IStorage interface {
-	Save(s *storage.AliasURLModel) error
-	FindByShortKey(shortKey string) (*storage.AliasURLModel, error)
-	FindByLongURL(longURL string) (*storage.AliasURLModel, error)
-}
+
 
 const (
 	textPlain = "text/plain"
@@ -22,7 +17,7 @@ const (
 )
 
 type Handlers struct {
-	storage IStorage
+	service *aliasmaker.AliasMakerServise
 	config  *config.Configuration
 	logger  *zap.SugaredLogger
 }
@@ -36,10 +31,10 @@ type Handlers struct {
 //		logger *zap.SugaredLogger
 //	Output:
 //		*Handlers - ptr to new Handlers
-func NewHandlers(storage IStorage, config *config.Configuration, logger *zap.SugaredLogger) *Handlers {
+func NewHandlers(service *aliasmaker.AliasMakerServise, config *config.Configuration, logger *zap.SugaredLogger) *Handlers {
 
 	return &Handlers{
-		storage: storage,
+		service: service,
 		config:  config,
 		logger:  logger,
 	}

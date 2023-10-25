@@ -5,11 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
-
-	"github.com/Schalure/urlalias/internal/app/aliasmaker"
-	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
 // ------------------------------------------------------------
@@ -21,7 +17,7 @@ import (
 //		r *http.Request
 func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	shortKey := r.RequestURI
-	node, err := h.storage.FindByShortKey(shortKey[1:])
+	node, err := h.service.Storage.FindByShortKey(shortKey[1:])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		h.logger.Errorw(
@@ -48,62 +44,34 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 //		r *http.Request
 func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
-	if err := h.checkMainHandlerMethodPost(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Infow(
-			"error", 
-			"err", err.Error(),
-		)
+	if !h.isValidContentType(r, textPlain){
+		h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
 		return
 	}
 
 	//	get url
-	data, err := io.ReadAll(r.Body)
+	longURL, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.logger.Infow(
-			"error",
-			"err", err.Error(),
-		)
-		http.Error(w, error.Error(err), http.StatusBadRequest)
+		h.publishBadRequest(&w, err)
+		h.logger.Info(err.Error())
 		return
 	}
 
-	//	Check to valid URL
-	u, err := url.ParseRequestURI(string(data[:]))
-	if err != nil {
-		h.logger.Infow(
-			"error", 
-			"err", err.Error(),
-		)
-		http.Error(w, error.Error(err), http.StatusBadRequest)
+	if !h.isValidURL(string(longURL)){
+		h.publishBadRequest(&w, fmt.Errorf("url is not in the correct format"))
 		return
 	}
+
 	h.logger.Infow(
 		"Parsed URL",
-		"Long URL", u,
+		"Long URL", string(longURL),
 	)
 
-	us := u.String()
-	node, err := h.storage.FindByLongURL(us)
-	if err != nil {
-		//	try to create alias key
-		for i := 0; i < aliasmaker.TrysToMakeAliasKey+1; i++ {
-			if i == aliasmaker.TrysToMakeAliasKey {
-				h.logger.Errorw(
-					"Can not create alias key",
-					"long url", u,
-				)
-				http.Error(w, fmt.Errorf("can not create alias key from \"%s\"", u.String()).Error(), http.StatusBadRequest)
-				return
-			}
 
-			aliasKey := aliasmaker.CreateAliasKey()
-			if err = h.storage.Save(&storage.AliasURLModel{ID: 0, ShortKey: aliasKey, LongURL: u.String()}); err == nil {
-				node = new(storage.AliasURLModel)
-				node.LongURL = us
-				node.ShortKey = aliasKey
-				break
-			}
+	node, err := h.service.Storage.FindByLongURL(string(longURL))
+	if err != nil {
+		node, err = h.service.NewPairURL(string(longURL)); if err != nil{
+			h.publishBadRequest(&w, err)
 		}
 	}
 	aliasURL := h.config.BaseURL() + "/" + node.ShortKey

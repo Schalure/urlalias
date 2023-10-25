@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
+	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/storage"
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
@@ -33,6 +34,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 			require.NotNil(t, err)
 		}
 	}
+	service := aliasmaker.NewAliasMakerServise(testStor)
 
 	//	Test cases
 	testCases := []struct {
@@ -75,7 +77,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 			request.Header.Add("Content-type", testCase.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(testStor, config.NewConfig(), suggar).mainHandlerGet
+			h := NewHandlers(service, config.NewConfig(), suggar).mainHandlerGet
 			h(recorder, request)
 
 			result := recorder.Result()
@@ -108,6 +110,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			require.NotNil(t, err)
 		}
 	}
+	service := aliasmaker.NewAliasMakerServise(testStor)
 
 	testConfig := config.NewConfig()
 
@@ -153,7 +156,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(testStor, testConfig, suggar).mainHandlerPost
+			h := NewHandlers(service, testConfig, suggar).mainHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()

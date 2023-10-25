@@ -15,9 +15,9 @@ type (
 
 	//	Date from response
 	responseData struct {
-		status      int
-		size        int
-		data        string
+		status int
+		size   int
+		data   string
 	}
 
 	//	Response writer with login
@@ -88,10 +88,10 @@ func (m *Middleware) WhithLogging(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		responseData := new(responseData)
-        lw := loggingResponseWriter {
-            ResponseWriter: w,
-            responseData: responseData,
-        }
+		lw := loggingResponseWriter{
+			ResponseWriter: w,
+			responseData:   responseData,
+		}
 
 		start := time.Now()
 		h.ServeHTTP(&lw, r)

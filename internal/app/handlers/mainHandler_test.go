@@ -56,7 +56,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 				contentType string
 				requestURI  string
 			}{
-				contentType: "text/plain",
+				contentType: textPlain,
 				requestURI:  listOfURL[0].ShortKey,
 			},
 			want: struct {
@@ -134,7 +134,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 				contentType string
 				requestURI  string
 			}{
-				contentType: "text/plain",
+				contentType: textPlain,
 				requestURI:  listOfURL[0].LongURL,
 			},
 			want: struct {
@@ -143,7 +143,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 				response    string
 			}{
 				code:        http.StatusCreated,
-				contentType: "text/plain",
+				contentType: textPlain,
 				response:    testConfig.BaseURL() + "/" + listOfURL[0].ShortKey,
 			},
 		},

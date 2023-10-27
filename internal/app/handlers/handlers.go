@@ -12,7 +12,7 @@ import (
 
 
 const (
-	textPlain = "text/plain"
+	textPlain = "text/plain; charset=utf-8"
 	appJSON = "application/json"
 )
 

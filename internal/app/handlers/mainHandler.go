@@ -81,7 +81,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		"Alias URL", aliasURL,
 	)
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", textPlain)
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(aliasURL))
 }
@@ -98,12 +98,12 @@ func (h *Handlers) checkMainHandlerMethodPost(r *http.Request) error {
 
 	//	execut "Content-Type" value error
 	for _, value := range contentType {
-		if strings.Contains(value, "text/plain") {
+		if strings.Contains(value, textPlain) {
 			return nil
 		}
 	}
 
-	err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
+	err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"%s\"", contentType, textPlain)
 	h.logger.Info(err.Error())
 
 	return err

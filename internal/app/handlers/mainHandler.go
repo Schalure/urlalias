@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 )
 
 // ------------------------------------------------------------
@@ -70,7 +68,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	node, err := h.service.Storage.FindByLongURL(string(longURL))
 	if err != nil {
-		node, err = h.service.NewPairURL(string(longURL)); if err != nil{
+		if node, err = h.service.NewPairURL(string(longURL)); err != nil{
 			h.publishBadRequest(&w, err)
 		}
 	}
@@ -84,27 +82,4 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", textPlain)
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(aliasURL))
-}
-
-func (h *Handlers) checkMainHandlerMethodPost(r *http.Request) error {
-
-	//	execut header "Content-Type" error
-	contentType, ok := r.Header["Content-Type"]
-	if !ok {
-		err := errors.New("header \"Content-Type\" not found")
-		h.logger.Info(err.Error())
-		return err
-	}
-
-	//	execut "Content-Type" value error
-	for _, value := range contentType {
-		if strings.Contains(value, textPlain) {
-			return nil
-		}
-	}
-
-	err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"%s\"", contentType, textPlain)
-	h.logger.Info(err.Error())
-
-	return err
 }

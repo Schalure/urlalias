@@ -41,7 +41,7 @@ func (s *AliasMakerServise) NewPairURL(longURL string) (*storage.AliasURLModel, 
 			ShortKey: createAliasKey(),
 		}
 
-		if err := s.Storage.Save(&node); err != nil {
+		if err := s.Storage.Save(&node); err == nil {
 			return &node, nil
 		}
 	}

@@ -18,8 +18,8 @@ import (
 
 func Test_ApiShortenHandlerPost(t *testing.T) {
 
-	loggger, suggar := newLogger()
-	defer loggger.Sync()
+	logger, suggar := newLogger()
+	defer logger.Sync()
 
 	listOfURL := []storage.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
@@ -50,7 +50,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 		//	1. simple test
 		{
 			name: "simple test",
-			requestURI:  "url:" + listOfURL[0].LongURL,
+			requestURI:  fmt.Sprintf("{\"url\":\"%s\"}", listOfURL[0].LongURL),
 			want: struct {
 				code        int
 				contentType string
@@ -58,7 +58,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 			}{
 				code:        http.StatusCreated,
 				contentType: appJSON,
-				response:    fmt.Sprintf("\"result\": \"%s/%s", testConfig.BaseURL(), listOfURL[0].ShortKey),
+				response:    fmt.Sprintf("{\"result\":\"%s/%s\"}", testConfig.BaseURL(), listOfURL[0].ShortKey),
 			},
 		},
 	}
@@ -66,6 +66,13 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 	//	Start test cases
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
+			
+			suggar.Infow(
+				"Response URL",
+				"URL", tt.requestURI,
+				"test", fmt.Sprintf("\"url\": \"%v\"", listOfURL[0].LongURL),
+			)
+			
 			request := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(tt.requestURI))
 			request.Header.Add("Content-type", appJSON)
 

@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+
+	"github.com/Schalure/urlalias/internal/app/interpreter"
 )
 
 type request struct{
@@ -23,15 +23,17 @@ func (h *Handlers) ApiShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var requestJson request
-	if err := json.NewDecoder(r.Body).Decode(&requestJson); err != nil {
+	var(
+		requestJson request
+		i interpreter.InterpreterJSON
+	)
+	if err := i.Decode(r.Body, &requestJson); err != nil{
 		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
-		data, _ := io.ReadAll(r.Body)
 		h.logger.Infow(
 			"Can't decode JSON content",
-			"Content", data,
-		)
-		return
+			"err", err.Error(),
+	)
+	return
 	}
 
 	if !h.isValidURL(requestJson.URL){
@@ -47,21 +49,27 @@ func (h *Handlers) ApiShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	var buf bytes.Buffer
 	var resp = response{
 		Result: h.config.BaseURL() + "/" + node.ShortKey,
 	}
-	if err := json.NewEncoder(&buf).Encode(&resp); err != nil{
+	buf, err := json.Marshal(&resp)
+	if err != nil{
 		h.publishBadRequest(&w, err)
+		h.logger.Infow(
+			"Can not encode data",
+			"data", resp,
+			"err", err,
+		)
 		return
 	}
+
 	h.logger.Infow(
 		"Serch/Create alias key",
 		"Long URL", node.LongURL,
 		"Alias URL", resp.Result,
 	)
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", appJSON)
 	w.WriteHeader(http.StatusCreated)
-	w.Write(buf.Bytes())
+	w.Write(buf)
 }

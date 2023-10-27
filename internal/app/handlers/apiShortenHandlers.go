@@ -16,7 +16,7 @@ type response struct{
 	Result string `json:"result"`
 }
 
-func (h *Handlers) ApiShortenHandlerPost(w http.ResponseWriter, r *http.Request){
+func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request){
 	
 	if !h.isValidContentType(r, appJSON){
 		h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
@@ -24,10 +24,10 @@ func (h *Handlers) ApiShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	}
 
 	var(
-		requestJson request
+		requestJSON request
 		i interpreter.InterpreterJSON
 	)
-	if err := i.Decode(r.Body, &requestJson); err != nil{
+	if err := i.Decode(r.Body, &requestJSON); err != nil{
 		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
 		h.logger.Infow(
 			"Can't decode JSON content",
@@ -36,14 +36,14 @@ func (h *Handlers) ApiShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	return
 	}
 
-	if !h.isValidURL(requestJson.URL){
+	if !h.isValidURL(requestJSON.URL){
 		h.publishBadRequest(&w, fmt.Errorf("url is not in the correct format"))
 		return
 	}
 
-	node, err := h.service.Storage.FindByLongURL(requestJson.URL)
+	node, err := h.service.Storage.FindByLongURL(requestJSON.URL)
 	if err != nil {
-		node, err = h.service.NewPairURL(requestJson.URL); if err != nil{
+		node, err = h.service.NewPairURL(requestJSON.URL); if err != nil{
 			h.publishBadRequest(&w, err)
 			return
 		}

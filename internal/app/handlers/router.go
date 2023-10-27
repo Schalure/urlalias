@@ -15,7 +15,7 @@ func NewRouter(handlers *Handlers) *chi.Mux {
 	r.Get("/{shortkey}", handlers.mainHandlerGet)
 	r.Post("/", handlers.mainHandlerPost)
 
-	r.Post("/api/shorten", handlers.ApiShortenHandlerPost)
+	r.Post("/api/shorten", handlers.APIShortenHandlerPost)
 
 	return r
 }

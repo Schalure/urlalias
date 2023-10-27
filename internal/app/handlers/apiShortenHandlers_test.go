@@ -77,7 +77,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 			request.Header.Add("Content-type", appJSON)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service, testConfig, suggar).ApiShortenHandlerPost
+			h := NewHandlers(service, testConfig, suggar).APIShortenHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()

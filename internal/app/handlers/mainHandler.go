@@ -42,10 +42,10 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 //		r *http.Request
 func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
-	if !h.isValidContentType(r, textPlain) {
-		h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
-		return
-	}
+	// if !h.isValidContentType(r, textPlain) {
+	// 	h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
+	// 	return
+	// }
 
 	//	get url
 	longURL, err := io.ReadAll(r.Body)

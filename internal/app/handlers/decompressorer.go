@@ -36,7 +36,7 @@ func NewDecompressorer(r io.Reader, compressType CompressType) (Decompressorer, 
 			return decompressorGZIP, nil
 		}
 	default:
-		err = fmt.Errorf("%s compression type is not supported")
+		err = fmt.Errorf("%s compression type is not supported", compressType)
 	}
 	return nil, err
 }

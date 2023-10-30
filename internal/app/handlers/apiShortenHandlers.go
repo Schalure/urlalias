@@ -18,10 +18,10 @@ type response struct {
 
 func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) {
 
-	if !h.isValidContentType(r, appJSON) {
-		h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
-		return
-	}
+	// if !h.isValidContentType(r, appJSON) {
+	// 	h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
+	// 	return
+	// }
 
 	var (
 		requestJSON request

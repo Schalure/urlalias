@@ -14,7 +14,7 @@ const (
 	TypeLZW    CompressType = "compress"
 	TypeZLIB   CompressType = "deflate"
 	TypeBrotli CompressType = "br"
-	TypeNone CompressType = "none"
+	TypeNone CompressType = ""
 )
 
 var PossibleCompressionTypes = []CompressType{

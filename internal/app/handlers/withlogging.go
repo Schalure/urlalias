@@ -1,17 +1,11 @@
-package middleware
+package handlers
 
 import (
 	"net/http"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 type (
-	//	Middleware type
-	Middleware struct {
-		logger *zap.SugaredLogger
-	}
 
 	//	Date from response
 	responseData struct {
@@ -61,21 +55,7 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 
 // ------------------------------------------------------------
 //
-//	Constructor of middleware
-//	Input:
-//		logger *slog.Logger
-//	Output:
-//		*Middleware
-func NewMiddleware(logger *zap.SugaredLogger) *Middleware {
-
-	return &Middleware{
-		logger: logger,
-	}
-}
-
-// ------------------------------------------------------------
-//
-//	WhithLogging middleware - method of Middleware type
+//	WithLogging middleware - method of Middleware type
 //	Logs request and response data
 //	Receiver:
 //		m* Middleware
@@ -83,7 +63,7 @@ func NewMiddleware(logger *zap.SugaredLogger) *Middleware {
 //		h http.Handler
 //	Output:
 //		http.Handler
-func (m *Middleware) WhithLogging(h http.Handler) http.Handler {
+func (m *Middleware) WithLogging(h http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

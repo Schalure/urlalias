@@ -177,12 +177,12 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 	}
 }
 
-func newLogger() (*zap.Logger, *zap.SugaredLogger){
+func newLogger() (*zap.Logger, *zap.SugaredLogger) {
 
 	logger, err := zap.NewDevelopment()
-    if err != nil {
-        // вызываем панику, если ошибка
-        panic("cannot initialize zap")
-    }
+	if err != nil {
+		// вызываем панику, если ошибка
+		panic("cannot initialize zap")
+	}
 	return logger, logger.Sugar()
 }

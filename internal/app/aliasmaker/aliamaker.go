@@ -12,15 +12,15 @@ const (
 	trysToMakeAliasKey int = 5
 )
 
-//	Type of service
-type AliasMakerServise struct{
+// Type of service
+type AliasMakerServise struct {
 	Storage Storager
 }
 
 // --------------------------------------------------
 //	Constructor
 
-func NewAliasMakerServise(storage Storager) *AliasMakerServise{
+func NewAliasMakerServise(storage Storager) *AliasMakerServise {
 	return &AliasMakerServise{
 		Storage: storage,
 	}

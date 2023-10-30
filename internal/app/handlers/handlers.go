@@ -3,18 +3,28 @@ package handlers
 import (
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"go.uber.org/zap"
 )
 
-
+const (
+	contentType string = "Content-Type"
+	contentEncoding string = "Content-Encoding"
+	acceptEncoding  string = "Accept-Encoding"
+)
 
 const (
-	textPlain = "text/plain; charset=utf-8"
-	appJSON = "application/json"
+	textPlain = "text/plain"
+	appJSON   = "application/json"
 )
+
+var ContentTypeToCompress = []string{
+	textPlain,
+	appJSON,
+}
 
 type Handlers struct {
 	service *aliasmaker.AliasMakerServise
@@ -50,10 +60,17 @@ func NewHandlers(service *aliasmaker.AliasMakerServise, config *config.Configura
 //		contentType string - expected content type
 //	Output:
 //		bool
-func (h *Handlers) isValidContentType(r *http.Request, contentType string) bool{
+func (h *Handlers) isValidContentType(r *http.Request, contentType string) bool {
 
 	ct, ok := r.Header["Content-Type"]
-	if ok && containt(ct, contentType){
+	if ok && func() bool {
+		for _, str := range ct {
+			if strings.Contains(str, contentType) {
+				return true
+			}
+		}
+		return false
+	}() {
 		return true
 	}
 	h.logger.Infow(
@@ -62,7 +79,6 @@ func (h *Handlers) isValidContentType(r *http.Request, contentType string) bool{
 		"request content type", ct,
 	)
 	return false
-
 }
 
 // ------------------------------------------------------------
@@ -74,9 +90,9 @@ func (h *Handlers) isValidContentType(r *http.Request, contentType string) bool{
 //		url string
 //	Output:
 //		bool
-func (h *Handlers) isValidURL(u string) bool{
+func (h *Handlers) isValidURL(u string) bool {
 
-	if _, err := url.ParseRequestURI(u); err != nil{
+	if _, err := url.ParseRequestURI(u); err != nil {
 		h.logger.Infow(
 			"URL is not in the correct format",
 			"URL", u,
@@ -94,17 +110,17 @@ func (h *Handlers) isValidURL(u string) bool{
 //	Input:
 //		w *http.ResponseWriter
 //		err error
-func (h *Handlers) publishBadRequest(w *http.ResponseWriter, err error){
+func (h *Handlers) publishBadRequest(w *http.ResponseWriter, err error) {
 	http.Error(*w, err.Error(), http.StatusBadRequest)
 }
 
-
 // ------------------------------------------------------------
+//
 //	Check to containt string in slice of strings
-func containt(strings []string, s string) bool{
+func containt(strings []string, s string) bool {
 
-	for _, str := range strings{
-		if str == s{
+	for _, str := range strings {
+		if str == s {
 			return true
 		}
 	}

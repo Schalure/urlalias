@@ -38,9 +38,9 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 	testConfig := config.NewConfig()
 
 	testCases := []struct {
-		name    string
-		requestURI  string
-		want struct {
+		name       string
+		requestURI string
+		want       struct {
 			code        int
 			contentType string
 			response    string
@@ -49,8 +49,8 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 		//----------------------------------
 		//	1. simple test
 		{
-			name: "simple test",
-			requestURI:  fmt.Sprintf("{\"url\":\"%s\"}", listOfURL[0].LongURL),
+			name:       "simple test",
+			requestURI: fmt.Sprintf("{\"url\":\"%s\"}", listOfURL[0].LongURL),
 			want: struct {
 				code        int
 				contentType string
@@ -66,13 +66,13 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 	//	Start test cases
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			
+
 			suggar.Infow(
 				"Response URL",
 				"URL", tt.requestURI,
 				"test", fmt.Sprintf("\"url\": \"%v\"", listOfURL[0].LongURL),
 			)
-			
+
 			request := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(tt.requestURI))
 			request.Header.Add("Content-type", appJSON)
 

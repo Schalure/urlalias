@@ -8,42 +8,43 @@ import (
 	"github.com/Schalure/urlalias/internal/app/interpreter"
 )
 
-type request struct{
+type request struct {
 	URL string `json:"url"`
 }
 
-type response struct{
+type response struct {
 	Result string `json:"result"`
 }
 
-func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request){
-	
-	if !h.isValidContentType(r, appJSON){
+func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) {
+
+	if !h.isValidContentType(r, appJSON) {
 		h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
 		return
 	}
 
-	var(
+	var (
 		requestJSON request
-		i interpreter.InterpreterJSON
+		i           interpreter.InterpreterJSON
 	)
-	if err := i.Decode(r.Body, &requestJSON); err != nil{
+	if err := i.Decode(r.Body, &requestJSON); err != nil {
 		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
 		h.logger.Infow(
 			"Can't decode JSON content",
 			"err", err.Error(),
-	)
-	return
+		)
+		return
 	}
 
-	if !h.isValidURL(requestJSON.URL){
+	if !h.isValidURL(requestJSON.URL) {
 		h.publishBadRequest(&w, fmt.Errorf("url is not in the correct format"))
 		return
 	}
 
 	node, err := h.service.Storage.FindByLongURL(requestJSON.URL)
 	if err != nil {
-		node, err = h.service.NewPairURL(requestJSON.URL); if err != nil{
+		node, err = h.service.NewPairURL(requestJSON.URL)
+		if err != nil {
 			h.publishBadRequest(&w, err)
 			return
 		}
@@ -53,7 +54,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 		Result: h.config.BaseURL() + "/" + node.ShortKey,
 	}
 	buf, err := json.Marshal(&resp)
-	if err != nil{
+	if err != nil {
 		h.publishBadRequest(&w, err)
 		h.logger.Infow(
 			"Can not encode data",

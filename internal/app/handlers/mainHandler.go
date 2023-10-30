@@ -19,13 +19,13 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		h.logger.Errorw(
-			"error", 
+			"error",
 			"err", err.Error(),
 		)
 		return
 	}
 	h.logger.Infow(
-		"Long URL", 
+		"Long URL",
 		"URL", node.LongURL,
 	)
 
@@ -42,7 +42,7 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 //		r *http.Request
 func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
-	if !h.isValidContentType(r, textPlain){
+	if !h.isValidContentType(r, textPlain) {
 		h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
 		return
 	}
@@ -55,7 +55,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !h.isValidURL(string(longURL)){
+	if !h.isValidURL(string(longURL)) {
 		h.publishBadRequest(&w, fmt.Errorf("url is not in the correct format"))
 		return
 	}
@@ -65,10 +65,9 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		"Long URL", string(longURL),
 	)
 
-
 	node, err := h.service.Storage.FindByLongURL(string(longURL))
 	if err != nil {
-		if node, err = h.service.NewPairURL(string(longURL)); err != nil{
+		if node, err = h.service.NewPairURL(string(longURL)); err != nil {
 			h.publishBadRequest(&w, err)
 		}
 	}

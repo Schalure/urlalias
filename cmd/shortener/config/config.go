@@ -18,7 +18,7 @@ const (
 	AppName       = string("github.com/Schalure/urlalias") //	Application name
 	hostEnvKey    = string("SERVER_ADDRESS")               //	key for "host" in environment variables
 	baseURLEnvKey = string("BASE_URL")                     //	key for "baseURL" in environment variables
-
+	storageFileEnvKey = string("FILE_STORAGE_PATH")	//	key for "storageFile" in environment variables
 )
 
 // ------------------------------------------------------------
@@ -27,6 +27,7 @@ const (
 const (
 	hostDefault      = string("localhost:8080")        //	Host default value
 	baseURLDefault   = string("http://localhost:8080") //	Base URL default value
+	storageFileDefault = "/tmp/short-url-db.json"		//	Default file name of URLs storage
 	logToFileDefault = false                           //	How to save log default value
 )
 
@@ -36,6 +37,8 @@ const (
 type Configuration struct {
 	host      string //	Server addres
 	baseURL   string //	Base URL for create alias
+	storageFile string // File name of URLs storage
+	useStorageFile bool
 	logToFile bool   //	true - save log to file, false - print log to console
 }
 
@@ -63,7 +66,12 @@ func NewConfig() *Configuration {
 	config.parseFlags()
 	config.parseEnv()
 
-	log.Printf("Server address: \"%s\", Base URL: \"%s\", Save log to file: \"%t\"", config.host, config.baseURL, config.logToFile)
+	log.Printf("Server address: \"%s\"\n", config.host)
+	log.Printf("Base URL: \"%s\"\n", config.host)
+	if config.useStorageFile {
+		log.Printf("Storage file: \"%s\"\n", config.storageFile)
+	}
+	log.Printf("Save log to file: \"%t\"\n", config.logToFile)
 	return config
 }
 
@@ -85,6 +93,9 @@ func (c *Configuration) BaseURL() string {
 	return c.baseURL
 }
 
+func (c *Configuration) StorageFile() string{
+	return c.storageFile
+}
 // ------------------------------------------------------------
 //
 //	Getter "Configuration.logSaver"
@@ -101,7 +112,21 @@ func (c *Configuration) parseFlags() {
 
 	host := flag.String("a", hostDefault, "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
 	baseURL := flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
+	storageFile := ""
+	useStorageFile := false
 	logToFile := flag.Bool("l", logToFileDefault, "Variant of logger: true - save log to file, false - print log to console")
+
+	flag.Func("f", "File name of URLs storage. Specify the full name of the file", func(s string) error {
+
+		if s == ""{
+			storageFile = storageFileDefault
+		}else{
+			storageFile = s
+		}
+		useStorageFile = true
+
+		return nil
+	})
 
 	flag.Parse()
 
@@ -114,6 +139,10 @@ func (c *Configuration) parseFlags() {
 	}
 
 	c.logToFile = *logToFile
+
+	if useStorageFile {
+		c.storageFile = storageFile
+	}
 }
 
 // ------------------------------------------------------------
@@ -137,6 +166,12 @@ func (c *Configuration) parseEnv() {
 			log.Printf("The environment variable \"%s\" is written in the wrong format: %s", baseURLEnvKey, baseURL)
 		}
 	}
+
+	//	get storage file from environment variables
+	if storageFile, ok := os.LookupEnv(storageFileEnvKey); ok {
+		c.storageFile = storageFile
+	}
+	
 }
 
 // ------------------------------------------------------------

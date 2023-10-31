@@ -9,6 +9,7 @@ import (
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/handlers"
+	"github.com/Schalure/urlalias/internal/app/storage/filestor"
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -29,7 +30,13 @@ func main() {
 	defer aliasLogger.Sync()
 	suggarLogger := aliasLogger.Sugar()
 
-	service := aliasmaker.NewAliasMakerServise(memstor.NewMemStorage())
+	var stor aliasmaker.Storager
+	if conf.StorageFile() != ""{
+		stor = filestor.NewFileStorage(conf.StorageFile())
+	}else{
+		stor = memstor.NewMemStorage()
+	}
+	service := aliasmaker.NewAliasMakerServise(stor)
 
 	router := handlers.NewRouter(handlers.NewHandlers(service, conf, suggarLogger))
 
@@ -38,6 +45,7 @@ func main() {
 		"Server address", conf.Host(),
 		"Base URL", conf.BaseURL(),
 		"Save log to file", conf.LogToFile(),
+		"Storage file", conf.StorageFile(),
 	)
 
 	log.Fatal(run(conf.Host(), router))

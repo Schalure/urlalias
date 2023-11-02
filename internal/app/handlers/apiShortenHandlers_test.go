@@ -18,8 +18,9 @@ import (
 
 func Test_ApiShortenHandlerPost(t *testing.T) {
 
-	logger, suggar := newLogger()
-	defer logger.Sync()
+	logger, err := NewLogger(LoggerTypeZap)
+	require.NoError(t, err)
+	defer logger.Close()
 
 	listOfURL := []storage.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
@@ -67,7 +68,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 
-			suggar.Infow(
+			logger.Infow(
 				"Response URL",
 				"URL", tt.requestURI,
 				"test", fmt.Sprintf("\"url\": \"%v\"", listOfURL[0].LongURL),
@@ -77,7 +78,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 			request.Header.Add("Content-type", appJSON)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service, testConfig, suggar).APIShortenHandlerPost
+			h := NewHandlers(service, testConfig, logger).APIShortenHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()

@@ -1,10 +1,8 @@
 package handlers
 
-import "go.uber.org/zap"
-
 // Middleware type
 type Middleware struct {
-	logger *zap.SugaredLogger
+	logger Loggerer
 }
 
 // ------------------------------------------------------------
@@ -14,7 +12,7 @@ type Middleware struct {
 //		logger *slog.Logger
 //	Output:
 //		*Middleware
-func NewMiddleware(logger *zap.SugaredLogger) *Middleware {
+func NewMiddleware(logger Loggerer) *Middleware {
 
 	return &Middleware{
 		logger: logger,

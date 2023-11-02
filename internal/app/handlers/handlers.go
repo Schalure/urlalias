@@ -7,7 +7,6 @@ import (
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
-	"go.uber.org/zap"
 )
 
 const (
@@ -29,8 +28,9 @@ var ContentTypeToCompress = []string{
 type Handlers struct {
 	service *aliasmaker.AliasMakerServise
 	config  *config.Configuration
-	logger  *zap.SugaredLogger
+	logger  Loggerer
 }
+
 
 // ------------------------------------------------------------
 //
@@ -41,7 +41,7 @@ type Handlers struct {
 //		logger *zap.SugaredLogger
 //	Output:
 //		*Handlers - ptr to new Handlers
-func NewHandlers(service *aliasmaker.AliasMakerServise, config *config.Configuration, logger *zap.SugaredLogger) *Handlers {
+func NewHandlers(service *aliasmaker.AliasMakerServise, config *config.Configuration, logger Loggerer) *Handlers {
 
 	return &Handlers{
 		service: service,
@@ -114,15 +114,3 @@ func (h *Handlers) publishBadRequest(w *http.ResponseWriter, err error) {
 	http.Error(*w, err.Error(), http.StatusBadRequest)
 }
 
-// ------------------------------------------------------------
-//
-//	Check to containt string in slice of strings
-func containt(strings []string, s string) bool {
-
-	for _, str := range strings {
-		if str == s {
-			return true
-		}
-	}
-	return false
-}

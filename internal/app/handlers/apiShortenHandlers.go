@@ -8,11 +8,11 @@ import (
 	"github.com/Schalure/urlalias/internal/app/interpreter"
 )
 
-type request struct {
+type requestModel struct {
 	URL string `json:"url"`
 }
 
-type response struct {
+type responseModel struct {
 	Result string `json:"result"`
 }
 
@@ -24,7 +24,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	// }
 
 	var (
-		requestJSON request
+		requestJSON requestModel
 		i           interpreter.InterpreterJSON
 	)
 	if err := i.Decode(r.Body, &requestJSON); err != nil {
@@ -50,7 +50,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	var resp = response{
+	var resp = responseModel{
 		Result: h.config.BaseURL() + "/" + node.ShortKey,
 	}
 	buf, err := json.Marshal(&resp)

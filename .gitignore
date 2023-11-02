@@ -12,6 +12,7 @@
 *.out
 
 # Binaries
+main
 cmd/shortener/main
 cmd/shortener/shortener
 
@@ -23,4 +24,4 @@ vendor/
 .vscode
 
 # Client
-cmd/Client
+cmd/client

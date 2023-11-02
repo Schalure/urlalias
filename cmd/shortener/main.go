@@ -7,7 +7,9 @@ import (
 	"net/http"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
+	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/handlers"
+	"github.com/Schalure/urlalias/internal/app/storage/filestor"
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/go-chi/chi/v5"
 )
@@ -17,15 +19,36 @@ import (
 //	Main function
 func main() {
 
-	fmt.Printf("%s service have been started...\n", config.AppName)
+	conf := config.NewConfig()
 
-	config := config.NewConfig()
 
-	storage := memstor.NewMemStorage()
+	aliasLogger, err := handlers.NewLogger(handlers.LoggerTypeZap)
+	if err != nil {
+		log.Panicf("cannot initialize logger: %s", err)
+	}
+	defer aliasLogger.Close()
 
-	router := handlers.NewRouter(handlers.NewHandlers(storage, config))
 
-	log.Fatal(run(config.Host(), router))
+	var stor aliasmaker.Storager
+	if conf.StorageFile() != ""{
+		stor = filestor.NewFileStorage(conf.StorageFile())
+	}else{
+		stor = memstor.NewMemStorage()
+	}
+
+	service := aliasmaker.NewAliasMakerServise(stor)
+
+	router := handlers.NewRouter(handlers.NewHandlers(service, conf, aliasLogger))
+
+	aliasLogger.Infow(fmt.Sprintf(
+		"%s service have been started...", config.AppName),
+		"Server address", conf.Host(),
+		"Base URL", conf.BaseURL(),
+		"Save log to file", conf.LogToFile(),
+		"Storage file", conf.StorageFile(),
+	)
+
+	log.Fatal(run(conf.Host(), router))
 }
 
 // ------------------------------------------------------------

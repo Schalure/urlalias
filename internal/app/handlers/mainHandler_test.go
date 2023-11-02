@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
+	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/storage"
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
@@ -19,6 +20,10 @@ import (
 //	Test mainHandlerMethodGet: "/{shortKey}"
 func Test_mainHandlerMethodGet(t *testing.T) {
 
+	logger, err := NewLogger(LoggerTypeZap)
+	require.NoError(t, err)
+	defer logger.Close()
+
 	var listOfURL = []storage.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
@@ -29,6 +34,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 			require.NotNil(t, err)
 		}
 	}
+	service := aliasmaker.NewAliasMakerServise(testStor)
 
 	//	Test cases
 	testCases := []struct {
@@ -50,7 +56,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 				contentType string
 				requestURI  string
 			}{
-				contentType: "text/plain",
+				contentType: textPlain,
 				requestURI:  listOfURL[0].ShortKey,
 			},
 			want: struct {
@@ -71,7 +77,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 			request.Header.Add("Content-type", testCase.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(testStor, config.NewConfig()).mainHandlerGet
+			h := NewHandlers(service, config.NewConfig(), logger).mainHandlerGet
 			h(recorder, request)
 
 			result := recorder.Result()
@@ -89,6 +95,10 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 
 func Test_mainHandlerMethodPost(t *testing.T) {
 
+	logger, err := NewLogger(LoggerTypeZap)
+	require.NoError(t, err)
+	defer logger.Close()
+
 	listOfURL := []storage.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
@@ -101,6 +111,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			require.NotNil(t, err)
 		}
 	}
+	service := aliasmaker.NewAliasMakerServise(testStor)
 
 	testConfig := config.NewConfig()
 
@@ -124,7 +135,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 				contentType string
 				requestURI  string
 			}{
-				contentType: "text/plain",
+				contentType: textPlain,
 				requestURI:  listOfURL[0].LongURL,
 			},
 			want: struct {
@@ -133,7 +144,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 				response    string
 			}{
 				code:        http.StatusCreated,
-				contentType: "text/plain",
+				contentType: textPlain,
 				response:    testConfig.BaseURL() + "/" + listOfURL[0].ShortKey,
 			},
 		},
@@ -146,7 +157,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(testStor, testConfig).mainHandlerPost
+			h := NewHandlers(service, testConfig, logger).mainHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()

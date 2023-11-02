@@ -1,16 +1,9 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
-	"net/url"
-	"strings"
-
-	"github.com/Schalure/urlalias/internal/app/aliasmaker"
-	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
 // ------------------------------------------------------------
@@ -22,13 +15,20 @@ import (
 //		r *http.Request
 func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	shortKey := r.RequestURI
-	node, err := h.storage.FindByShortKey(shortKey[1:])
+	node, err := h.service.Storage.FindByShortKey(shortKey[1:])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Println(err.Error())
+		h.logger.Errorw(
+			"error",
+			"err", err.Error(),
+		)
 		return
 	}
-	log.Println(node.LongURL)
+	h.logger.Infow(
+		"Long URL",
+		"URL", node.LongURL,
+	)
+
 	w.Header().Add("Location", node.LongURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
@@ -42,75 +42,43 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 //		r *http.Request
 func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
-	if err := checkMainHandlerMethodPost(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Println(err.Error())
-		return
-	}
+	// if !h.isValidContentType(r, textPlain) {
+	// 	h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
+	// 	return
+	// }
 
 	//	get url
-	data, err := io.ReadAll(r.Body)
+	longURL, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Println(error.Error(err))
-		http.Error(w, error.Error(err), http.StatusBadRequest)
+		h.publishBadRequest(&w, err)
+		h.logger.Info(err.Error())
 		return
 	}
 
-	//	Check to valid URL
-	u, err := url.ParseRequestURI(string(data[:]))
-	if err != nil {
-		log.Println(error.Error(err))
-		http.Error(w, error.Error(err), http.StatusBadRequest)
+	if !h.isValidURL(string(longURL)) {
+		h.publishBadRequest(&w, fmt.Errorf("url is not in the correct format"))
 		return
 	}
-	log.Println(u)
 
-	us := u.String()
-	node, err := h.storage.FindByLongURL(us)
+	h.logger.Infow(
+		"Parsed URL",
+		"Long URL", string(longURL),
+	)
+
+	node, err := h.service.Storage.FindByLongURL(string(longURL))
 	if err != nil {
-		//	try to create alias key
-		for i := 0; i < aliasmaker.TrysToMakeAliasKey+1; i++ {
-			if i == aliasmaker.TrysToMakeAliasKey {
-				log.Println("Can not create alias key")
-				http.Error(w, fmt.Errorf("can not create alias key from \"%s\"", u.String()).Error(), http.StatusBadRequest)
-				return
-			}
-
-			aliasKey := aliasmaker.CreateAliasKey()
-			if err = h.storage.Save(&storage.AliasURLModel{ID: 0, ShortKey: aliasKey, LongURL: u.String()}); err == nil {
-				node = new(storage.AliasURLModel)	
-				node.LongURL = us
-				node.ShortKey = aliasKey
-				break
-			}
+		if node, err = h.service.NewPairURL(string(longURL)); err != nil {
+			h.publishBadRequest(&w, err)
 		}
 	}
 	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
-	log.Printf("Serch/Create alias key: %s - %s\n", node.LongURL, aliasURL)
+	h.logger.Infow(
+		"Serch/Create alias key",
+		"Long URL", node.LongURL,
+		"Alias URL", aliasURL,
+	)
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", textPlain)
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(aliasURL))
-}
-
-func checkMainHandlerMethodPost(r *http.Request) error {
-
-	//	execut header "Content-Type" error
-	contentType, ok := r.Header["Content-Type"]
-	if !ok {
-		err := errors.New("header \"Content-Type\" not found")
-		log.Println(err.Error())
-		return err
-	}
-
-	//	execut "Content-Type" value error
-	for _, value := range contentType {
-		if strings.Contains(value, "text/plain") {
-			return nil
-		}
-	}
-
-	err := fmt.Errorf("error: value of \"content-type\" not right: %s. content-type mast be only \"text/plain\"", contentType)
-	log.Println(err.Error())
-	return err
 }

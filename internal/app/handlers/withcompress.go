@@ -143,9 +143,9 @@ func (m *Middleware) WithCompress(h http.Handler) http.Handler {
 
 		origWriter := w
 
-		if isCompressionPossible(r.Header.Get(contentType)){
+		if isCompressionPossible(r.Header.Get(contentType)) {
 			encodingMethod := getEncodingMethod(r)
-			if encodingMethod != TypeNone{
+			if encodingMethod != TypeNone {
 
 				encodingWriter := newCompressWriter(w, encodingMethod)
 				origWriter = encodingWriter
@@ -153,20 +153,19 @@ func (m *Middleware) WithCompress(h http.Handler) http.Handler {
 			}
 		}
 
-
 		contentEncodingType := r.Header.Get(contentEncoding)
-		if contentEncodingType != "" && func () bool {
+		if contentEncodingType != "" && func() bool {
 			for _, enc := range PossibleCompressionTypes {
-				if CompressType(contentEncodingType) == enc{
+				if CompressType(contentEncodingType) == enc {
 					return true
 				}
 			}
 			return false
 		}() {
 			cr, err := newCompressReader(r.Body, CompressType(contentEncodingType))
-			if err != nil{
+			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-                return
+				return
 			}
 			// меняем тело запроса на новое
 			r.Body = cr
@@ -179,25 +178,25 @@ func (m *Middleware) WithCompress(h http.Handler) http.Handler {
 
 // ------------------------------------------------------------
 //
-func isCompressionPossible(contentType string) bool{
-	
-	for _, ct := range ContentTypeToCompress{
-		if strings.Contains(contentType, ct){
+func isCompressionPossible(contentType string) bool {
+
+	for _, ct := range ContentTypeToCompress {
+		if strings.Contains(contentType, ct) {
 			return true
 		}
-	} 
+	}
 	return false
 }
 
 // ------------------------------------------------------------
 //
-func getEncodingMethod(r *http.Request) CompressType{
+func getEncodingMethod(r *http.Request) CompressType {
 
 	var (
 		methodType string
-		q float64
-		err error
-		qMax = -1.0
+		q          float64
+		err        error
+		qMax       = -1.0
 	)
 
 	acceptEncodingList := r.Header.Values(acceptEncoding)
@@ -206,24 +205,24 @@ func getEncodingMethod(r *http.Request) CompressType{
 		return TypeNone
 	}
 
-	for _, method := range acceptEncodingList{
+	for _, method := range acceptEncodingList {
 
 		s := strings.Split(method, ";")
 
-		if (len(s) == 2) {
+		if len(s) == 2 {
 			q, err = strconv.ParseFloat(strings.TrimPrefix(s[1], "q="), 32)
-			if err != nil{
-				q = 0;
+			if err != nil {
+				q = 0
 			}
 		}
 
-		if q > qMax && func () bool  {
-			for _, t := range PossibleCompressionTypes{
-				if CompressType(s[0]) == t{
+		if q > qMax && func() bool {
+			for _, t := range PossibleCompressionTypes {
+				if CompressType(s[0]) == t {
 					return true
 				}
 			}
-					return false
+			return false
 		}() {
 			methodType = s[0]
 		}

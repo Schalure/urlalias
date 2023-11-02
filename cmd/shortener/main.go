@@ -21,18 +21,16 @@ func main() {
 
 	conf := config.NewConfig()
 
-
 	aliasLogger, err := handlers.NewLogger(handlers.LoggerTypeZap)
 	if err != nil {
 		log.Panicf("cannot initialize logger: %s", err)
 	}
 	defer aliasLogger.Close()
 
-
 	var stor aliasmaker.Storager
-	if conf.StorageFile() != ""{
+	if conf.StorageFile() != "" {
 		stor = filestor.NewFileStorage(conf.StorageFile())
-	}else{
+	} else {
 		stor = memstor.NewMemStorage()
 	}
 

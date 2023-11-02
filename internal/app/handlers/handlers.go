@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	contentType string = "Content-Type"
+	contentType     string = "Content-Type"
 	contentEncoding string = "Content-Encoding"
 	acceptEncoding  string = "Accept-Encoding"
 )
@@ -30,7 +30,6 @@ type Handlers struct {
 	config  *config.Configuration
 	logger  Loggerer
 }
-
 
 // ------------------------------------------------------------
 //
@@ -113,4 +112,3 @@ func (h *Handlers) isValidURL(u string) bool {
 func (h *Handlers) publishBadRequest(w *http.ResponseWriter, err error) {
 	http.Error(*w, err.Error(), http.StatusBadRequest)
 }
-

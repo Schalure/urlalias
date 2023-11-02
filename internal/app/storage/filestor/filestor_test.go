@@ -20,37 +20,42 @@ func TestFileStorage_Save(t *testing.T) {
 
 	stor := NewFileStorage(file.Name())
 
-
 	testCases := []struct {
 		testName string
 		storNode storage.AliasURLModel
-		want struct {
+		want     struct {
 			data string
-			err error
+			err  error
 		}
 	}{
 		{
 			testName: "simple save",
 			storNode: storage.AliasURLModel{
-				ID: 1,
+				ID:       1,
 				ShortKey: "555555555",
-				LongURL: "https://qqq.ru",
+				LongURL:  "https://qqq.ru",
 			},
-			want: struct{data string; err error}{
+			want: struct {
+				data string
+				err  error
+			}{
 				data: `{"uuid":1,"short_url":"555555555","original_url":"https://qqq.ru"}`,
-				err: nil,
+				err:  nil,
 			},
 		},
 		{
 			testName: "dublicate key save",
 			storNode: storage.AliasURLModel{
-				ID: 2,
+				ID:       2,
 				ShortKey: "555555555",
-				LongURL: "https://eee.ru",
+				LongURL:  "https://eee.ru",
 			},
-			want: struct{data string; err error}{
+			want: struct {
+				data string
+				err  error
+			}{
 				data: ``,
-				err: fmt.Errorf("the key \"%s\" is already in the database", "555555555"),
+				err:  fmt.Errorf("the key \"%s\" is already in the database", "555555555"),
 			},
 		},
 	}
@@ -59,7 +64,7 @@ func TestFileStorage_Save(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 
 			err := stor.Save(&test.storNode)
-			if err != nil{
+			if err != nil {
 				assert.Equal(t, test.want.err, err)
 				return
 			}
@@ -69,11 +74,11 @@ func TestFileStorage_Save(t *testing.T) {
 			scanner := bufio.NewScanner(f)
 
 			var resalt = make([]string, 0)
-			for scanner.Scan(){
+			for scanner.Scan() {
 				resalt = append(resalt, scanner.Text())
 			}
 
-			assert.Equal(t, resalt[len(resalt) - 1], test.want.data)
+			assert.Equal(t, resalt[len(resalt)-1], test.want.data)
 		})
-	}	
+	}
 }

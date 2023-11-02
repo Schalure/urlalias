@@ -7,7 +7,7 @@ import (
 )
 
 type ZapLogger struct {
-	logger *zap.Logger
+	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger
 }
 
@@ -25,23 +25,23 @@ func NewZapLogger(logFileName string) (*ZapLogger, error) {
 	suggarLogger := aliasLogger.Sugar()
 
 	return &ZapLogger{
-		logger: aliasLogger,
+		logger:        aliasLogger,
 		sugaredLogger: suggarLogger,
 	}, nil
 }
 
-func (l *ZapLogger) Info(args ...interface{}){
+func (l *ZapLogger) Info(args ...interface{}) {
 	l.sugaredLogger.Info(args)
 }
 
-func (l *ZapLogger) Infow(msg string, keysAndValues ...interface{}){
+func (l *ZapLogger) Infow(msg string, keysAndValues ...interface{}) {
 	l.sugaredLogger.Infow(msg, keysAndValues)
 }
 
-func (l *ZapLogger) Errorw(msg string, keysAndValues ...interface{}){
+func (l *ZapLogger) Errorw(msg string, keysAndValues ...interface{}) {
 	l.sugaredLogger.Errorw(msg, keysAndValues)
 }
 
-func (l *ZapLogger) Close(){
+func (l *ZapLogger) Close() {
 	l.logger.Sync()
 }

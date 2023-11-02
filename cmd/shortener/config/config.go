@@ -15,31 +15,31 @@ import (
 //
 //	Application constants
 const (
-	AppName       = string("github.com/Schalure/urlalias") //	Application name
-	hostEnvKey    = string("SERVER_ADDRESS")               //	key for "host" in environment variables
-	baseURLEnvKey = string("BASE_URL")                     //	key for "baseURL" in environment variables
-	storageFileEnvKey = string("FILE_STORAGE_PATH")	//	key for "storageFile" in environment variables
+	AppName           = string("github.com/Schalure/urlalias") //	Application name
+	hostEnvKey        = string("SERVER_ADDRESS")               //	key for "host" in environment variables
+	baseURLEnvKey     = string("BASE_URL")                     //	key for "baseURL" in environment variables
+	storageFileEnvKey = string("FILE_STORAGE_PATH")            //	key for "storageFile" in environment variables
 )
 
 // ------------------------------------------------------------
 //
 //	Default values
 const (
-	hostDefault      = string("localhost:8080")        //	Host default value
-	baseURLDefault   = string("http://localhost:8080") //	Base URL default value
-	storageFileDefault = "/tmp/short-url-db.json"		//	Default file name of URLs storage
-	logToFileDefault = false                           //	How to save log default value
+	hostDefault        = string("localhost:8080")        //	Host default value
+	baseURLDefault     = string("http://localhost:8080") //	Base URL default value
+	storageFileDefault = "/tmp/short-url-db.json"        //	Default file name of URLs storage
+	logToFileDefault   = false                           //	How to save log default value
 )
 
 // ------------------------------------------------------------
 //
 //	Struct of configuration vars
 type Configuration struct {
-	host      string //	Server addres
-	baseURL   string //	Base URL for create alias
-	storageFile string // File name of URLs storage
+	host           string //	Server addres
+	baseURL        string //	Base URL for create alias
+	storageFile    string // File name of URLs storage
 	useStorageFile bool
-	logToFile bool   //	true - save log to file, false - print log to console
+	logToFile      bool //	true - save log to file, false - print log to console
 }
 
 // Common config variable
@@ -93,9 +93,10 @@ func (c *Configuration) BaseURL() string {
 	return c.baseURL
 }
 
-func (c *Configuration) StorageFile() string{
+func (c *Configuration) StorageFile() string {
 	return c.storageFile
 }
+
 // ------------------------------------------------------------
 //
 //	Getter "Configuration.logSaver"
@@ -118,9 +119,9 @@ func (c *Configuration) parseFlags() {
 
 	flag.Func("f", "File name of URLs storage. Specify the full name of the file", func(s string) error {
 
-		if s == ""{
+		if s == "" {
 			storageFile = storageFileDefault
-		}else{
+		} else {
 			storageFile = s
 		}
 		useStorageFile = true
@@ -171,7 +172,7 @@ func (c *Configuration) parseEnv() {
 	if storageFile, ok := os.LookupEnv(storageFileEnvKey); ok {
 		c.storageFile = storageFile
 	}
-	
+
 }
 
 // ------------------------------------------------------------

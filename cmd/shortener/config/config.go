@@ -15,11 +15,24 @@ import (
 //
 //	Application constants
 const (
-	AppName           = string("github.com/Schalure/urlalias") //	Application name
-	hostEnvKey        = string("SERVER_ADDRESS")               //	key for "host" in environment variables
-	baseURLEnvKey     = string("BASE_URL")                     //	key for "baseURL" in environment variables
-	storageFileEnvKey = string("FILE_STORAGE_PATH")            //	key for "storageFile" in environment variables
+	AppName            = string("github.com/Schalure/urlalias") //	Application name
+	hostEnvKey         = string("SERVER_ADDRESS")               //	key for "host" in environment variables
+	baseURLEnvKey      = string("BASE_URL")                     //	key for "baseURL" in environment variables
+	storageFileEnvKey  = string("FILE_STORAGE_PATH")            //	key for "storageFile" in environment variables
+	dbConnectionEnvKey = string("DATABASE_DSN")                 //	key for "dbConnection in environment variables
 )
+
+type StorageType int
+
+const (
+	MemoryStor StorageType = iota
+	FileStor
+	DataBaseStor
+)
+
+func (s StorageType) String() string {
+	return [...]string{"MemoryStor", "FileStor", "DataBaseStor"}[s]
+}
 
 // ------------------------------------------------------------
 //
@@ -35,11 +48,15 @@ const (
 //
 //	Struct of configuration vars
 type Configuration struct {
-	host           string //	Server addres
-	baseURL        string //	Base URL for create alias
-	storageFile    string // File name of URLs storage
-	useStorageFile bool
-	logToFile      bool //	true - save log to file, false - print log to console
+	host    string //	Server addres
+	baseURL string //	Base URL for create alias
+
+	storageFile  string // File name of URLs storage
+	dbConnection string
+
+	storageType StorageType
+
+	logToFile bool //	true - save log to file, false - print log to console
 }
 
 // Common config variable
@@ -62,15 +79,25 @@ func NewConfig() *Configuration {
 	config.host = hostDefault
 	config.baseURL = baseURLDefault
 	config.logToFile = logToFileDefault
+	config.storageType = MemoryStor
 
 	config.parseFlags()
 	config.parseEnv()
 
+	config.chooseStorageType()
+
 	log.Printf("Server address: \"%s\"\n", config.host)
 	log.Printf("Base URL: \"%s\"\n", config.host)
-	if config.useStorageFile {
+
+	switch config.storageType {
+	case DataBaseStor:
+		log.Printf("DB conection string: \"%s\"\n", config.dbConnection)
+	case FileStor:
 		log.Printf("Storage file: \"%s\"\n", config.storageFile)
+	default:
+		log.Print("memory storage is used")
 	}
+
 	log.Printf("Save log to file: \"%t\"\n", config.logToFile)
 	return config
 }
@@ -93,8 +120,31 @@ func (c *Configuration) BaseURL() string {
 	return c.baseURL
 }
 
+// ------------------------------------------------------------
+//
+//	Getter "Configuration.baseURL"
+//	Output:
+//		c.baseURL string
 func (c *Configuration) StorageFile() string {
 	return c.storageFile
+}
+
+// ------------------------------------------------------------
+//
+//	Getter "Configuration.baseURL"
+//	Output:
+//		c.baseURL string
+func (c *Configuration) DBConnection() string {
+	return c.dbConnection
+}
+
+// ------------------------------------------------------------
+//
+//	Getter "Configuration.baseURL"
+//	Output:
+//		c.baseURL string
+func (c *Configuration) StorageType() StorageType {
+	return c.storageType
 }
 
 // ------------------------------------------------------------
@@ -113,21 +163,21 @@ func (c *Configuration) parseFlags() {
 
 	host := flag.String("a", hostDefault, "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
 	baseURL := flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
-	storageFile := ""
-	useStorageFile := false
 	logToFile := flag.Bool("l", logToFileDefault, "Variant of logger: true - save log to file, false - print log to console")
 
+	storageFile := ""
 	flag.Func("f", "File name of URLs storage. Specify the full name of the file", func(s string) error {
 
+		//	TODO need to parce file path to check valid
 		if s == "" {
 			storageFile = storageFileDefault
 		} else {
 			storageFile = s
 		}
-		useStorageFile = true
-
 		return nil
 	})
+
+	dbConnection := flag.String("d", "", "data base connection string")
 
 	flag.Parse()
 
@@ -141,9 +191,8 @@ func (c *Configuration) parseFlags() {
 
 	c.logToFile = *logToFile
 
-	if useStorageFile {
-		c.storageFile = storageFile
-	}
+	c.dbConnection = *dbConnection
+	c.storageFile = storageFile
 }
 
 // ------------------------------------------------------------
@@ -173,6 +222,24 @@ func (c *Configuration) parseEnv() {
 		c.storageFile = storageFile
 	}
 
+	//	get storage file from environment variables
+	if dbConnection, ok := os.LookupEnv(dbConnectionEnvKey); ok {
+		c.dbConnection = dbConnection
+	}
+}
+
+// ------------------------------------------------------------
+//
+//	Choose storage type
+func (c *Configuration) chooseStorageType() {
+
+	if c.dbConnection != "" {
+		c.storageType = DataBaseStor
+	} else if c.storageFile != "" {
+		c.storageType = FileStor
+	} else {
+		c.storageType = MemoryStor
+	}
 }
 
 // ------------------------------------------------------------

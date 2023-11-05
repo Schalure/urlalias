@@ -92,7 +92,7 @@ func (s *MemStorage) FindByLongURL(longURL string) (*storage.AliasURLModel, erro
 //		bool - true: connection is
 //			   false: connection isn't
 //		error - if can not find "urlAliasNode" by long URL
-func (s *MemStorage) IsConnected() bool{
+func (s *MemStorage) IsConnected() bool {
 	return true
 }
 
@@ -102,7 +102,6 @@ func (s *MemStorage) IsConnected() bool{
 //	This is interfase method of "Storager" interface
 //	Output:
 //		error
-func (s *MemStorage) Close() error{
+func (s *MemStorage) Close() error {
 	return nil
 }
-

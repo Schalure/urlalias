@@ -177,7 +177,6 @@ func (m *Middleware) WithCompress(h http.Handler) http.Handler {
 }
 
 // ------------------------------------------------------------
-//
 func isCompressionPossible(contentType string) bool {
 
 	for _, ct := range ContentTypeToCompress {
@@ -189,7 +188,6 @@ func isCompressionPossible(contentType string) bool {
 }
 
 // ------------------------------------------------------------
-//
 func getEncodingMethod(r *http.Request) CompressType {
 
 	var (

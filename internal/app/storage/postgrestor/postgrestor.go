@@ -3,34 +3,28 @@ package postgrestor
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"time"
 
+	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/storage"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type PostgreStor struct{
+type PostgreStor struct {
 	db *sql.DB
 }
 
-func NewPostgreStor() {
-	ps := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", `localhost`, `aleksandr`, `c1f2i3f4`, `aliasurldb`)
-	db, err := sql.Open("pgx", ps)
-	if err != nil{
+func NewPostgreStor(dbConnectionString string) aliasmaker.Storager {
+
+	db, err := sql.Open("pgx", dbConnectionString)
+	if err != nil {
 		log.Panicln(err)
 	}
-	defer db.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1 * time.Second)
-	defer cancel()
-
-	if err = db.PingContext(ctx); err != nil{
-		log.Println(err)
+	return &PostgreStor{
+		db: db,
 	}
-
-	fmt.Println("all right!")
 }
 
 // ------------------------------------------------------------
@@ -41,7 +35,7 @@ func NewPostgreStor() {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *PostgreStor)Save(urlAliasNode *storage.AliasURLModel) error {
+func (s *PostgreStor) Save(urlAliasNode *storage.AliasURLModel) error {
 
 	panic("no implemented")
 }
@@ -55,7 +49,7 @@ func (s *PostgreStor)Save(urlAliasNode *storage.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *PostgreStor)FindByShortKey(shortKey string) (*storage.AliasURLModel, error) {
+func (s *PostgreStor) FindByShortKey(shortKey string) (*storage.AliasURLModel, error) {
 
 	panic("no implemented")
 }
@@ -69,11 +63,10 @@ func (s *PostgreStor)FindByShortKey(shortKey string) (*storage.AliasURLModel, er
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *PostgreStor)FindByLongURL(longURL string) (*storage.AliasURLModel, error) {
+func (s *PostgreStor) FindByLongURL(longURL string) (*storage.AliasURLModel, error) {
 
 	panic("no implemented")
 }
-
 
 // ------------------------------------------------------------
 //
@@ -85,10 +78,10 @@ func (s *PostgreStor)FindByLongURL(longURL string) (*storage.AliasURLModel, erro
 //		error - if can not find "urlAliasNode" by long URL
 func (s *PostgreStor) IsConnected() bool {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	if err := s.db.PingContext(ctx); err != nil{
+	if err := s.db.PingContext(ctx); err != nil {
 		return false
 	}
 	return true
@@ -100,7 +93,7 @@ func (s *PostgreStor) IsConnected() bool {
 //	This is interfase method of "Storager" interface
 //	Output:
 //		error
-func (s *PostgreStor) Close() error{
-	
+func (s *PostgreStor) Close() error {
+
 	return s.db.Close()
 }

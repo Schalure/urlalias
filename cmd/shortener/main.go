@@ -11,6 +11,7 @@ import (
 	"github.com/Schalure/urlalias/internal/app/handlers"
 	"github.com/Schalure/urlalias/internal/app/storage/filestor"
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
+	"github.com/Schalure/urlalias/internal/app/storage/postgrestor"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -27,12 +28,8 @@ func main() {
 	}
 	defer aliasLogger.Close()
 
-	var stor aliasmaker.Storager
-	if conf.StorageFile() != "" {
-		stor = filestor.NewFileStorage(conf.StorageFile())
-	} else {
-		stor = memstor.NewMemStorage()
-	}
+	stor := NewStorage(conf)
+	defer stor.Close()
 
 	service := aliasmaker.NewAliasMakerServise(stor)
 
@@ -44,6 +41,8 @@ func main() {
 		"Base URL", conf.BaseURL(),
 		"Save log to file", conf.LogToFile(),
 		"Storage file", conf.StorageFile(),
+		"DB connection string", conf.DBConnection(),
+		"Storage type", conf.StorageType(),
 	)
 
 	log.Fatal(run(conf.Host(), router))
@@ -58,4 +57,23 @@ func main() {
 //		err error - if servise have become panic or fatal error
 func run(serverAddres string, router *chi.Mux) error {
 	return http.ListenAndServe(serverAddres, router)
+}
+
+// ------------------------------------------------------------
+//
+//	New storage
+//	Input:
+//		storageType string
+//	Output:
+//		Storager
+func NewStorage(c *config.Configuration) aliasmaker.Storager {
+
+	switch c.StorageType() {
+	case config.DataBaseStor:
+		return postgrestor.NewPostgreStor(c.DBConnection())
+	case config.FileStor:
+		return filestor.NewFileStorage(c.StorageFile())
+	default:
+		return memstor.NewMemStorage()
+	}
 }

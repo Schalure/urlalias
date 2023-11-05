@@ -8,8 +8,8 @@ import (
 	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
-type FileStorage struct {
-	stor     map[string]string
+type FileStorage struct{
+	stor map[string]string
 	fileName string
 }
 
@@ -18,10 +18,10 @@ type FileStorage struct {
 //	FileStorage constructor
 //	Output:
 //		*FileStorage
-func NewFileStorage(fileName string) *FileStorage {
+func NewFileStorage(fileName string) *FileStorage{
 
 	return &FileStorage{
-		stor:     make(map[string]string),
+		stor: make(map[string]string),
 		fileName: fileName,
 	}
 }
@@ -29,14 +29,14 @@ func NewFileStorage(fileName string) *FileStorage {
 // ------------------------------------------------------------
 //
 //	Save pair "shortKey, longURL" to db
-//	This is interfase method of "RepositoryURL" interface
+//	This is interfase method of "Storager" interface
 //	Input:
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
+func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error{
 
-	if _, ok := s.stor[urlAliasNode.ShortKey]; ok {
+	if _, ok := s.stor[urlAliasNode.ShortKey]; ok{
 		return fmt.Errorf("the key \"%s\" is already in the database", urlAliasNode.ShortKey)
 	}
 
@@ -44,9 +44,9 @@ func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 	urlAliasNode.ID = uint64(len(s.stor))
 
 	var data []byte
-	file, err := os.OpenFile(s.fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	file, err := os.OpenFile(s.fileName, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0644)
 	if err != nil {
-		return err
+		return err 
 	}
 	defer file.Close()
 
@@ -55,7 +55,7 @@ func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 	}
 
 	if _, err = file.Write(append(data, '\n')); err != nil {
-		return err
+		return err 
 	}
 
 	return nil
@@ -64,13 +64,13 @@ func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 // ------------------------------------------------------------
 //
 //	Find "urlAliasNode models.AliasURLModel" by short key
-//	This is interfase method of "RepositoryURL" interface
+//	This is interfase method of "Storager" interface
 //	Input:
 //		shortKey string
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *FileStorage) FindByShortKey(shortKey string) (*storage.AliasURLModel, error) {
+func (s *FileStorage) FindByShortKey(shortKey string) (*storage.AliasURLModel, error){
 
 	longURL, ok := s.stor[shortKey]
 	if !ok {
@@ -82,13 +82,13 @@ func (s *FileStorage) FindByShortKey(shortKey string) (*storage.AliasURLModel, e
 // ------------------------------------------------------------
 //
 //	Find "urlAliasNode models.AliasURLModel" by long URL
-//	This is interfase method of "RepositoryURL" interface
+//	This is interfase method of "Storager" interface
 //	Input:
 //		longURL string
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *FileStorage) FindByLongURL(longURL string) (*storage.AliasURLModel, error) {
+func (s *FileStorage) FindByLongURL(longURL string) (*storage.AliasURLModel, error){
 
 	for k, v := range s.stor {
 		if v == longURL {
@@ -96,4 +96,28 @@ func (s *FileStorage) FindByLongURL(longURL string) (*storage.AliasURLModel, err
 		}
 	}
 	return nil, fmt.Errorf("the urlAliasNode not found by long URL \"%s\"", longURL)
+}
+
+
+// ------------------------------------------------------------
+//
+//	Check connection to DB
+//	This is interfase method of "Storager" interface
+//	Output:
+//		bool - true: connection is
+//			   false: connection isn't
+//		error - if can not find "urlAliasNode" by long URL
+func (s *FileStorage) IsConnected() bool{
+	return true
+}
+
+
+// ------------------------------------------------------------
+//
+//	Close connection to DB
+//	This is interfase method of "Storager" interface
+//	Output:
+//		error
+func (s *FileStorage) Close() error{
+	return nil
 }

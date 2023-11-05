@@ -7,4 +7,6 @@ type Storager interface {
 	Save(urlAliasNode *storage.AliasURLModel) error
 	FindByShortKey(shortKey string) (*storage.AliasURLModel, error)
 	FindByLongURL(longURL string) (*storage.AliasURLModel, error)
+	IsConnected() bool
+	Close() error
 }

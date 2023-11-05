@@ -32,7 +32,7 @@ func NewMemStorage() *MemStorage {
 // ------------------------------------------------------------
 //
 //	Save pair "shortKey, longURL" to db
-//	This is interfase method of "RepositoryURL" interface
+//	This is interfase method of "Storager" interface
 //	Input:
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
@@ -50,7 +50,7 @@ func (s *MemStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 // ------------------------------------------------------------
 //
 //	Find "urlAliasNode models.AliasURLModel" by short key
-//	This is interfase method of "RepositoryURL" interface
+//	This is interfase method of "Storager" interface
 //	Input:
 //		shortKey string
 //	Output:
@@ -68,7 +68,7 @@ func (s *MemStorage) FindByShortKey(shortKey string) (*storage.AliasURLModel, er
 // ------------------------------------------------------------
 //
 //	Find "urlAliasNode models.AliasURLModel" by long URL
-//	This is interfase method of "RepositoryURL" interface
+//	This is interfase method of "Storager" interface
 //	Input:
 //		longURL string
 //	Output:
@@ -83,3 +83,26 @@ func (s *MemStorage) FindByLongURL(longURL string) (*storage.AliasURLModel, erro
 	}
 	return nil, fmt.Errorf("the urlAliasNode not found by long URL \"%s\"", longURL)
 }
+
+// ------------------------------------------------------------
+//
+//	Check connection to DB
+//	This is interfase method of "Storager" interface
+//	Output:
+//		bool - true: connection is
+//			   false: connection isn't
+//		error - if can not find "urlAliasNode" by long URL
+func (s *MemStorage) IsConnected() bool{
+	return true
+}
+
+// ------------------------------------------------------------
+//
+//	Close connection to DB
+//	This is interfase method of "Storager" interface
+//	Output:
+//		error
+func (s *MemStorage) Close() error{
+	return nil
+}
+

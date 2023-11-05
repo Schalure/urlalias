@@ -42,7 +42,7 @@ func main() {
 		"Save log to file", conf.LogToFile(),
 		"Storage file", conf.StorageFile(),
 		"DB connection string", conf.DBConnection(),
-		"Storage type", conf.StorageType(),
+		"Storage type", conf.StorageType().String(),
 	)
 
 	log.Fatal(run(conf.Host(), router))

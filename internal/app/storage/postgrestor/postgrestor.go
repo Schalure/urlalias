@@ -37,7 +37,7 @@ func NewPostgreStor(dbConnectionString string) aliasmaker.Storager {
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
 func (s *PostgreStor) Save(urlAliasNode *storage.AliasURLModel) error {
 
-	panic("no implemented")
+	panic("save to PostgreSQL no implemented")
 }
 
 // ------------------------------------------------------------
@@ -51,7 +51,7 @@ func (s *PostgreStor) Save(urlAliasNode *storage.AliasURLModel) error {
 //		error - if can not find "urlAliasNode" by short key
 func (s *PostgreStor) FindByShortKey(shortKey string) (*storage.AliasURLModel, error) {
 
-	panic("no implemented")
+	panic("find by short key from PostgreSQL no implemented")
 }
 
 // ------------------------------------------------------------
@@ -65,7 +65,7 @@ func (s *PostgreStor) FindByShortKey(shortKey string) (*storage.AliasURLModel, e
 //		error - if can not find "urlAliasNode" by long URL
 func (s *PostgreStor) FindByLongURL(longURL string) (*storage.AliasURLModel, error) {
 
-	panic("no implemented")
+	panic("find by long URL from PostgreSQL no implemented")
 }
 
 // ------------------------------------------------------------

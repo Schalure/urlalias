@@ -22,11 +22,11 @@ type MemStorage struct {
 //	MemStorage constructor
 //	Output:
 //		*MemStorage
-func NewMemStorage() *MemStorage {
+func NewMemStorage() (*MemStorage, error) {
 
 	var s MemStorage
 	s.stor = make(map[string]string)
-	return &s
+	return &s, nil
 }
 
 // ------------------------------------------------------------

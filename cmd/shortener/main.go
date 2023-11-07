@@ -28,15 +28,24 @@ func main() {
 	}
 	defer aliasLogger.Close()
 
-	stor := NewStorage(conf)
+	//	спросить ментора про этот кусок
+	stor, err := NewStorage(conf)
+	if err != nil {
+		aliasLogger.Fatalw(
+			"can't create storage",
+			"error", err,
+		)
+	}
 	defer stor.Close()
 
 	service := aliasmaker.NewAliasMakerServise(stor)
 
 	router := handlers.NewRouter(handlers.NewHandlers(service, conf, aliasLogger))
 
-	aliasLogger.Infow(fmt.Sprintf(
-		"%s service have been started...", config.AppName),
+
+	//	спросить у ментора выдает ошибку
+	aliasLogger.Infow(
+		fmt.Sprintf("%s service have been started...", config.AppName),
 		"Server address", conf.Host(),
 		"Base URL", conf.BaseURL(),
 		"Save log to file", conf.LogToFile(),
@@ -66,7 +75,7 @@ func run(serverAddres string, router *chi.Mux) error {
 //		storageType string
 //	Output:
 //		Storager
-func NewStorage(c *config.Configuration) aliasmaker.Storager {
+func NewStorage(c *config.Configuration) (aliasmaker.Storager, error) {
 
 	switch c.StorageType() {
 	case config.DataBaseStor:

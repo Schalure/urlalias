@@ -28,7 +28,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
 	}
 
-	testStor := memstor.NewMemStorage()
+	testStor, _ := memstor.NewMemStorage()
 	for i, nodeURL := range listOfURL {
 		if err := testStor.Save(&storage.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)

@@ -28,7 +28,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 	}
-	testStor := memstor.NewMemStorage()
+	testStor, _ := memstor.NewMemStorage()
 	for i, nodeURL := range listOfURL {
 		if err := testStor.Save(&storage.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
@@ -105,7 +105,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
 	}
 
-	testStor := memstor.NewMemStorage()
+	testStor, _ := memstor.NewMemStorage()
 	for i, nodeURL := range listOfURL {
 		if err := testStor.Save(&storage.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)

@@ -45,3 +45,7 @@ func (l *ZapLogger) Errorw(msg string, keysAndValues ...interface{}) {
 func (l *ZapLogger) Close() {
 	l.logger.Sync()
 }
+
+func (l *ZapLogger) Fatalw(msg string, keysAndValues ...interface{}) {
+	l.sugaredLogger.Fatalw(msg, keysAndValues)
+}

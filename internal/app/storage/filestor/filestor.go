@@ -18,12 +18,12 @@ type FileStorage struct {
 //	FileStorage constructor
 //	Output:
 //		*FileStorage
-func NewFileStorage(fileName string) *FileStorage {
+func NewFileStorage(fileName string) (*FileStorage, error) {
 
 	return &FileStorage{
 		stor:     make(map[string]string),
 		fileName: fileName,
-	}
+	}, nil
 }
 
 // ------------------------------------------------------------

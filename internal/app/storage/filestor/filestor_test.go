@@ -18,7 +18,7 @@ func TestFileStorage_Save(t *testing.T) {
 	file.Close()
 	defer os.Remove(file.Name())
 
-	stor := NewFileStorage(file.Name())
+	stor, _ := NewFileStorage(file.Name())
 
 	testCases := []struct {
 		testName string

@@ -49,7 +49,7 @@ func NewPostgreStor(dbConnectionString string) (*PostgreStor, error) {
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
 func (s *PostgreStor) Save(urlAliasNode *storage.AliasURLModel) error {
 
-	panic("save to PostgreSQL no implemented")
+	return nil
 }
 
 // ------------------------------------------------------------

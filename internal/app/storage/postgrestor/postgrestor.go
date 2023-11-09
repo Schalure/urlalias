@@ -49,7 +49,7 @@ func NewPostgreStor(dbConnectionString string) (*PostgreStor, error) {
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
 func (s *PostgreStor) Save(urlAliasNode *storage.AliasURLModel) error {
 
-	return nil
+	return fmt.Errorf("no inplemented")
 }
 
 // ------------------------------------------------------------
@@ -68,7 +68,9 @@ func (s *PostgreStor) FindByShortKey(shortKey string) (*storage.AliasURLModel, e
 	ctx, cancel := context.WithTimeout(context.Background(), 2 * time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, originalURL, shortKey FROM aliases WHERE shortKey=$1`, shortKey)
+
+
+	row := s.db.QueryRowContext(ctx, `SELECT id, originalURL, shortKey FROM aliases WHERE shortKey = $1`, shortKey)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil{
 		return nil, fmt.Errorf("no record was found where originalURL = %s", shortKey)
 	}

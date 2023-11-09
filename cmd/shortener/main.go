@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -43,15 +44,15 @@ func main() {
 
 
 	//	спросить у ментора выдает ошибку
-	// aliasLogger.Infow(
-	// 	fmt.Sprintf("%s service have been started...", config.AppName),
-	// 	"Server address", conf.Host(),
-	// 	"Base URL", conf.BaseURL(),
-	// 	"Save log to file", conf.LogToFile(),
-	// 	"Storage file", conf.StorageFile(),
-	// 	"DB connection string", conf.DBConnection(),
-	// 	"Storage type", conf.StorageType().String(),
-	// )
+	aliasLogger.Infow(
+		fmt.Sprintf("%s service have been started...", config.AppName),
+		"Server address", conf.Host(),
+		"Base URL", conf.BaseURL(),
+		"Save log to file", conf.LogToFile(),
+		"Storage file", conf.StorageFile(),
+		"DB connection string", conf.DBConnection(),
+		"Storage type", conf.StorageType().String(),
+	)
 
 	log.Fatal(run(conf.Host(), router))
 }

@@ -35,11 +35,11 @@ func (l *ZapLogger) Info(args ...interface{}) {
 }
 
 func (l *ZapLogger) Infow(msg string, keysAndValues ...interface{}) {
-	l.sugaredLogger.Infow(msg, keysAndValues)
+	l.sugaredLogger.Infow(msg, keysAndValues...)
 }
 
 func (l *ZapLogger) Errorw(msg string, keysAndValues ...interface{}) {
-	l.sugaredLogger.Errorw(msg, keysAndValues)
+	l.sugaredLogger.Errorw(msg, keysAndValues...)
 }
 
 func (l *ZapLogger) Close() {
@@ -47,5 +47,5 @@ func (l *ZapLogger) Close() {
 }
 
 func (l *ZapLogger) Fatalw(msg string, keysAndValues ...interface{}) {
-	l.sugaredLogger.Fatalw(msg, keysAndValues)
+	l.sugaredLogger.Fatalw(msg, keysAndValues...)
 }

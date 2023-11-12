@@ -98,3 +98,99 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 		})
 	}
 }
+
+
+func Test_ApiShortenBatchHandlerPost(t *testing.T) {
+
+	logger, err := NewLogger(LoggerTypeZap)
+	require.NoError(t, err)
+	defer logger.Close()
+
+	listOfURL := []storage.AliasURLModel{
+		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
+		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
+		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
+	}
+
+	testStor, _ := memstor.NewMemStorage()
+	for i, nodeURL := range listOfURL {
+		if err := testStor.Save(&storage.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+			require.NotNil(t, err)
+		}
+	}
+	service := aliasmaker.NewAliasMakerServise(testStor)
+	testConfig := config.NewConfig()
+
+
+	testCases := []struct {
+		testName string
+		data string
+		want struct{
+			code        int
+			contentType string
+			response    string			
+		}
+	}{
+		//	memstor simple test
+		struct{testName string; data string; want struct{code int; contentType string; response string}}{
+			testName: "memstor simple test",
+			data: `
+			[
+				{
+					"correlation_id": "1",
+					"original_url": "https://ya.ru"
+				},
+				{
+					"correlation_id": "2",
+					"original_url": "https://google.com"
+				},
+			]`,
+			want: struct{code int; contentType string; response string}{
+				code: http.StatusCreated,
+				contentType: appJSON,
+				response: `
+				[
+					{
+						"correlation_id": "1",
+						"original_url": "123456789"
+					},
+					{
+						"correlation_id": "2",
+						"original_url": "987654321"
+					},
+				]`,
+
+			},
+		},
+	}
+
+	for _, test := range testCases{
+		t.Run(test.testName, func(t *testing.T) {
+
+			request := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", strings.NewReader(test.data))
+			request.Header.Add(contentType, appJSON)
+
+
+			recorder := httptest.NewRecorder()
+			h := NewHandlers(service, testConfig, logger).APIShortenHandlerPost
+			h(recorder, request)
+
+			result := recorder.Result()
+
+
+			//	check status code
+			assert.Equal(t, test.want.code, result.StatusCode)
+
+			//	check contentType
+			assert.Contains(t, recorder.Header().Get("Content-type"), test.want.contentType)
+
+			//	check response
+			data, err := io.ReadAll(recorder.Body)
+			require.NoError(t, err)
+			err = result.Body.Close()
+			require.NoError(t, err)
+
+			assert.Equal(t, test.want.response, string(data))
+		})
+	}
+}

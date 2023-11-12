@@ -15,6 +15,7 @@ func NewRouter(handlers *Handlers) *chi.Mux {
 	r.Post("/", handlers.mainHandlerPost)
 
 	r.Post("/api/shorten", handlers.APIShortenHandlerPost)
+	r.Post("/api/shorten/batch", handlers.APIShortenBatchHandlerPost)
 
 	r.Get("/ping", handlers.PingGet)
 

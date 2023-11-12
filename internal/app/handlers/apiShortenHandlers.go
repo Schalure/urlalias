@@ -18,16 +18,13 @@ type responseModel struct {
 
 func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) {
 
-	// if !h.isValidContentType(r, appJSON) {
-	// 	h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
-	// 	return
-	// }
-
 	var (
 		requestJSON requestModel
 		i           interpreter.InterpreterJSON
 	)
-	if err := i.Decode(r.Body, &requestJSON); err != nil {
+
+	err := i.Decode(r.Body, &requestJSON)
+	if err != nil {
 		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
 		h.logger.Infow(
 			"Can't decode JSON content",
@@ -41,14 +38,13 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	node, err := h.service.Storage.FindByLongURL(requestJSON.URL)
-	if err != nil {
-		node, err = h.service.NewPairURL(requestJSON.URL)
-		if err != nil {
+	node := h.service.Storage.FindByLongURL(string(requestJSON.URL))
+	if node == nil {
+		if node, err = h.service.NewPairURL(string(requestJSON.URL)); err != nil {
 			h.publishBadRequest(&w, err)
 			return
 		}
-	}
+	}	
 
 	var resp = responseModel{
 		Result: h.config.BaseURL() + "/" + node.ShortKey,
@@ -73,4 +69,56 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", appJSON)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(buf)
+}
+
+// /api/shorten/batch
+// request:
+// [
+//
+//	{
+//	    "correlation_id": "<строковый идентификатор>",
+//	    "original_url": "<URL для сокращения>"
+//	},
+//	...
+//
+// ]
+// response:
+// [
+//
+//	{
+//	    "correlation_id": "<строковый идентификатор из объекта запроса>",
+//	    "short_url": "<результирующий сокращённый URL>"
+//	},
+//	...
+//
+// ]
+func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Request) {
+
+	type (
+		requestModel struct {
+			Id          int    `json:"correlation_id"`
+			OriginalURL string `json:"original_url"`
+		}
+
+		responseModel struct {
+			Id       int    `json:"correlation_id"`
+			ShortURL string `json:"short_url"`
+		}
+	)
+
+	var (
+		requestJSON  requestModel
+		//responseJSON responseModel
+		i            interpreter.InterpreterJSON
+	)
+
+	if err := i.Decode(r.Body, &requestJSON); err != nil {
+		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
+		h.logger.Infow(
+			"Can't decode JSON content",
+			"err", err.Error(),
+		)
+		return
+	}
+
 }

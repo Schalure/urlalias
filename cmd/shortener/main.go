@@ -42,7 +42,6 @@ func main() {
 
 	router := handlers.NewRouter(handlers.NewHandlers(service, conf, aliasLogger))
 
-
 	//	спросить у ментора выдает ошибку
 	aliasLogger.Infow(
 		fmt.Sprintf("%s service have been started...", config.AppName),

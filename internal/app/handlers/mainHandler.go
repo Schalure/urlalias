@@ -14,14 +14,11 @@ import (
 //		w http.ResponseWriter
 //		r *http.Request
 func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
+
 	shortKey := r.RequestURI
-	node, err := h.service.Storage.FindByShortKey(shortKey[1:])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Errorw(
-			"error",
-			"err", err.Error(),
-		)
+	node := h.service.Storage.FindByShortKey(shortKey[1:])
+	if node == nil {
+		http.Error(w, fmt.Errorf("the urlAliasNode not found by key \"%s\"", shortKey).Error(), http.StatusBadRequest)
 		return
 	}
 	h.logger.Infow(
@@ -42,11 +39,6 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 //		r *http.Request
 func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
-	// if !h.isValidContentType(r, textPlain) {
-	// 	h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
-	// 	return
-	// }
-
 	//	get url
 	longURL, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -65,13 +57,15 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		"Long URL", string(longURL),
 	)
 
-	node, err := h.service.Storage.FindByLongURL(string(longURL))
-	if err != nil {
+	node := h.service.Storage.FindByLongURL(string(longURL))
+	if node == nil {
 		if node, err = h.service.NewPairURL(string(longURL)); err != nil {
 			h.publishBadRequest(&w, err)
+			return
 		}
 	}
 	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
+
 	h.logger.Infow(
 		"Serch/Create alias key",
 		"Long URL", node.LongURL,

@@ -46,6 +46,10 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 			h.publishBadRequest(&w, err)
 			return
 		}
+		if err = h.service.Storage.Save(node); err != nil{
+			h.publishBadRequest(&w, err)
+			return
+		}
 	}
 
 	var resp = responseModel{
@@ -98,12 +102,12 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 
 	type (
 		requestModel struct {
-			Id          string `json:"correlation_id"`
+			ID          string `json:"correlation_id"`
 			OriginalURL string `json:"original_url"`
 		}
 
 		responseModel struct {
-			Id       string `json:"correlation_id"`
+			ID       string `json:"correlation_id"`
 			ShortURL string `json:"short_url"`
 		}
 	)
@@ -140,7 +144,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 			}
 		}
 		nodes = append(nodes, *node)
-		responseJSON = append(responseJSON, responseModel{req.Id, node.ShortKey})
+		responseJSON = append(responseJSON, responseModel{req.ID, node.ShortKey})
 	}
 
 	if err := h.service.Storage.SaveAll(nodes); err != nil {

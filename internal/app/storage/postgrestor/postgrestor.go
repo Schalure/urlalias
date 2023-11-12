@@ -107,7 +107,7 @@ func (s *PostgreStor) FindByShortKey(shortKey string) *storage.AliasURLModel {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, originalURL, shortKey FROM aliases WHERE shortKey = $1`, shortKey)
+	row := s.db.QueryRowContext(ctx, `SELECT id, originalURL, shortKey FROM aliases WHERE shortKey = $1;`, shortKey)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
 		return nil
 	}
@@ -130,7 +130,7 @@ func (s *PostgreStor) FindByLongURL(longURL string) *storage.AliasURLModel {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, originalURL, shortKey FROM aliases WHERE originalURL=$1`, longURL)
+	row := s.db.QueryRowContext(ctx, `SELECT id, originalURL, shortKey FROM aliases WHERE originalURL=$1;`, longURL)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
 		return nil
 	}

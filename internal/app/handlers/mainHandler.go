@@ -63,6 +63,10 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 			h.publishBadRequest(&w, err)
 			return
 		}
+		if err = h.service.Storage.Save(node); err != nil{
+			h.publishBadRequest(&w, err)
+			return
+		}
 	}
 	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
 

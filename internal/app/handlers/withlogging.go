@@ -73,15 +73,18 @@ func (m *Middleware) WithLogging(h http.Handler) http.Handler {
 			responseData:   responseData,
 		}
 
+		m.logger.Infow("Information about request",
+		"Request URI", r.RequestURI,
+		"Request method", r.Method,
+		"Request headers", r.Header,
+	)
+
 		start := time.Now()
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
 
 		m.logger.Infow(
-			"Information about request and response",
-			"Request URI", r.RequestURI,
-			"Request method", r.Method,
-
+			"Information about response",
 			"Response status", responseData.status,
 			"Response headers", lw.ResponseWriter.Header(),
 			"Response data", responseData.data,

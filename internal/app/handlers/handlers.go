@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
@@ -59,26 +58,26 @@ func NewHandlers(service *aliasmaker.AliasMakerServise, config *config.Configura
 //		contentType string - expected content type
 //	Output:
 //		bool
-func (h *Handlers) isValidContentType(r *http.Request, contentType string) bool {
+// // func (h *Handlers) isValidContentType(r *http.Request, contentType string) bool {
 
-	ct, ok := r.Header["Content-Type"]
-	if ok && func() bool {
-		for _, str := range ct {
-			if strings.Contains(str, contentType) {
-				return true
-			}
-		}
-		return false
-	}() {
-		return true
-	}
-	h.logger.Infow(
-		"Content type is not as expected",
-		"expected content type", contentType,
-		"request content type", ct,
-	)
-	return false
-}
+// // 	ct, ok := r.Header["Content-Type"]
+// // 	if ok && func() bool {
+// // 		for _, str := range ct {
+// // 			if strings.Contains(str, contentType) {
+// // 				return true
+// // 			}
+// // 		}
+// // 		return false
+// // 	}() {
+// // 		return true
+// // 	}
+// // 	h.logger.Infow(
+// // 		"Content type is not as expected",
+// // 		"expected content type", contentType,
+// // 		"request content type", ct,
+// // 	)
+// // 	return false
+// // }
 
 // ------------------------------------------------------------
 //

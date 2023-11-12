@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	aliasKeyLen        int = 9
+	aliasKeyLen int = 9
 )
 
 // Type of service
@@ -21,8 +21,12 @@ type AliasMakerServise struct {
 //	Constructor
 
 func NewAliasMakerServise(storage Storager) *AliasMakerServise {
+
+	lastKey := storage.GetLastShortKey()
+
 	return &AliasMakerServise{
 		Storage: storage,
+		lastKey: lastKey,
 	}
 }
 
@@ -34,7 +38,7 @@ func NewAliasMakerServise(storage Storager) *AliasMakerServise {
 func (s *AliasMakerServise) NewPairURL(longURL string) (*storage.AliasURLModel, error) {
 
 	newAliasKey, err := s.createAliasKey()
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -43,7 +47,6 @@ func (s *AliasMakerServise) NewPairURL(longURL string) (*storage.AliasURLModel, 
 		ShortKey: newAliasKey,
 	}, nil
 }
-
 
 // --------------------------------------------------
 //
@@ -54,28 +57,28 @@ func (s *AliasMakerServise) createAliasKey() (string, error) {
 
 	var charset []string = []string{
 		"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", 
-		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", 
+		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
 	}
 
-	if s.lastKey == ""{
+	if s.lastKey == "" {
 		s.lastKey = "000000000"
 		return s.lastKey, nil
 	}
 
 	newKey := strings.Split(s.lastKey, "")
-	if(len(newKey) != aliasKeyLen){
+	if len(newKey) != aliasKeyLen {
 		return "", fmt.Errorf("a non-valid key was received from the repository: %s", s.lastKey)
 	}
 
 	for i := 0; i < aliasKeyLen; i++ {
 		for n, char := range charset {
-			if (newKey[i] == char) {
-				if n == len(charset) - 1 {
+			if newKey[i] == char {
+				if n == len(charset)-1 {
 					newKey[i] = charset[0]
-					break;					
+					break
 				} else {
-					newKey[i] = charset[n + 1]
+					newKey[i] = charset[n+1]
 					s.lastKey = strings.Join(newKey, "")
 					return s.lastKey, nil
 				}

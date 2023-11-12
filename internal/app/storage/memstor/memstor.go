@@ -56,13 +56,13 @@ func (s *MemStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *MemStorage) FindByShortKey(shortKey string) (*storage.AliasURLModel, error) {
+func (s *MemStorage) FindByShortKey(shortKey string) *storage.AliasURLModel {
 
 	longURL, ok := s.stor[shortKey]
 	if !ok {
-		return nil, fmt.Errorf("the urlAliasNode not found by key \"%s\"", shortKey)
+		return nil
 	}
-	return &storage.AliasURLModel{ID: 0, ShortKey: shortKey, LongURL: longURL}, nil
+	return &storage.AliasURLModel{ID: 0, ShortKey: shortKey, LongURL: longURL}
 }
 
 // ------------------------------------------------------------
@@ -74,14 +74,14 @@ func (s *MemStorage) FindByShortKey(shortKey string) (*storage.AliasURLModel, er
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *MemStorage) FindByLongURL(longURL string) (*storage.AliasURLModel, error) {
+func (s *MemStorage) FindByLongURL(longURL string) *storage.AliasURLModel {
 
 	for k, v := range s.stor {
 		if v == longURL {
-			return &storage.AliasURLModel{ID: 0, ShortKey: k, LongURL: longURL}, nil
+			return &storage.AliasURLModel{ID: 0, ShortKey: k, LongURL: longURL}
 		}
 	}
-	return nil, fmt.Errorf("the urlAliasNode not found by long URL \"%s\"", longURL)
+	return nil
 }
 
 // ------------------------------------------------------------

@@ -3,7 +3,6 @@ package postgrestor
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"time"
 
@@ -38,7 +37,6 @@ func NewPostgreStor(dbConnectionString string) (*PostgreStor, error) {
 	}, nil
 }
 
-
 // ------------------------------------------------------------
 //
 //	Save pair "shortKey, longURL" to db
@@ -66,20 +64,18 @@ func (s *PostgreStor) Save(urlAliasNode *storage.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *PostgreStor) FindByShortKey(shortKey string) (*storage.AliasURLModel, error) {
+func (s *PostgreStor) FindByShortKey(shortKey string) *storage.AliasURLModel {
 
 	var aliasNode = new(storage.AliasURLModel)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-
-
 	row := s.db.QueryRowContext(ctx, `SELECT id, originalURL, shortKey FROM aliases WHERE shortKey = $1`, shortKey)
-	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil{
-		return nil, fmt.Errorf("no record was found where originalURL = %s", shortKey)
+	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
+		return nil
 	}
-	return aliasNode, nil
+	return aliasNode
 }
 
 // ------------------------------------------------------------
@@ -91,18 +87,18 @@ func (s *PostgreStor) FindByShortKey(shortKey string) (*storage.AliasURLModel, e
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *PostgreStor) FindByLongURL(longURL string) (*storage.AliasURLModel, error) {
+func (s *PostgreStor) FindByLongURL(longURL string) *storage.AliasURLModel {
 
 	var aliasNode = new(storage.AliasURLModel)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	row := s.db.QueryRowContext(ctx, `SELECT id, originalURL, shortKey FROM aliases WHERE originalURL=$1`, longURL)
-	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil{
-		return nil, fmt.Errorf("no record was found where originalURL = %s", longURL)
+	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
+		return nil
 	}
-	return aliasNode, nil
+	return aliasNode
 }
 
 // ------------------------------------------------------------

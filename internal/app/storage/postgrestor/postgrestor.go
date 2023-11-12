@@ -79,11 +79,11 @@ func (s *PostgreStor) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
 
 	for _, node := range urlAliasNodes {
 
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 1 * time.Second)
 		defer cancel()
-		_, err := tx.ExecContext(ctx, `insert into aliases(originalURL, shortKey) VALUES(@long_url, @short_key);`,
-			sql.Named("long_url", node.LongURL),
-			sql.Named("short_url", node.ShortKey))
+		_, err := tx.ExecContext(ctx, `insert into aliases(originalURL, shortKey) VALUES($1, $2);`, node.LongURL, node.ShortKey)
+			// sql.Named("long_url", node.LongURL),
+			// sql.Named("short_url", node.ShortKey))
 		if err != nil {
 			return err
 		}

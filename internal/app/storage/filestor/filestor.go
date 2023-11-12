@@ -12,7 +12,7 @@ import (
 type FileStorage struct {
 	fileName string
 	lastKey  string
-	lastId   uint64
+	lastID   uint64
 }
 
 // ------------------------------------------------------------
@@ -31,7 +31,7 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 	scanner := bufio.NewScanner(file)
 
 	var lastKey string
-	var lastId uint64
+	var lastID uint64
 
 	for i := 0; scanner.Scan(); i++ {
 		var node storage.AliasURLModel
@@ -39,14 +39,14 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 			return nil, errors.New("invalid file format")
 		}
 
-		lastId = node.ID
+		lastID = node.ID
 		lastKey = node.ShortKey
 	}
 
 	return &FileStorage{
 		fileName: fileName,
 		lastKey:  lastKey,
-		lastId:   lastId,
+		lastID:   lastID,
 	}, nil
 }
 
@@ -67,7 +67,7 @@ func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 	}
 	defer file.Close()
 
-	urlAliasNode.ID = s.lastId + 1
+	urlAliasNode.ID = s.lastID + 1
 	if data, err = json.Marshal(urlAliasNode); err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 		return err
 	}
 
-	s.lastId++
+	s.lastID++
 	s.lastKey = urlAliasNode.ShortKey
 
 	return nil
@@ -100,7 +100,7 @@ func (s *FileStorage) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
 	defer file.Close()
 
 	for _, node := range urlAliasNodes {
-		node.ID = s.lastId + 1
+		node.ID = s.lastID + 1
 		if data, err = json.Marshal(&node); err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ func (s *FileStorage) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
 			return err
 		}
 
-		s.lastId++
+		s.lastID++
 		s.lastKey = node.ShortKey
 	}
 	return nil

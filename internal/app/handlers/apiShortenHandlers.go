@@ -6,24 +6,26 @@ import (
 	"net/http"
 
 	"github.com/Schalure/urlalias/internal/app/interpreter"
+	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
-type requestModel struct {
-	URL string `json:"url"`
-}
-
-type responseModel struct {
-	Result string `json:"result"`
-}
-
 func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) {
+
+	type (
+		requestModel struct {
+			URL string `json:"url"`
+		}
+		responseModel struct {
+			Result string `json:"result"`
+		}
+	)
 
 	var (
 		requestJSON requestModel
 		i           interpreter.InterpreterJSON
 	)
 
-	err := i.Decode(r.Body, &requestJSON)
+	err := i.Unmarshal(r.Body, &requestJSON)
 	if err != nil {
 		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
 		h.logger.Infow(
@@ -44,7 +46,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 			h.publishBadRequest(&w, err)
 			return
 		}
-	}	
+	}
 
 	var resp = responseModel{
 		Result: h.config.BaseURL() + "/" + node.ShortKey,
@@ -96,23 +98,25 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 
 	type (
 		requestModel struct {
-			Id          int    `json:"correlation_id"`
+			Id          string `json:"correlation_id"`
 			OriginalURL string `json:"original_url"`
 		}
 
 		responseModel struct {
-			Id       int    `json:"correlation_id"`
+			Id       string `json:"correlation_id"`
 			ShortURL string `json:"short_url"`
 		}
 	)
 
 	var (
-		requestJSON  requestModel
-		//responseJSON responseModel
+		requestJSON  []requestModel
+		responseJSON []responseModel
 		i            interpreter.InterpreterJSON
+		nodes        []storage.AliasURLModel
 	)
 
-	if err := i.Decode(r.Body, &requestJSON); err != nil {
+	err := i.Unmarshal(r.Body, &requestJSON)
+	if err != nil {
 		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
 		h.logger.Infow(
 			"Can't decode JSON content",
@@ -121,4 +125,45 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	for _, req := range requestJSON {
+
+		node := h.service.Storage.FindByLongURL(req.OriginalURL)
+		if node == nil {
+			node, err = h.service.NewPairURL(req.OriginalURL)
+			if err != nil {
+				h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
+				h.logger.Infow(
+					"Can't create pair url",
+					"err", err.Error(),
+				)
+				return
+			}
+		}
+		nodes = append(nodes, *node)
+		responseJSON = append(responseJSON, responseModel{req.Id, node.ShortKey})
+	}
+
+	if err := h.service.Storage.SaveAll(nodes); err != nil {
+		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
+		h.logger.Infow(
+			"Can't save to storage",
+			"err", err.Error(),
+		)
+		return
+	}
+
+	buf, err := json.Marshal(&responseJSON)
+	if err != nil {
+		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
+		h.logger.Infow(
+			"Can't dekode to JSON",
+			"buf", string(buf),
+			"err", err.Error(),
+		)
+		return
+	}
+
+	w.Header().Set("Content-Type", appJSON)
+	w.WriteHeader(http.StatusCreated)
+	w.Write(buf)
 }

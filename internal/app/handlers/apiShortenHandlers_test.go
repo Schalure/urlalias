@@ -99,7 +99,6 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 	}
 }
 
-
 func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 
 	logger, err := NewLogger(LoggerTypeZap)
@@ -121,21 +120,19 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 	service := aliasmaker.NewAliasMakerServise(testStor)
 	testConfig := config.NewConfig()
 
-
 	testCases := []struct {
 		testName string
-		data string
-		want struct{
+		data     string
+		want     struct {
 			code        int
 			contentType string
-			response    string			
+			response    string
 		}
 	}{
 		//	memstor simple test
-		struct{testName string; data string; want struct{code int; contentType string; response string}}{
+		{
 			testName: "memstor simple test",
-			data: `
-			[
+			data: `[
 				{
 					"correlation_id": "1",
 					"original_url": "https://ya.ru"
@@ -143,40 +140,31 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 				{
 					"correlation_id": "2",
 					"original_url": "https://google.com"
-				},
+				}
 			]`,
-			want: struct{code int; contentType string; response string}{
-				code: http.StatusCreated,
+			want: struct {
+				code        int
+				contentType string
+				response    string
+			}{
+				code:        http.StatusCreated,
 				contentType: appJSON,
-				response: `
-				[
-					{
-						"correlation_id": "1",
-						"original_url": "123456789"
-					},
-					{
-						"correlation_id": "2",
-						"original_url": "987654321"
-					},
-				]`,
-
+				response:    `[{"correlation_id":"1","short_url":"123456789"},{"correlation_id":"2","short_url":"987654321"}]`,
 			},
 		},
 	}
 
-	for _, test := range testCases{
+	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
 
 			request := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", strings.NewReader(test.data))
 			request.Header.Add(contentType, appJSON)
 
-
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service, testConfig, logger).APIShortenHandlerPost
+			h := NewHandlers(service, testConfig, logger).APIShortenBatchHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()
-
 
 			//	check status code
 			assert.Equal(t, test.want.code, result.StatusCode)

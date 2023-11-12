@@ -169,5 +169,9 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 
 	w.Header().Set("Content-Type", appJSON)
 	w.WriteHeader(http.StatusCreated)
+	h.logger.Infow(
+		"Response data",
+		"data", string(buf),
+	)	
 	w.Write(buf)
 }

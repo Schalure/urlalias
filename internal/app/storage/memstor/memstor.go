@@ -7,14 +7,14 @@ Type "MemStorage" implements the "RepositoryURL" interface.
 package memstor
 
 import (
-	"fmt"
-
 	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
 // Type for storage long URL and their alias keys
 type MemStorage struct {
-	stor map[string]string
+	//	[key, value] = [ShortKey, LongURL]
+	stor    map[string]string
+	lastKey string
 }
 
 // ------------------------------------------------------------
@@ -26,6 +26,7 @@ func NewMemStorage() (*MemStorage, error) {
 
 	var s MemStorage
 	s.stor = make(map[string]string)
+
 	return &s, nil
 }
 
@@ -39,11 +40,26 @@ func NewMemStorage() (*MemStorage, error) {
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
 func (s *MemStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 
-	if _, ok := s.stor[urlAliasNode.ShortKey]; ok {
-		return fmt.Errorf("the key \"%s\" is already in the database", urlAliasNode.ShortKey)
-	}
-
 	s.stor[urlAliasNode.ShortKey] = urlAliasNode.LongURL
+	s.lastKey = urlAliasNode.ShortKey
+
+	return nil
+}
+
+// ------------------------------------------------------------
+//
+//	Save array of pairs "shortKey, longURL" to db
+//	This is interfase method of "Storager" interface
+//	Input:
+//		urlAliasNode []repositories.AliasURLModel
+//	Output:
+//		error - if not nil, can not save "[]storage.AliasURLModel"
+func (s *MemStorage) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
+
+	for _, node := range urlAliasNodes {
+		s.stor[node.ShortKey] = node.LongURL
+		s.lastKey = node.ShortKey
+	}
 	return nil
 }
 
@@ -82,6 +98,16 @@ func (s *MemStorage) FindByLongURL(longURL string) *storage.AliasURLModel {
 		}
 	}
 	return nil
+}
+
+// ------------------------------------------------------------
+//
+//	Get the last saved key
+//	This is interfase method of "Storager" interface
+//	Output:
+//		string - last saved key
+func (s *MemStorage) GetLastShortKey() string {
+	return s.lastKey
 }
 
 // ------------------------------------------------------------

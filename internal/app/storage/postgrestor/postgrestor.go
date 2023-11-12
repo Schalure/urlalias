@@ -32,6 +32,12 @@ func NewPostgreStor(dbConnectionString string) (*PostgreStor, error) {
 		return nil, err
 	}
 
+	s := PostgreStor{
+		db: db,
+	}
+
+	s.GetLastShortKey()
+
 	return &PostgreStor{
 		db: db,
 	}, nil
@@ -53,6 +59,36 @@ func (s *PostgreStor) Save(urlAliasNode *storage.AliasURLModel) error {
 		return err
 	}
 	return nil
+}
+
+// ------------------------------------------------------------
+//
+//	Save array of pairs "shortKey, longURL" to db
+//	This is interfase method of "Storager" interface
+//	Input:
+//		urlAliasNode []repositories.AliasURLModel
+//	Output:
+//		error - if not nil, can not save "[]storage.AliasURLModel"
+func (s *PostgreStor) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, node := range urlAliasNodes {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+		_, err := tx.ExecContext(ctx, `insert into aliases(originalURL, shortKey) VALUES(@long_url, @short_key);`,
+			sql.Named("long_url", node.LongURL),
+			sql.Named("short_url", node.ShortKey))
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 // ------------------------------------------------------------
@@ -99,6 +135,25 @@ func (s *PostgreStor) FindByLongURL(longURL string) *storage.AliasURLModel {
 		return nil
 	}
 	return aliasNode
+}
+
+// ------------------------------------------------------------
+//
+//	Get the last saved key
+//	This is interfase method of "Storager" interface
+//	Output:
+//		string - last saved key
+func (s *PostgreStor) GetLastShortKey() string {
+
+	var shortKey string
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	row := s.db.QueryRowContext(ctx, `select shortkey from aliases where id=(select max(id) from aliases);`)
+	if err := row.Scan(&shortKey); err != nil {
+		return ""
+	}
+	return shortKey
 }
 
 // ------------------------------------------------------------

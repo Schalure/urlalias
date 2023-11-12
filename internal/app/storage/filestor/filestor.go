@@ -1,16 +1,18 @@
 package filestor
 
 import (
+	"bufio"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"os"
 
 	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
 type FileStorage struct {
-	stor     map[string]string
 	fileName string
+	lastKey  string
+	lastId   uint64
 }
 
 // ------------------------------------------------------------
@@ -20,9 +22,31 @@ type FileStorage struct {
 //		*FileStorage
 func NewFileStorage(fileName string) (*FileStorage, error) {
 
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	var lastKey string
+	var lastId uint64
+
+	for i := 0; scanner.Scan(); i++ {
+		var node storage.AliasURLModel
+		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
+			return nil, errors.New("invalid file format")
+		}
+
+		lastId = node.ID
+		lastKey = node.ShortKey
+	}
+
 	return &FileStorage{
-		stor:     make(map[string]string),
 		fileName: fileName,
+		lastKey:  lastKey,
+		lastId:   lastId,
 	}, nil
 }
 
@@ -36,13 +60,6 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
 func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 
-	if _, ok := s.stor[urlAliasNode.ShortKey]; ok {
-		return fmt.Errorf("the key \"%s\" is already in the database", urlAliasNode.ShortKey)
-	}
-
-	s.stor[urlAliasNode.ShortKey] = urlAliasNode.LongURL
-	urlAliasNode.ID = uint64(len(s.stor))
-
 	var data []byte
 	file, err := os.OpenFile(s.fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
@@ -50,6 +67,7 @@ func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 	}
 	defer file.Close()
 
+	urlAliasNode.ID = s.lastId + 1
 	if data, err = json.Marshal(urlAliasNode); err != nil {
 		return err
 	}
@@ -58,6 +76,42 @@ func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 		return err
 	}
 
+	s.lastId++
+	s.lastKey = urlAliasNode.ShortKey
+
+	return nil
+}
+
+// ------------------------------------------------------------
+//
+//	Save array of pairs "shortKey, longURL" to db
+//	This is interfase method of "Storager" interface
+//	Input:
+//		urlAliasNode []repositories.AliasURLModel
+//	Output:
+//		error - if not nil, can not save "[]storage.AliasURLModel"
+func (s *FileStorage) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
+
+	var data []byte
+	file, err := os.OpenFile(s.fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	for _, node := range urlAliasNodes {
+		node.ID = s.lastId + 1
+		if data, err = json.Marshal(&node); err != nil {
+			return err
+		}
+
+		if _, err = file.Write(append(data, '\n')); err != nil {
+			return err
+		}
+
+		s.lastId++
+		s.lastKey = node.ShortKey
+	}
 	return nil
 }
 
@@ -72,11 +126,26 @@ func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 //		error - if can not find "urlAliasNode" by short key
 func (s *FileStorage) FindByShortKey(shortKey string) *storage.AliasURLModel {
 
-	longURL, ok := s.stor[shortKey]
-	if !ok {
+	file, err := os.OpenFile(s.fileName, os.O_RDONLY, 0644)
+	if err != nil {
 		return nil
 	}
-	return &storage.AliasURLModel{ID: 0, ShortKey: shortKey, LongURL: longURL}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	for i := 0; scanner.Scan(); i++ {
+		var node storage.AliasURLModel
+		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
+			return nil
+		}
+
+		if shortKey == node.ShortKey {
+			return &node
+		}
+
+	}
+	return nil
 }
 
 // ------------------------------------------------------------
@@ -90,12 +159,36 @@ func (s *FileStorage) FindByShortKey(shortKey string) *storage.AliasURLModel {
 //		error - if can not find "urlAliasNode" by long URL
 func (s *FileStorage) FindByLongURL(longURL string) *storage.AliasURLModel {
 
-	for k, v := range s.stor {
-		if v == longURL {
-			return &storage.AliasURLModel{ID: 0, ShortKey: k, LongURL: longURL}
+	file, err := os.OpenFile(s.fileName, os.O_RDONLY, 0644)
+	if err != nil {
+		return nil
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	for i := 0; scanner.Scan(); i++ {
+		var node storage.AliasURLModel
+		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
+			return nil
 		}
+
+		if longURL == node.LongURL {
+			return &node
+		}
+
 	}
 	return nil
+}
+
+// ------------------------------------------------------------
+//
+//	Get the last saved key
+//	This is interfase method of "Storager" interface
+//	Output:
+//		string - last saved key
+func (s *FileStorage) GetLastShortKey() string {
+	return s.lastKey
 }
 
 // ------------------------------------------------------------

@@ -2,7 +2,6 @@ package filestor
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"testing"
 
@@ -32,30 +31,15 @@ func TestFileStorage_Save(t *testing.T) {
 			testName: "simple save",
 			storNode: storage.AliasURLModel{
 				ID:       1,
-				ShortKey: "555555555",
+				ShortKey: "000000000",
 				LongURL:  "https://qqq.ru",
 			},
 			want: struct {
 				data string
 				err  error
 			}{
-				data: `{"uuid":1,"short_url":"555555555","original_url":"https://qqq.ru"}`,
+				data: `{"uuid":1,"short_url":"000000000","original_url":"https://qqq.ru"}`,
 				err:  nil,
-			},
-		},
-		{
-			testName: "dublicate key save",
-			storNode: storage.AliasURLModel{
-				ID:       2,
-				ShortKey: "555555555",
-				LongURL:  "https://eee.ru",
-			},
-			want: struct {
-				data string
-				err  error
-			}{
-				data: ``,
-				err:  fmt.Errorf("the key \"%s\" is already in the database", "555555555"),
 			},
 		},
 	}

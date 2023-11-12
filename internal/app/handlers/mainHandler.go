@@ -18,7 +18,11 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	shortKey := r.RequestURI
 	node := h.service.Storage.FindByShortKey(shortKey[1:])
 	if node == nil {
-		http.Error(w, fmt.Errorf("the urlAliasNode not found by key \"%s\"", shortKey).Error(), http.StatusBadRequest)
+		h.publishBadRequest(&w, fmt.Errorf("the urlAliasNode not found by key \"%s\"", shortKey))
+		h.logger.Infow(
+			"The urlAliasNode not found by key",
+			"Key", shortKey,
+		)		
 		return
 	}
 	h.logger.Infow(

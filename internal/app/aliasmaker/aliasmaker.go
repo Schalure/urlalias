@@ -2,19 +2,19 @@ package aliasmaker
 
 import (
 	"fmt"
-	"math/rand"
+	"strings"
 
 	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
 const (
 	aliasKeyLen        int = 9
-	trysToMakeAliasKey int = 5
 )
 
 // Type of service
 type AliasMakerServise struct {
 	Storage Storager
+	lastKey string
 }
 
 // --------------------------------------------------
@@ -33,34 +33,54 @@ func NewAliasMakerServise(storage Storager) *AliasMakerServise {
 //		alias string - short alias to "longURL"
 func (s *AliasMakerServise) NewPairURL(longURL string) (*storage.AliasURLModel, error) {
 
-	for i := 0; i < trysToMakeAliasKey+1; i++ {
-
-		node := storage.AliasURLModel{
-			ID:       0,
-			LongURL:  longURL,
-			ShortKey: createAliasKey(),
-		}
-
-		if err := s.Storage.Save(&node); err == nil {
-			return &node, nil
-		}
+	newAliasKey, err := s.createAliasKey()
+	if err != nil{
+		return nil, err
 	}
-	return nil, fmt.Errorf("can not create alias key from \"%s\"", longURL)
+
+	return &storage.AliasURLModel{
+		LongURL:  longURL,
+		ShortKey: newAliasKey,
+	}, nil
 }
+
 
 // --------------------------------------------------
 //
 //	Make short alias from URL
 //	Output:
 //		alias string - short alias to "longURL"
-func createAliasKey() string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+func (s *AliasMakerServise) createAliasKey() (string, error) {
 
-	alliasKey := make([]byte, aliasKeyLen)
-
-	for i := range alliasKey {
-		alliasKey[i] = charset[rand.Intn(len(charset))]
+	var charset []string = []string{
+		"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", 
+		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", 
 	}
 
-	return string(alliasKey)
+	if s.lastKey == ""{
+		s.lastKey = "000000000"
+		return s.lastKey, nil
+	}
+
+	newKey := strings.Split(s.lastKey, "")
+	if(len(newKey) != aliasKeyLen){
+		return "", fmt.Errorf("a non-valid key was received from the repository: %s", s.lastKey)
+	}
+
+	for i := 0; i < aliasKeyLen; i++ {
+		for n, char := range charset {
+			if (newKey[i] == char) {
+				if n == len(charset) - 1 {
+					newKey[i] = charset[0]
+					break;					
+				} else {
+					newKey[i] = charset[n + 1]
+					s.lastKey = strings.Join(newKey, "")
+					return s.lastKey, nil
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("it is impossible to generate a new string because the storage is full")
 }

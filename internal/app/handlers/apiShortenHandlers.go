@@ -50,6 +50,9 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 			h.publishBadRequest(&w, err)
 			return
 		}
+		w.WriteHeader(http.StatusCreated)
+	} else {
+		w.WriteHeader(http.StatusConflict)
 	}
 
 	var resp = responseModel{

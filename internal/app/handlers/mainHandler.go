@@ -71,7 +71,11 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 			h.publishBadRequest(&w, err)
 			return
 		}
+		w.WriteHeader(http.StatusCreated)
+	} else {
+		w.WriteHeader(http.StatusConflict)
 	}
+
 	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
 
 	h.logger.Infow(

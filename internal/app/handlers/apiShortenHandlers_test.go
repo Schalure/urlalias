@@ -149,7 +149,7 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 			}{
 				code:        http.StatusCreated,
 				contentType: appJSON,
-				response:    `[{"correlation_id":"1","short_url":"123456789"},{"correlation_id":"2","short_url":"987654321"}]`,
+				response:    `[{"correlation_id":"1","short_url":"http://localhost:8080/123456789"},{"correlation_id":"2","short_url":"http://localhost:8080/987654321"}]`,
 			},
 		},
 	}

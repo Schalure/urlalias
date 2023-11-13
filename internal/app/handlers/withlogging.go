@@ -74,10 +74,10 @@ func (m *Middleware) WithLogging(h http.Handler) http.Handler {
 		}
 
 		m.logger.Infow("Information about request",
-		"Request URI", r.RequestURI,
-		"Request method", r.Method,
-		"Request headers", r.Header,
-	)
+			"Request URI", r.RequestURI,
+			"Request method", r.Method,
+			"Request headers", r.Header,
+		)
 
 		start := time.Now()
 		h.ServeHTTP(&lw, r)

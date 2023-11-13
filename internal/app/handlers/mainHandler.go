@@ -22,7 +22,7 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 		h.logger.Infow(
 			"The urlAliasNode not found by key",
 			"Key", shortKey,
-		)		
+		)
 		return
 	}
 	h.logger.Infow(
@@ -67,7 +67,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 			h.publishBadRequest(&w, err)
 			return
 		}
-		if err = h.service.Storage.Save(node); err != nil{
+		if err = h.service.Storage.Save(node); err != nil {
 			h.publishBadRequest(&w, err)
 			return
 		}

@@ -46,7 +46,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 			h.publishBadRequest(&w, err)
 			return
 		}
-		if err = h.service.Storage.Save(node); err != nil{
+		if err = h.service.Storage.Save(node); err != nil {
 			h.publishBadRequest(&w, err)
 			return
 		}

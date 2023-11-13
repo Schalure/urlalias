@@ -57,7 +57,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 				contentType string
 				response    string
 			}{
-				code:        http.StatusCreated,
+				code:        http.StatusConflict,
 				contentType: appJSON,
 				response:    fmt.Sprintf("{\"result\":\"%s/%s\"}", testConfig.BaseURL(), listOfURL[0].ShortKey),
 			},
@@ -149,7 +149,10 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 			}{
 				code:        http.StatusCreated,
 				contentType: appJSON,
-				response:    `[{"correlation_id":"1","short_url":"http://localhost:8080/123456789"},{"correlation_id":"2","short_url":"http://localhost:8080/987654321"}]`,
+				response: fmt.Sprintf(`[{"correlation_id":"1","short_url":"%s/123456789"},{"correlation_id":"2","short_url":"%s/987654321"}]`,
+					testConfig.BaseURL(),
+					testConfig.BaseURL(),
+				),
 			},
 		},
 	}

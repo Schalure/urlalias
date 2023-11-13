@@ -143,7 +143,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 				contentType string
 				response    string
 			}{
-				code:        http.StatusCreated,
+				code:        http.StatusConflict,
 				contentType: textPlain,
 				response:    testConfig.BaseURL() + "/" + listOfURL[0].ShortKey,
 			},

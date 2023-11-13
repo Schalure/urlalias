@@ -144,7 +144,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 			}
 		}
 		nodes = append(nodes, *node)
-		responseJSON = append(responseJSON, responseModel{req.ID, node.ShortKey})
+		responseJSON = append(responseJSON, responseModel{req.ID, h.config.BaseURL() + "/" + node.ShortKey})
 	}
 
 	if err := h.service.Storage.SaveAll(nodes); err != nil {
@@ -169,9 +169,5 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 
 	w.Header().Set("Content-Type", appJSON)
 	w.WriteHeader(http.StatusCreated)
-	h.logger.Infow(
-		"Response data",
-		"data", string(buf),
-	)	
 	w.Write(buf)
 }

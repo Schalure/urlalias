@@ -24,8 +24,8 @@ func NewPostgreStor(dbConnectionString string) (*PostgreStor, error) {
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS aliases(
 		id serial PRIMARY KEY,
-		originalURL text NOT NULL,
-		shortKey text NOT NULL
+		originalURL text NOT NULL UNIQUE,
+		shortKey varchar(9) NOT NULL
 		);`)
 
 	if err != nil {

@@ -40,6 +40,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	var statusCode int
 	node := h.service.Storage.FindByLongURL(string(requestJSON.URL))
 	if node == nil {
 		if node, err = h.service.NewPairURL(string(requestJSON.URL)); err != nil {
@@ -50,9 +51,9 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 			h.publishBadRequest(&w, err)
 			return
 		}
-		w.WriteHeader(http.StatusCreated)
+		statusCode = http.StatusCreated
 	} else {
-		w.WriteHeader(http.StatusConflict)
+		statusCode = http.StatusConflict
 	}
 
 	var resp = responseModel{
@@ -76,7 +77,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	)
 
 	w.Header().Set("Content-Type", appJSON)
-	//w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(statusCode)
 	w.Write(buf)
 }
 

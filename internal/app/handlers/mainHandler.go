@@ -61,6 +61,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		"Long URL", string(longURL),
 	)
 
+	var statusCode int
 	node := h.service.Storage.FindByLongURL(string(longURL))
 	if node == nil {
 		if node, err = h.service.NewPairURL(string(longURL)); err != nil {
@@ -71,9 +72,9 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 			h.publishBadRequest(&w, err)
 			return
 		}
-		w.WriteHeader(http.StatusCreated)
+		statusCode = http.StatusCreated
 	} else {
-		w.WriteHeader(http.StatusConflict)
+		statusCode = http.StatusConflict
 	}
 
 	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
@@ -85,6 +86,6 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	)
 
 	w.Header().Set("Content-Type", textPlain)
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(statusCode)
 	w.Write([]byte(aliasURL))
 }

@@ -76,7 +76,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	)
 
 	w.Header().Set("Content-Type", appJSON)
-	w.WriteHeader(http.StatusCreated)
+	//w.WriteHeader(http.StatusCreated)
 	w.Write(buf)
 }
 

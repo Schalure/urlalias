@@ -81,27 +81,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	w.Write(buf)
 }
 
-// /api/shorten/batch
-// request:
-// [
-//
-//	{
-//	    "correlation_id": "<строковый идентификатор>",
-//	    "original_url": "<URL для сокращения>"
-//	},
-//	...
-//
-// ]
-// response:
-// [
-//
-//	{
-//	    "correlation_id": "<строковый идентификатор из объекта запроса>",
-//	    "short_url": "<результирующий сокращённый URL>"
-//	},
-//	...
-//
-// ]
+
 func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	type (

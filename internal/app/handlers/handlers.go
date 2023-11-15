@@ -50,37 +50,6 @@ func NewHandlers(service *aliasmaker.AliasMakerServise, config *config.Configura
 
 // ------------------------------------------------------------
 //
-//	Check to valid content type - method of Handlers type
-//	Receiver:
-//		h* Handlers
-//	Input:
-//		r *http.Request
-//		contentType string - expected content type
-//	Output:
-//		bool
-// // func (h *Handlers) isValidContentType(r *http.Request, contentType string) bool {
-
-// // 	ct, ok := r.Header["Content-Type"]
-// // 	if ok && func() bool {
-// // 		for _, str := range ct {
-// // 			if strings.Contains(str, contentType) {
-// // 				return true
-// // 			}
-// // 		}
-// // 		return false
-// // 	}() {
-// // 		return true
-// // 	}
-// // 	h.logger.Infow(
-// // 		"Content type is not as expected",
-// // 		"expected content type", contentType,
-// // 		"request content type", ct,
-// // 	)
-// // 	return false
-// // }
-
-// ------------------------------------------------------------
-//
 //	Check to valid URL - method of Handlers type
 //	Receiver:
 //		h* Handlers

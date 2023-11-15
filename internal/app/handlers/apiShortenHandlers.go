@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Schalure/urlalias/internal/app/interpreter"
-	"github.com/Schalure/urlalias/internal/app/storage"
+	"github.com/Schalure/urlalias/internal/app/models"
 )
 
 func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +27,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 
 	err := i.Unmarshal(r.Body, &requestJSON)
 	if err != nil {
-		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
+		http.Error(w, "can't decode JSON content", http.StatusBadRequest)
 		h.logger.Infow(
 			"Can't decode JSON content",
 			"err", err.Error(),
@@ -36,7 +36,11 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	}
 
 	if !h.isValidURL(requestJSON.URL) {
-		h.publishBadRequest(&w, fmt.Errorf("url is not in the correct format"))
+		http.Error(w, "url is not in the correct format", http.StatusBadRequest)
+		h.logger.Infow(
+			"url is not in the correct format",
+			"url", requestJSON.URL,
+		)
 		return
 	}
 
@@ -44,11 +48,13 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	node := h.service.Storage.FindByLongURL(string(requestJSON.URL))
 	if node == nil {
 		if node, err = h.service.NewPairURL(string(requestJSON.URL)); err != nil {
-			h.publishBadRequest(&w, err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			h.logger.Info(err.Error())
 			return
 		}
 		if err = h.service.Storage.Save(node); err != nil {
-			h.publishBadRequest(&w, err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			h.logger.Info(err.Error())
 			return
 		}
 		statusCode = http.StatusCreated
@@ -61,7 +67,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	}
 	buf, err := json.Marshal(&resp)
 	if err != nil {
-		h.publishBadRequest(&w, err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		h.logger.Infow(
 			"Can not encode data",
 			"data", resp,
@@ -81,7 +87,6 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	w.Write(buf)
 }
 
-
 func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	type (
@@ -100,12 +105,12 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 		requestJSON  []requestModel
 		responseJSON []responseModel
 		i            interpreter.InterpreterJSON
-		nodes        []storage.AliasURLModel
+		nodes        []models.AliasURLModel
 	)
 
 	err := i.Unmarshal(r.Body, &requestJSON)
 	if err != nil {
-		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
+		http.Error(w, fmt.Sprintf("can't decode JSON content, error: %s", err), http.StatusBadRequest)
 		h.logger.Infow(
 			"Can't decode JSON content",
 			"err", err.Error(),
@@ -119,7 +124,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 		if node == nil {
 			node, err = h.service.NewPairURL(req.OriginalURL)
 			if err != nil {
-				h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				h.logger.Infow(
 					"Can't create pair url",
 					"err", err.Error(),
@@ -132,7 +137,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 	}
 
 	if err := h.service.Storage.SaveAll(nodes); err != nil {
-		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		h.logger.Infow(
 			"Can't save to storage",
 			"err", err.Error(),
@@ -142,7 +147,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 
 	buf, err := json.Marshal(&responseJSON)
 	if err != nil {
-		h.publishBadRequest(&w, fmt.Errorf("can't decode JSON content"))
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		h.logger.Infow(
 			"Can't dekode to JSON",
 			"buf", string(buf),

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Schalure/urlalias/internal/app/storage"
+	"github.com/Schalure/urlalias/internal/app/models"
 )
 
 const (
@@ -35,14 +35,14 @@ func NewAliasMakerServise(storage Storager) *AliasMakerServise {
 //	Create new URL pair
 //	Output:
 //		alias string - short alias to "longURL"
-func (s *AliasMakerServise) NewPairURL(longURL string) (*storage.AliasURLModel, error) {
+func (s *AliasMakerServise) NewPairURL(longURL string) (*models.AliasURLModel, error) {
 
 	newAliasKey, err := s.createAliasKey()
 	if err != nil {
 		return nil, err
 	}
 
-	return &storage.AliasURLModel{
+	return &models.AliasURLModel{
 		LongURL:  longURL,
 		ShortKey: newAliasKey,
 	}, nil

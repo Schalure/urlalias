@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/Schalure/urlalias/internal/app/storage"
+	"github.com/Schalure/urlalias/internal/app/models"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -51,7 +51,7 @@ func NewPostgreStor(dbConnectionString string) (*PostgreStor, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *PostgreStor) Save(urlAliasNode *storage.AliasURLModel) error {
+func (s *PostgreStor) Save(urlAliasNode *models.AliasURLModel) error {
 
 	_, err := s.db.Exec(`INSERT INTO aliases(originalURL, shortKey) VALUES($1, $2);`, urlAliasNode.LongURL, urlAliasNode.ShortKey)
 
@@ -69,7 +69,7 @@ func (s *PostgreStor) Save(urlAliasNode *storage.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *PostgreStor) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
+func (s *PostgreStor) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -100,9 +100,9 @@ func (s *PostgreStor) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *PostgreStor) FindByShortKey(shortKey string) *storage.AliasURLModel {
+func (s *PostgreStor) FindByShortKey(shortKey string) *models.AliasURLModel {
 
-	var aliasNode = new(storage.AliasURLModel)
+	var aliasNode = new(models.AliasURLModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -123,9 +123,9 @@ func (s *PostgreStor) FindByShortKey(shortKey string) *storage.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *PostgreStor) FindByLongURL(longURL string) *storage.AliasURLModel {
+func (s *PostgreStor) FindByLongURL(longURL string) *models.AliasURLModel {
 
-	var aliasNode = new(storage.AliasURLModel)
+	var aliasNode = new(models.AliasURLModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

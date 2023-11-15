@@ -1,4 +1,4 @@
-package storage
+package models
 
 // Storage model for long URL and their alias keys
 type AliasURLModel struct {

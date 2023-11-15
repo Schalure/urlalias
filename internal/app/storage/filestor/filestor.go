@@ -6,7 +6,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/Schalure/urlalias/internal/app/storage"
+	"github.com/Schalure/urlalias/internal/app/models"
 )
 
 type FileStorage struct {
@@ -34,7 +34,7 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 	var lastID uint64
 
 	for i := 0; scanner.Scan(); i++ {
-		var node storage.AliasURLModel
+		var node models.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil, errors.New("invalid file format")
 		}
@@ -58,7 +58,7 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
+func (s *FileStorage) Save(urlAliasNode *models.AliasURLModel) error {
 
 	var data []byte
 	file, err := os.OpenFile(s.fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -90,7 +90,7 @@ func (s *FileStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *FileStorage) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
+func (s *FileStorage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 	var data []byte
 	file, err := os.OpenFile(s.fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -124,7 +124,7 @@ func (s *FileStorage) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *FileStorage) FindByShortKey(shortKey string) *storage.AliasURLModel {
+func (s *FileStorage) FindByShortKey(shortKey string) *models.AliasURLModel {
 
 	file, err := os.OpenFile(s.fileName, os.O_RDONLY, 0644)
 	if err != nil {
@@ -135,7 +135,7 @@ func (s *FileStorage) FindByShortKey(shortKey string) *storage.AliasURLModel {
 	scanner := bufio.NewScanner(file)
 
 	for i := 0; scanner.Scan(); i++ {
-		var node storage.AliasURLModel
+		var node models.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil
 		}
@@ -157,7 +157,7 @@ func (s *FileStorage) FindByShortKey(shortKey string) *storage.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *FileStorage) FindByLongURL(longURL string) *storage.AliasURLModel {
+func (s *FileStorage) FindByLongURL(longURL string) *models.AliasURLModel {
 
 	file, err := os.OpenFile(s.fileName, os.O_RDONLY, 0644)
 	if err != nil {
@@ -168,7 +168,7 @@ func (s *FileStorage) FindByLongURL(longURL string) *storage.AliasURLModel {
 	scanner := bufio.NewScanner(file)
 
 	for i := 0; scanner.Scan(); i++ {
-		var node storage.AliasURLModel
+		var node models.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil
 		}

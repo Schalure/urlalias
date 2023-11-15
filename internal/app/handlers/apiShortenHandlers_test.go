@@ -10,7 +10,7 @@ import (
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
-	"github.com/Schalure/urlalias/internal/app/storage"
+	"github.com/Schalure/urlalias/internal/app/models"
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +22,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 	require.NoError(t, err)
 	defer logger.Close()
 
-	listOfURL := []storage.AliasURLModel{
+	listOfURL := []models.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
@@ -30,7 +30,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 
 	testStor, _ := memstor.NewMemStorage()
 	for i, nodeURL := range listOfURL {
-		if err := testStor.Save(&storage.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := testStor.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
@@ -105,7 +105,7 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 	require.NoError(t, err)
 	defer logger.Close()
 
-	listOfURL := []storage.AliasURLModel{
+	listOfURL := []models.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
@@ -113,7 +113,7 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 
 	testStor, _ := memstor.NewMemStorage()
 	for i, nodeURL := range listOfURL {
-		if err := testStor.Save(&storage.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := testStor.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}

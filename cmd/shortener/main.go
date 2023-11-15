@@ -9,9 +9,6 @@ import (
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/handlers"
-	"github.com/Schalure/urlalias/internal/app/storage/filestor"
-	"github.com/Schalure/urlalias/internal/app/storage/memstor"
-	"github.com/Schalure/urlalias/internal/app/storage/postgrestor"
 )
 
 // ------------------------------------------------------------
@@ -28,7 +25,7 @@ func main() {
 	defer aliasLogger.Close()
 
 	//	спросить ментора про этот кусок
-	stor, err := NewStorage(conf)
+	stor, err := aliasmaker.NewStorage(conf)
 	if err != nil {
 		aliasLogger.Fatalw(
 			"can't create storage",
@@ -57,24 +54,4 @@ func main() {
 		"aliasURL service stoped!",
 		"error", err,
 	)
-}
-
-
-// ------------------------------------------------------------
-//
-//	New storage
-//	Input:
-//		storageType string
-//	Output:
-//		Storager
-func NewStorage(c *config.Configuration) (aliasmaker.Storager, error) {
-
-	switch c.StorageType() {
-	case config.DataBaseStor:
-		return postgrestor.NewPostgreStor(c.DBConnection())
-	case config.FileStor:
-		return filestor.NewFileStorage(c.StorageFile())
-	default:
-		return memstor.NewMemStorage()
-	}
 }

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"net/http"
 	"net/url"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
@@ -67,16 +66,4 @@ func (h *Handlers) isValidURL(u string) bool {
 		return false
 	}
 	return true
-}
-
-// ------------------------------------------------------------
-//
-//	Send status bad request - method of Handlers type
-//	Receiver:
-//		h* Handlers
-//	Input:
-//		w *http.ResponseWriter
-//		err error
-func (h *Handlers) publishBadRequest(w *http.ResponseWriter, err error) {
-	http.Error(*w, err.Error(), http.StatusBadRequest)
 }

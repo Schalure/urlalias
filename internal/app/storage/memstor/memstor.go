@@ -6,9 +6,7 @@ Type "MemStorage" implements the "RepositoryURL" interface.
 */
 package memstor
 
-import (
-	"github.com/Schalure/urlalias/internal/app/storage"
-)
+import "github.com/Schalure/urlalias/internal/app/models"
 
 // Type for storage long URL and their alias keys
 type MemStorage struct {
@@ -38,7 +36,7 @@ func NewMemStorage() (*MemStorage, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *MemStorage) Save(urlAliasNode *storage.AliasURLModel) error {
+func (s *MemStorage) Save(urlAliasNode *models.AliasURLModel) error {
 
 	s.stor[urlAliasNode.ShortKey] = urlAliasNode.LongURL
 	s.lastKey = urlAliasNode.ShortKey
@@ -54,7 +52,7 @@ func (s *MemStorage) Save(urlAliasNode *storage.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *MemStorage) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
+func (s *MemStorage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 	for _, node := range urlAliasNodes {
 		s.stor[node.ShortKey] = node.LongURL
@@ -72,13 +70,13 @@ func (s *MemStorage) SaveAll(urlAliasNodes []storage.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *MemStorage) FindByShortKey(shortKey string) *storage.AliasURLModel {
+func (s *MemStorage) FindByShortKey(shortKey string) *models.AliasURLModel {
 
 	longURL, ok := s.stor[shortKey]
 	if !ok {
 		return nil
 	}
-	return &storage.AliasURLModel{ID: 0, ShortKey: shortKey, LongURL: longURL}
+	return &models.AliasURLModel{ID: 0, ShortKey: shortKey, LongURL: longURL}
 }
 
 // ------------------------------------------------------------
@@ -90,11 +88,11 @@ func (s *MemStorage) FindByShortKey(shortKey string) *storage.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *MemStorage) FindByLongURL(longURL string) *storage.AliasURLModel {
+func (s *MemStorage) FindByLongURL(longURL string) *models.AliasURLModel {
 
 	for k, v := range s.stor {
 		if v == longURL {
-			return &storage.AliasURLModel{ID: 0, ShortKey: k, LongURL: longURL}
+			return &models.AliasURLModel{ID: 0, ShortKey: k, LongURL: longURL}
 		}
 	}
 	return nil

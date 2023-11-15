@@ -18,7 +18,7 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	shortKey := r.RequestURI
 	node := h.service.Storage.FindByShortKey(shortKey[1:])
 	if node == nil {
-		h.publishBadRequest(&w, fmt.Errorf("the urlAliasNode not found by key \"%s\"", shortKey))
+		http.Error(w, fmt.Sprintf("the urlAliasNode not found by key \"%s\"", shortKey), http.StatusBadRequest)
 		h.logger.Infow(
 			"The urlAliasNode not found by key",
 			"Key", shortKey,
@@ -46,13 +46,13 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	//	get url
 	longURL, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.publishBadRequest(&w, err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		h.logger.Info(err.Error())
 		return
 	}
 
 	if !h.isValidURL(string(longURL)) {
-		h.publishBadRequest(&w, fmt.Errorf("url is not in the correct format"))
+		http.Error(w, fmt.Sprintf("url is not in the correct format: %s", longURL), http.StatusBadRequest)
 		return
 	}
 
@@ -65,11 +65,13 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	node := h.service.Storage.FindByLongURL(string(longURL))
 	if node == nil {
 		if node, err = h.service.NewPairURL(string(longURL)); err != nil {
-			h.publishBadRequest(&w, err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			h.logger.Info(err.Error())
 			return
 		}
 		if err = h.service.Storage.Save(node); err != nil {
-			h.publishBadRequest(&w, err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			h.logger.Info(err.Error())
 			return
 		}
 		statusCode = http.StatusCreated

@@ -12,7 +12,6 @@ import (
 	"github.com/Schalure/urlalias/internal/app/storage/filestor"
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/Schalure/urlalias/internal/app/storage/postgrestor"
-	"github.com/go-chi/chi/v5"
 )
 
 // ------------------------------------------------------------
@@ -53,19 +52,13 @@ func main() {
 		"Storage type", conf.StorageType().String(),
 	)
 
-	log.Fatal(run(conf.Host(), router))
+	err = http.ListenAndServe(conf.Host(), router)
+	aliasLogger.Fatalw(
+		"aliasURL service stoped!",
+		"error", err,
+	)
 }
 
-// ------------------------------------------------------------
-//
-//	Servise run.
-//	Input:
-//		mux *chi.Mux
-//	Output:
-//		err error - if servise have become panic or fatal error
-func run(serverAddres string, router *chi.Mux) error {
-	return http.ListenAndServe(serverAddres, router)
-}
 
 // ------------------------------------------------------------
 //

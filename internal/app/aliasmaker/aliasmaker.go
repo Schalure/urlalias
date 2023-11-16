@@ -71,7 +71,7 @@ func (s *AliasMakerServise) createAliasKey() (string, error) {
 		return "", fmt.Errorf("a non-valid key was received from the repository: %s", s.lastKey)
 	}
 
-	for i := 0; i < aliasKeyLen; i++ {
+	for i := aliasKeyLen - 1; i > 0; i-- {
 		for n, char := range charset {
 			if newKey[i] == char {
 				if n == len(charset)-1 {

@@ -28,7 +28,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	err := i.Unmarshal(r.Body, &requestJSON)
 	if err != nil {
 		http.Error(w, "can't decode JSON content", http.StatusBadRequest)
-		h.logger.Infow(
+		h.service.Logger.Infow(
 			"Can't decode JSON content",
 			"err", err.Error(),
 		)
@@ -37,7 +37,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 
 	if !h.isValidURL(requestJSON.URL) {
 		http.Error(w, "url is not in the correct format", http.StatusBadRequest)
-		h.logger.Infow(
+		h.service.Logger.Infow(
 			"url is not in the correct format",
 			"url", requestJSON.URL,
 		)
@@ -49,12 +49,12 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	if node == nil {
 		if node, err = h.service.NewPairURL(string(requestJSON.URL)); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			h.logger.Info(err.Error())
+			h.service.Logger.Info(err.Error())
 			return
 		}
 		if err = h.service.Storage.Save(node); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			h.logger.Info(err.Error())
+			h.service.Logger.Info(err.Error())
 			return
 		}
 		statusCode = http.StatusCreated
@@ -63,12 +63,12 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	}
 
 	var resp = responseModel{
-		Result: h.config.BaseURL() + "/" + node.ShortKey,
+		Result: h.service.Config.BaseURL() + "/" + node.ShortKey,
 	}
 	buf, err := json.Marshal(&resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Infow(
+		h.service.Logger.Infow(
 			"Can not encode data",
 			"data", resp,
 			"err", err,
@@ -76,7 +76,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	h.logger.Infow(
+	h.service.Logger.Infow(
 		"Serch/Create alias key",
 		"Long URL", node.LongURL,
 		"Alias URL", resp.Result,
@@ -111,7 +111,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 	err := i.Unmarshal(r.Body, &requestJSON)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("can't decode JSON content, error: %s", err), http.StatusBadRequest)
-		h.logger.Infow(
+		h.service.Logger.Infow(
 			"Can't decode JSON content",
 			"err", err.Error(),
 		)
@@ -125,7 +125,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 			node, err = h.service.NewPairURL(req.OriginalURL)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
-				h.logger.Infow(
+				h.service.Logger.Infow(
 					"Can't create pair url",
 					"err", err.Error(),
 				)
@@ -133,12 +133,12 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 			}
 		}
 		nodes = append(nodes, *node)
-		responseJSON = append(responseJSON, responseModel{req.ID, h.config.BaseURL() + "/" + node.ShortKey})
+		responseJSON = append(responseJSON, responseModel{req.ID, h.service.Config.BaseURL() + "/" + node.ShortKey})
 	}
 
 	if err := h.service.Storage.SaveAll(nodes); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Infow(
+		h.service.Logger.Infow(
 			"Can't save to storage",
 			"err", err.Error(),
 		)
@@ -148,7 +148,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 	buf, err := json.Marshal(&responseJSON)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Infow(
+		h.service.Logger.Infow(
 			"Can't dekode to JSON",
 			"buf", string(buf),
 			"err", err.Error(),
@@ -159,4 +159,8 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Content-Type", appJSON)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(buf)
+}
+
+func (h *Handlers) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request) {
+	
 }

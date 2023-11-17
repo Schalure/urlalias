@@ -10,7 +10,6 @@ import (
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/models"
-	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,21 +19,20 @@ import (
 //	Test mainHandlerMethodGet: "/{shortKey}"
 func Test_mainHandlerMethodGet(t *testing.T) {
 
-	logger, err := NewLogger(LoggerTypeZap)
+	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
 	require.NoError(t, err)
-	defer logger.Close()
+	defer service.Stop()
 
 	var listOfURL = []models.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 	}
-	testStor, _ := memstor.NewMemStorage()
+
 	for i, nodeURL := range listOfURL {
-		if err := testStor.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := service.Storage.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
-	service := aliasmaker.NewAliasMakerServise(testStor)
 
 	//	Test cases
 	testCases := []struct {
@@ -77,7 +75,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 			request.Header.Add("Content-type", testCase.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service, config.NewConfig(), logger).mainHandlerGet
+			h := NewHandlers(service).mainHandlerGet
 			h(recorder, request)
 
 			result := recorder.Result()
@@ -95,9 +93,9 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 
 func Test_mainHandlerMethodPost(t *testing.T) {
 
-	logger, err := NewLogger(LoggerTypeZap)
+	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
 	require.NoError(t, err)
-	defer logger.Close()
+	defer service.Stop()
 
 	listOfURL := []models.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
@@ -105,15 +103,12 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
 	}
 
-	testStor, _ := memstor.NewMemStorage()
 	for i, nodeURL := range listOfURL {
-		if err := testStor.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := service.Storage.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
-	service := aliasmaker.NewAliasMakerServise(testStor)
 
-	testConfig := config.NewConfig()
 
 	testCases := []struct {
 		name    string
@@ -145,7 +140,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			}{
 				code:        http.StatusConflict,
 				contentType: textPlain,
-				response:    testConfig.BaseURL() + "/" + listOfURL[0].ShortKey,
+				response:    service.Config.BaseURL() + "/" + listOfURL[0].ShortKey,
 			},
 		},
 	}
@@ -157,7 +152,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service, testConfig, logger).mainHandlerPost
+			h := NewHandlers(service).mainHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()

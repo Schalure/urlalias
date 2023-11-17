@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Schalure/urlalias/internal/app/models"
-	"github.com/Schalure/urlalias/internal/app/storage/memstor"
+	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_createAliasKey(t *testing.T) {
@@ -48,14 +48,12 @@ func Test_createAliasKey(t *testing.T) {
 	for _, test := range testCases{
 		t.Run(test.name, func(t *testing.T) {
 
-			stor, _ := memstor.NewMemStorage()
-			stor.Save(&models.AliasURLModel{
-				ID: 0,
-				ShortKey: test.lastKey,
-				LongURL: "",
-			})
+			s, err := NewAliasMakerServise(config.NewConfig())
+			require.NoError(t, err)
+			defer s.Stop()
 
-			s := NewAliasMakerServise(stor)
+			s.lastKey = test.lastKey
+			
 			aliasKey, err := s.createAliasKey()
 
 			assert.Equal(t, aliasKey, test.want.newKey)

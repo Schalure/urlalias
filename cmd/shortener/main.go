@@ -18,28 +18,15 @@ func main() {
 
 	conf := config.NewConfig()
 
-	aliasLogger, err := handlers.NewLogger(handlers.LoggerTypeZap)
+	service, err := aliasmaker.NewAliasMakerServise(conf)
 	if err != nil {
-		log.Panicf("cannot initialize logger: %s", err)
+		log.Fatal(err)
 	}
-	defer aliasLogger.Close()
+	defer service.Stop()
 
-	//	спросить ментора про этот кусок
-	stor, err := aliasmaker.NewStorage(conf)
-	if err != nil {
-		aliasLogger.Fatalw(
-			"can't create storage",
-			"error", err,
-		)
-	}
-	defer stor.Close()
+	router := handlers.NewRouter(handlers.NewHandlers(service))
 
-	service := aliasmaker.NewAliasMakerServise(stor)
-
-	router := handlers.NewRouter(handlers.NewHandlers(service, conf, aliasLogger))
-
-	//	спросить у ментора выдает ошибку
-	aliasLogger.Infow(
+	service.Logger.Infow(
 		fmt.Sprintf("%s service have been started...", config.AppName),
 		"Server address", conf.Host(),
 		"Base URL", conf.BaseURL(),
@@ -50,7 +37,7 @@ func main() {
 	)
 
 	err = http.ListenAndServe(conf.Host(), router)
-	aliasLogger.Fatalw(
+	service.Logger.Fatalw(
 		"aliasURL service stoped!",
 		"error", err,
 	)

@@ -19,13 +19,13 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 	node := h.service.Storage.FindByShortKey(shortKey[1:])
 	if node == nil {
 		http.Error(w, fmt.Sprintf("the urlAliasNode not found by key \"%s\"", shortKey), http.StatusBadRequest)
-		h.logger.Infow(
+		h.service.Logger.Infow(
 			"The urlAliasNode not found by key",
 			"Key", shortKey,
 		)
 		return
 	}
-	h.logger.Infow(
+	h.service.Logger.Infow(
 		"Long URL",
 		"URL", node.LongURL,
 	)
@@ -47,7 +47,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	longURL, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Info(err.Error())
+		h.service.Logger.Info(err.Error())
 		return
 	}
 
@@ -56,7 +56,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Infow(
+	h.service.Logger.Infow(
 		"Parsed URL",
 		"Long URL", string(longURL),
 	)
@@ -66,12 +66,12 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	if node == nil {
 		if node, err = h.service.NewPairURL(string(longURL)); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			h.logger.Info(err.Error())
+			h.service.Logger.Info(err.Error())
 			return
 		}
 		if err = h.service.Storage.Save(node); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			h.logger.Info(err.Error())
+			h.service.Logger.Info(err.Error())
 			return
 		}
 		statusCode = http.StatusCreated
@@ -79,9 +79,9 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 		statusCode = http.StatusConflict
 	}
 
-	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
+	aliasURL := h.service.Config.BaseURL() + "/" + node.ShortKey
 
-	h.logger.Infow(
+	h.service.Logger.Infow(
 		"Serch/Create alias key",
 		"Long URL", node.LongURL,
 		"Alias URL", aliasURL,

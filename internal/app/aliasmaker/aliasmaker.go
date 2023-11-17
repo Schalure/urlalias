@@ -1,10 +1,16 @@
 package aliasmaker
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/Schalure/urlalias/cmd/shortener/config"
+	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/storage/filestor"
+	"github.com/Schalure/urlalias/internal/app/storage/memstor"
+	"github.com/Schalure/urlalias/internal/app/storage/postgrestor"
 )
 
 const (
@@ -13,28 +19,66 @@ const (
 
 // Type of service
 type AliasMakerServise struct {
+	Config *config.Configuration
+	Logger Loggerer
 	Storage Storager
 	lastKey string
 }
 
 // --------------------------------------------------
 //	Constructor
+func NewAliasMakerServise(c *config.Configuration) (*AliasMakerServise, error){
 
-func NewAliasMakerServise(storage Storager) *AliasMakerServise {
+	var errs []error
+
+	logger, loggerErr := chooseLogger(LoggerTypeZap)
+	errs = append(errs, loggerErr)
+
+	storage, storageErr := chooseStorage(c)
+	errs = append(errs, storageErr)
 
 	lastKey := storage.GetLastShortKey()
 
 	return &AliasMakerServise{
+		Config: c,
+		Logger: logger,
 		Storage: storage,
 		lastKey: lastKey,
+	}, errors.Join(errs...)
+}
+
+
+// --------------------------------------------------
+//
+//	Choose logger for service
+func chooseLogger(loggerType LoggerType) (Loggerer, error) {
+	switch loggerType {
+	case LoggerTypeZap:
+		return zaplogger.NewZapLogger("")
+	default:
+		return nil, fmt.Errorf("logger type is not supported: %s", loggerType.String())
 	}
 }
 
 // --------------------------------------------------
 //
+//	Choose storage for service
+func chooseStorage(c *config.Configuration) (Storager, error) {
+
+	switch c.StorageType() {
+	case config.DataBaseStor:
+		return postgrestor.NewPostgreStor(c.DBConnection())
+	case config.FileStor:
+		return filestor.NewFileStorage(c.StorageFile())
+	default:
+		return memstor.NewMemStorage()
+	}
+}
+
+
+// --------------------------------------------------
+//
 //	Create new URL pair
-//	Output:
-//		alias string - short alias to "longURL"
 func (s *AliasMakerServise) NewPairURL(longURL string) (*models.AliasURLModel, error) {
 
 	newAliasKey, err := s.createAliasKey()
@@ -51,8 +95,6 @@ func (s *AliasMakerServise) NewPairURL(longURL string) (*models.AliasURLModel, e
 // --------------------------------------------------
 //
 //	Make short alias from URL
-//	Output:
-//		alias string - short alias to "longURL"
 func (s *AliasMakerServise) createAliasKey() (string, error) {
 
 	var charset = []string{
@@ -86,4 +128,13 @@ func (s *AliasMakerServise) createAliasKey() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("it is impossible to generate a new string because the storage is full")
+}
+
+// --------------------------------------------------
+//
+//	Stop service and full release
+func (s *AliasMakerServise) Stop() {
+
+	s.Storage.Close()
+	s.Logger.Close()
 }

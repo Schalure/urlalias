@@ -11,16 +11,16 @@ import (
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/models"
-	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_ApiShortenHandlerPost(t *testing.T) {
 
-	logger, err := NewLogger(LoggerTypeZap)
+	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
 	require.NoError(t, err)
-	defer logger.Close()
+	defer service.Stop()
+
 
 	listOfURL := []models.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
@@ -28,13 +28,12 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
 	}
 
-	testStor, _ := memstor.NewMemStorage()
 	for i, nodeURL := range listOfURL {
-		if err := testStor.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := service.Storage.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
-	service := aliasmaker.NewAliasMakerServise(testStor)
+	//service := aliasmaker.NewAliasMakerServise(testStor)
 
 	testConfig := config.NewConfig()
 
@@ -68,7 +67,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 
-			logger.Infow(
+			service.Logger.Infow(
 				"Response URL",
 				"URL", tt.requestURI,
 				"test", fmt.Sprintf("\"url\": \"%v\"", listOfURL[0].LongURL),
@@ -78,7 +77,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 			request.Header.Add("Content-type", appJSON)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service, testConfig, logger).APIShortenHandlerPost
+			h := NewHandlers(service).APIShortenHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()
@@ -101,9 +100,9 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 
 func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 
-	logger, err := NewLogger(LoggerTypeZap)
+	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
 	require.NoError(t, err)
-	defer logger.Close()
+	defer service.Stop()
 
 	listOfURL := []models.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
@@ -111,14 +110,11 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
 	}
 
-	testStor, _ := memstor.NewMemStorage()
 	for i, nodeURL := range listOfURL {
-		if err := testStor.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := service.Storage.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
-	service := aliasmaker.NewAliasMakerServise(testStor)
-	testConfig := config.NewConfig()
 
 	testCases := []struct {
 		testName string
@@ -150,8 +146,8 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 				code:        http.StatusCreated,
 				contentType: appJSON,
 				response: fmt.Sprintf(`[{"correlation_id":"1","short_url":"%s/123456789"},{"correlation_id":"2","short_url":"%s/987654321"}]`,
-					testConfig.BaseURL(),
-					testConfig.BaseURL(),
+					service.Config.BaseURL(),
+					service.Config.BaseURL(),
 				),
 			},
 		},
@@ -164,7 +160,7 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 			request.Header.Add(contentType, appJSON)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service, testConfig, logger).APIShortenBatchHandlerPost
+			h := NewHandlers(service).APIShortenBatchHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()

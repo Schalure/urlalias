@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/url"
 
-	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 )
 
@@ -25,41 +24,25 @@ var ContentTypeToCompress = []string{
 
 type Handlers struct {
 	service *aliasmaker.AliasMakerServise
-	config  *config.Configuration
-	logger  Loggerer
 }
 
 // ------------------------------------------------------------
 //
 //	Constructor of Handlers type
-//	Input:
-//		storage IStorage
-//		config *config.Configuration
-//		logger *zap.SugaredLogger
-//	Output:
-//		*Handlers - ptr to new Handlers
-func NewHandlers(service *aliasmaker.AliasMakerServise, config *config.Configuration, logger Loggerer) *Handlers {
+func NewHandlers(service *aliasmaker.AliasMakerServise) *Handlers {
 
 	return &Handlers{
 		service: service,
-		config:  config,
-		logger:  logger,
 	}
 }
 
 // ------------------------------------------------------------
 //
 //	Check to valid URL - method of Handlers type
-//	Receiver:
-//		h* Handlers
-//	Input:
-//		url string
-//	Output:
-//		bool
 func (h *Handlers) isValidURL(u string) bool {
 
 	if _, err := url.ParseRequestURI(u); err != nil {
-		h.logger.Infow(
+		h.service.Logger.Infow(
 			"URL is not in the correct format",
 			"URL", u,
 		)

@@ -78,7 +78,9 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 
 			recorder := httptest.NewRecorder()
 			h := NewHandlers(service).APIShortenHandlerPost
-			h(recorder, request)
+			ctx := context.WithValue(request.Context(), UserID, uint64(0))
+			
+			h(recorder, request.WithContext(ctx))
 
 			result := recorder.Result()
 

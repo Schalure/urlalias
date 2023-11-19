@@ -102,7 +102,7 @@ func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
-		_, err := tx.ExecContext(ctx, `insert into aliase_url, short_key) VALUES($1, $2);`, node.LongURL, node.ShortKey)
+		_, err := tx.ExecContext(ctx, `insert into aliase_url, short_key) VALUES($1, $2, $3);`, node.UserID, node.LongURL, node.ShortKey)
 		// sql.Named("long_url", node.LongURL),
 		// sql.Named("short_url", node.ShortKey))
 		if err != nil {

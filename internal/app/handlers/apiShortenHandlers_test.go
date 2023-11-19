@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -126,7 +127,7 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 	}{
 		//	memstor simple test
 		{
-			testName: "memstor simple test",
+			testName: "memstor_simple_test",
 			data: `[
 				{
 					"correlation_id": "1",
@@ -160,7 +161,9 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 
 			recorder := httptest.NewRecorder()
 			h := NewHandlers(service).APIShortenBatchHandlerPost
-			h(recorder, request)
+
+			ctx := context.WithValue(request.Context(), UserID, uint64(0))
+			h(recorder, request.WithContext(ctx))
 
 			result := recorder.Result()
 

@@ -16,7 +16,7 @@ import (
 type Storage struct {
 	//	[key, value] = [ShortKey, LongURL]
 	aliases []models.AliasURLModel
-	users []models.UserModel
+	users   []models.UserModel
 
 	lastKey string
 }
@@ -32,7 +32,6 @@ func NewStorage() (*Storage, error) {
 
 	return &s, nil
 }
-
 
 // ------------------------------------------------------------
 //
@@ -69,7 +68,7 @@ func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
 func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 	for _, node := range urlAliasNodes {
-		
+
 		s.aliases = append(s.aliases, node)
 		s.lastKey = node.ShortKey
 	}
@@ -88,7 +87,7 @@ func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 
 	for _, node := range s.aliases {
-		if (node.ShortKey == shortKey) {
+		if node.ShortKey == shortKey {
 			return &node
 		}
 	}
@@ -107,7 +106,7 @@ func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 
 	for _, node := range s.aliases {
-		if (node.LongURL == longURL) {
+		if node.LongURL == longURL {
 			return &node
 		}
 	}

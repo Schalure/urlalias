@@ -41,8 +41,8 @@ const (
 	hostDefault        = string("localhost:8080")        //	Host default value
 	baseURLDefault     = string("http://localhost:8080") //	Base URL default value
 	aliasesFileDefault = "/tmp/short-url-db.json"        //	Default file name of URLs storage
-	usersFileDefault = "/tmp/users-db.json" 
-	logToFileDefault   = false                           //	How to save log default value
+	usersFileDefault   = "/tmp/users-db.json"
+	logToFileDefault   = false //	How to save log default value
 )
 
 // ------------------------------------------------------------
@@ -53,7 +53,7 @@ type Configuration struct {
 	baseURL string //	Base URL for create alias
 
 	aliasesFile  string // File name of URLs storage
-	usersFile	string
+	usersFile    string
 	dbConnection string
 
 	storageType StorageType
@@ -133,6 +133,7 @@ func (c *Configuration) AliasesFile() string {
 func (c *Configuration) UsersFile() string {
 	return c.usersFile
 }
+
 // ------------------------------------------------------------
 //
 //	Getter "Configuration.DBConnection"

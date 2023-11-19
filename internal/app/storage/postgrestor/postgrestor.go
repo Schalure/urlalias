@@ -177,11 +177,12 @@ func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.Ali
 		nodes = append(nodes, node)
 	}
 
-    if err = rows.Err(); err != nil {
-        return nil, err
-    }
-    return nodes, nil
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return nodes, nil
 }
+
 // ------------------------------------------------------------
 //
 //	Get the last saved key

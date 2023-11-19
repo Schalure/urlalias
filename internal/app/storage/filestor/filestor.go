@@ -12,10 +12,10 @@ import (
 
 type Storage struct {
 	aliasesFileName string
-	usersFileName string
-	lastKey  string
-	lastID   uint64
-	lastUserID uint64
+	usersFileName   string
+	lastKey         string
+	lastID          uint64
+	lastUserID      uint64
 }
 
 // ------------------------------------------------------------
@@ -46,7 +46,6 @@ func NewStorage(aliasesFileName, usersFileName string) (*Storage, error) {
 		lastKey = node.ShortKey
 	}
 
-
 	usersFile, err := os.OpenFile(usersFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return nil, err
@@ -68,13 +67,12 @@ func NewStorage(aliasesFileName, usersFileName string) (*Storage, error) {
 
 	return &Storage{
 		aliasesFileName: aliasesFileName,
-		usersFileName: usersFileName,
-		lastKey:  lastKey,
-		lastID:   lastID,
-		lastUserID: lastUserID,
+		usersFileName:   usersFileName,
+		lastKey:         lastKey,
+		lastID:          lastID,
+		lastUserID:      lastUserID,
 	}, nil
 }
-
 
 // ------------------------------------------------------------
 //
@@ -82,7 +80,7 @@ func NewStorage(aliasesFileName, usersFileName string) (*Storage, error) {
 func (s *Storage) CreateUser() (uint64, error) {
 
 	var data []byte
-	
+
 	file, err := os.OpenFile(s.usersFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return 0, err
@@ -256,7 +254,7 @@ func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.Ali
 
 		if node.UserID == userID {
 			nodes = append(nodes, node)
-		}	
+		}
 	}
 	return nodes, nil
 }

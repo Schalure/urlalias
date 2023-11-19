@@ -16,7 +16,7 @@ func TestFileStorage_Save(t *testing.T) {
 	require.NoError(t, err)
 	aliasesFile.Close()
 	defer os.Remove(aliasesFile.Name())
-	
+
 	usersFile, err := os.CreateTemp("", "storage*.json")
 	require.NoError(t, err)
 	aliasesFile.Close()
@@ -36,7 +36,7 @@ func TestFileStorage_Save(t *testing.T) {
 			testName: "simple save",
 			storNode: models.AliasURLModel{
 				ID:       1,
-				UserID: 0,
+				UserID:   0,
 				ShortKey: "000000000",
 				LongURL:  "https://qqq.ru",
 			},

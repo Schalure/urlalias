@@ -11,6 +11,7 @@ import (
 )
 
 type ContextKey string
+
 const UserID ContextKey = "userID"
 
 const tokenExp = time.Hour * 3

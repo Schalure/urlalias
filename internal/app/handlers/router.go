@@ -7,7 +7,7 @@ import (
 func NewRouter(handlers *Handlers) *chi.Mux {
 
 	r := chi.NewRouter()
-	m := NewMiddleware(handlers.logger)
+	m := NewMiddleware(handlers.service.Logger)
 
 	r.Use(m.WithLogging, m.WithCompress)
 

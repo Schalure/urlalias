@@ -193,7 +193,7 @@ func (c *Configuration) parseFlags() {
 
 	c.dbConnection = *dbConnection
 	c.aliasesFile = storageFile
-	c.usersFile = "users-" + storageFile
+	c.usersFile = storageFile + "-users"
 }
 
 // ------------------------------------------------------------
@@ -221,7 +221,7 @@ func (c *Configuration) parseEnv() {
 	//	get storage file from environment variables
 	if storageFile, ok := os.LookupEnv(storageFileEnvKey); ok {
 		c.aliasesFile = storageFile
-		c.usersFile = "users-" + storageFile
+		c.usersFile = storageFile + "-users"
 	}
 
 	//	get storage file from environment variables

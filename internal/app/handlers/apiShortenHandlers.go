@@ -175,7 +175,7 @@ func (h *Handlers) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request)
 		responseJSON []responseModel
 	)
 
-	userID := r.Context().Value("userID")
+	userID := r.Context().Value(UserID)
 	uID, ok := userID.(uint64)
 	if !ok {
 		http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)

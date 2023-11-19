@@ -10,8 +10,11 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-const TOKEN_EXP = time.Hour * 3
-const SECRET_KEY = "supersecretkey"
+type ContextKey string
+const UserID ContextKey = "userID"
+
+const tokenExp = time.Hour * 3
+const secretKey = "supersecretkey"
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -52,7 +55,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 			Name:  authorization,
 			Value: tokenString,
 		})
-		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), "userID", userID)))
+		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), UserID, userID)))
 	})
 }
 
@@ -64,7 +67,7 @@ func getUserID(tokenString string) (uint64, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		return []byte(SECRET_KEY), nil
+		return []byte(secretKey), nil
 	})
 	if err != nil {
 		return 0, errors.New("can't parse token string")
@@ -79,12 +82,12 @@ func createTokenJWT(userID uint64) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
 		UserID: userID,
 	})
 
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", err
 	}

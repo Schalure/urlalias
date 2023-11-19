@@ -20,6 +20,6 @@ func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 			return
 		}
 
-		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), "userID", userID)))
+		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), UserID, userID)))
 	})
 }

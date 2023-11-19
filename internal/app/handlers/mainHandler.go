@@ -71,7 +71,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		userID := r.Context().Value("userID")
+		userID := r.Context().Value(UserID)
 		uID, ok := userID.(uint64)
 		if !ok {
 			http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)

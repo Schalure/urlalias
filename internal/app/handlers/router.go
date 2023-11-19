@@ -7,7 +7,7 @@ import (
 func NewRouter(handlers *Handlers) *chi.Mux {
 
 	r := chi.NewRouter()
-	m := NewMiddleware(handlers.service.Logger)
+	m := NewMiddleware(handlers.service)
 
 	r.Use(m.WithLogging, m.WithCompress)
 
@@ -27,7 +27,6 @@ func NewRouter(handlers *Handlers) *chi.Mux {
 		r.Use(m.WithVerification)
 		r.Get("/api/user/urls", handlers.APIUserURLsHandlerGet)
 	})
-
 
 	return r
 }

@@ -6,10 +6,15 @@ Type "MemStorage" implements the "RepositoryURL" interface.
 */
 package memstor
 
-import "github.com/Schalure/urlalias/internal/app/models"
+import (
+	"context"
+	"errors"
+
+	"github.com/Schalure/urlalias/internal/app/models"
+)
 
 // Type for storage long URL and their alias keys
-type MemStorage struct {
+type Storage struct {
 	//	[key, value] = [ShortKey, LongURL]
 	stor    map[string]string
 	lastKey string
@@ -20,12 +25,17 @@ type MemStorage struct {
 //	MemStorage constructor
 //	Output:
 //		*MemStorage
-func NewMemStorage() (*MemStorage, error) {
+func NewStorage() (*Storage, error) {
 
-	var s MemStorage
+	var s Storage
 	s.stor = make(map[string]string)
 
 	return &s, nil
+}
+
+func (s *Storage) CreateUser() (uint64, error) {
+
+	return 0, errors.New("no implemented")
 }
 
 // ------------------------------------------------------------
@@ -36,7 +46,7 @@ func NewMemStorage() (*MemStorage, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *MemStorage) Save(urlAliasNode *models.AliasURLModel) error {
+func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
 
 	s.stor[urlAliasNode.ShortKey] = urlAliasNode.LongURL
 	s.lastKey = urlAliasNode.ShortKey
@@ -52,7 +62,7 @@ func (s *MemStorage) Save(urlAliasNode *models.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *MemStorage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
+func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 	for _, node := range urlAliasNodes {
 		s.stor[node.ShortKey] = node.LongURL
@@ -70,7 +80,7 @@ func (s *MemStorage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *MemStorage) FindByShortKey(shortKey string) *models.AliasURLModel {
+func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 
 	longURL, ok := s.stor[shortKey]
 	if !ok {
@@ -88,7 +98,7 @@ func (s *MemStorage) FindByShortKey(shortKey string) *models.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *MemStorage) FindByLongURL(longURL string) *models.AliasURLModel {
+func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 
 	for k, v := range s.stor {
 		if v == longURL {
@@ -98,13 +108,18 @@ func (s *MemStorage) FindByLongURL(longURL string) *models.AliasURLModel {
 	return nil
 }
 
+func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.AliasURLModel, error) {
+
+	return nil, errors.New("no implemented")
+}
+
 // ------------------------------------------------------------
 //
 //	Get the last saved key
 //	This is interfase method of "Storager" interface
 //	Output:
 //		string - last saved key
-func (s *MemStorage) GetLastShortKey() string {
+func (s *Storage) GetLastShortKey() string {
 	return s.lastKey
 }
 
@@ -116,7 +131,7 @@ func (s *MemStorage) GetLastShortKey() string {
 //		bool - true: connection is
 //			   false: connection isn't
 //		error - if can not find "urlAliasNode" by long URL
-func (s *MemStorage) IsConnected() bool {
+func (s *Storage) IsConnected() bool {
 	return true
 }
 
@@ -126,6 +141,6 @@ func (s *MemStorage) IsConnected() bool {
 //	This is interfase method of "Storager" interface
 //	Output:
 //		error
-func (s *MemStorage) Close() error {
+func (s *Storage) Close() error {
 	return nil
 }

@@ -21,7 +21,6 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 	require.NoError(t, err)
 	defer service.Stop()
 
-
 	listOfURL := []models.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},

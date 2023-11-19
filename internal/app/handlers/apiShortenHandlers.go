@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/Schalure/urlalias/internal/app/interpreter"
 	"github.com/Schalure/urlalias/internal/app/models"
@@ -162,5 +165,56 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 }
 
 func (h *Handlers) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request) {
-	
+
+	type responseModel struct {
+		ShortURL    string `json:"short_url"`
+		OriginalURL string `json:"original_url"`
+	}
+
+	var (
+		responseJSON []responseModel
+	)
+
+	userID := r.Context().Value("userID")
+	uID, ok := userID.(uint64)
+	if !ok {
+		http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)
+		h.service.Logger.Info(errors.New("can't parsed user id").Error())
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	nodes, err := h.service.Storage.FindByUserID(ctx, uID)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	if len(nodes) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	for _, node := range nodes {
+		responseNodeJSON := responseModel{
+			ShortURL:    h.service.Config.BaseURL() + "/" + node.ShortKey,
+			OriginalURL: node.LongURL,
+		}
+		responseJSON = append(responseJSON, responseNodeJSON)
+	}
+
+	buf, err := json.Marshal(&responseJSON)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.service.Logger.Infow(
+			"Can't dekode to JSON",
+			"buf", string(buf),
+			"err", err.Error(),
+		)
+		return
+	}
+
+	w.Header().Set("Content-Type", appJSON)
+	w.WriteHeader(http.StatusOK)
+	w.Write(buf)
 }

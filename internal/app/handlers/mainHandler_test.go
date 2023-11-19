@@ -109,7 +109,6 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 		}
 	}
 
-
 	testCases := []struct {
 		name    string
 		request struct {

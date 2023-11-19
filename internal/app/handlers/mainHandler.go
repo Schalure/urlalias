@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -69,6 +70,16 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 			h.service.Logger.Info(err.Error())
 			return
 		}
+
+		userID := r.Context().Value("userID")
+		uID, ok := userID.(uint64)
+		if !ok {
+			http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)
+			h.service.Logger.Info(errors.New("can't parsed user id").Error())
+			return
+		}
+		node.UserID = uID
+
 		if err = h.service.Storage.Save(node); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			h.service.Logger.Info(err.Error())

@@ -4,7 +4,7 @@ import "github.com/Schalure/urlalias/internal/app/aliasmaker"
 
 // Middleware type
 type Middleware struct {
-	logger aliasmaker.Loggerer
+	service *aliasmaker.AliasMakerServise
 }
 
 // ------------------------------------------------------------
@@ -14,9 +14,9 @@ type Middleware struct {
 //		logger *slog.Logger
 //	Output:
 //		*Middleware
-func NewMiddleware(logger aliasmaker.Loggerer) *Middleware {
+func NewMiddleware(service *aliasmaker.AliasMakerServise) *Middleware {
 
 	return &Middleware{
-		logger: logger,
+		service: service,
 	}
 }

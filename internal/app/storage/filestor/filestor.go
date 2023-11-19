@@ -2,6 +2,7 @@ package filestor
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"github.com/Schalure/urlalias/internal/app/models"
 )
 
-type FileStorage struct {
+type Storage struct {
 	fileName string
 	lastKey  string
 	lastID   uint64
@@ -20,7 +21,7 @@ type FileStorage struct {
 //	FileStorage constructor
 //	Output:
 //		*FileStorage
-func NewFileStorage(fileName string) (*FileStorage, error) {
+func NewStorage(fileName string) (*Storage, error) {
 
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
@@ -43,11 +44,16 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 		lastKey = node.ShortKey
 	}
 
-	return &FileStorage{
+	return &Storage{
 		fileName: fileName,
 		lastKey:  lastKey,
 		lastID:   lastID,
 	}, nil
+}
+
+func (s *Storage) CreateUser() (uint64, error) {
+
+	return 0, errors.New("no implemented")
 }
 
 // ------------------------------------------------------------
@@ -58,7 +64,7 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *FileStorage) Save(urlAliasNode *models.AliasURLModel) error {
+func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
 
 	var data []byte
 	file, err := os.OpenFile(s.fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -90,7 +96,7 @@ func (s *FileStorage) Save(urlAliasNode *models.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *FileStorage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
+func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 	var data []byte
 	file, err := os.OpenFile(s.fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -124,7 +130,7 @@ func (s *FileStorage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *FileStorage) FindByShortKey(shortKey string) *models.AliasURLModel {
+func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 
 	file, err := os.OpenFile(s.fileName, os.O_RDONLY, 0644)
 	if err != nil {
@@ -157,7 +163,7 @@ func (s *FileStorage) FindByShortKey(shortKey string) *models.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *FileStorage) FindByLongURL(longURL string) *models.AliasURLModel {
+func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 
 	file, err := os.OpenFile(s.fileName, os.O_RDONLY, 0644)
 	if err != nil {
@@ -181,13 +187,18 @@ func (s *FileStorage) FindByLongURL(longURL string) *models.AliasURLModel {
 	return nil
 }
 
+func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.AliasURLModel, error) {
+
+	return nil, errors.New("no implemented")
+}
+
 // ------------------------------------------------------------
 //
 //	Get the last saved key
 //	This is interfase method of "Storager" interface
 //	Output:
 //		string - last saved key
-func (s *FileStorage) GetLastShortKey() string {
+func (s *Storage) GetLastShortKey() string {
 	return s.lastKey
 }
 
@@ -199,7 +210,7 @@ func (s *FileStorage) GetLastShortKey() string {
 //		bool - true: connection is
 //			   false: connection isn't
 //		error - if can not find "urlAliasNode" by long URL
-func (s *FileStorage) IsConnected() bool {
+func (s *Storage) IsConnected() bool {
 	return true
 }
 
@@ -209,6 +220,6 @@ func (s *FileStorage) IsConnected() bool {
 //	This is interfase method of "Storager" interface
 //	Output:
 //		error
-func (s *FileStorage) Close() error {
+func (s *Storage) Close() error {
 	return nil
 }

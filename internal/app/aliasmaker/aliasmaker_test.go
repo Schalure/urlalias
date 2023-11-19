@@ -11,41 +11,50 @@ import (
 
 func Test_createAliasKey(t *testing.T) {
 
-	testCases := []struct{
-		name string
+	testCases := []struct {
+		name    string
 		lastKey string
-		want struct{
+		want    struct {
 			newKey string
-			err error
+			err    error
 		}
 	}{
 		{
-			name: "symple test",
+			name:    "symple test",
 			lastKey: "000000000",
-			want: struct{newKey string; err error}{
+			want: struct {
+				newKey string
+				err    error
+			}{
 				newKey: "000000001",
-				err: nil,
+				err:    nil,
 			},
 		},
 		{
-			name: "overload test",
+			name:    "overload test",
 			lastKey: "00000000Z",
-			want: struct{newKey string; err error}{
+			want: struct {
+				newKey string
+				err    error
+			}{
 				newKey: "000000010",
-				err: nil,
+				err:    nil,
 			},
 		},
 		{
-			name: "storage full test",
+			name:    "storage full test",
 			lastKey: "ZZZZZZZZZ",
-			want: struct{newKey string; err error}{
+			want: struct {
+				newKey string
+				err    error
+			}{
 				newKey: "",
-				err: errors.New("it is impossible to generate a new string because the storage is full"),
+				err:    errors.New("it is impossible to generate a new string because the storage is full"),
 			},
 		},
 	}
 
-	for _, test := range testCases{
+	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 
 			s, err := NewAliasMakerServise(config.NewConfig())
@@ -53,7 +62,7 @@ func Test_createAliasKey(t *testing.T) {
 			defer s.Stop()
 
 			s.lastKey = test.lastKey
-			
+
 			aliasKey, err := s.createAliasKey()
 
 			assert.Equal(t, aliasKey, test.want.newKey)

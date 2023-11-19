@@ -19,15 +19,16 @@ const (
 
 // Type of service
 type AliasMakerServise struct {
-	Config *config.Configuration
-	Logger Loggerer
+	Config  *config.Configuration
+	Logger  Loggerer
 	Storage Storager
 	lastKey string
 }
 
 // --------------------------------------------------
+//
 //	Constructor
-func NewAliasMakerServise(c *config.Configuration) (*AliasMakerServise, error){
+func NewAliasMakerServise(c *config.Configuration) (*AliasMakerServise, error) {
 
 	var errs []error
 
@@ -37,16 +38,19 @@ func NewAliasMakerServise(c *config.Configuration) (*AliasMakerServise, error){
 	storage, storageErr := chooseStorage(c)
 	errs = append(errs, storageErr)
 
+	if errors.Join(errs...) != nil {
+		return nil, errors.Join(errs...)
+	}
+
 	lastKey := storage.GetLastShortKey()
 
 	return &AliasMakerServise{
-		Config: c,
-		Logger: logger,
+		Config:  c,
+		Logger:  logger,
 		Storage: storage,
 		lastKey: lastKey,
-	}, errors.Join(errs...)
+	}, nil
 }
-
 
 // --------------------------------------------------
 //
@@ -67,14 +71,13 @@ func chooseStorage(c *config.Configuration) (Storager, error) {
 
 	switch c.StorageType() {
 	case config.DataBaseStor:
-		return postgrestor.NewPostgreStor(c.DBConnection())
+		return postgrestor.NewStorage(c.DBConnection())
 	case config.FileStor:
-		return filestor.NewFileStorage(c.StorageFile())
+		return filestor.NewStorage(c.StorageFile())
 	default:
-		return memstor.NewMemStorage()
+		return memstor.NewStorage()
 	}
 }
-
 
 // --------------------------------------------------
 //
@@ -90,6 +93,18 @@ func (s *AliasMakerServise) NewPairURL(longURL string) (*models.AliasURLModel, e
 		LongURL:  longURL,
 		ShortKey: newAliasKey,
 	}, nil
+}
+
+// --------------------------------------------------
+//
+//	Create new user
+func (s *AliasMakerServise) CreateUser() (uint64, error) {
+
+	userID, err := s.Storage.CreateUser()
+	if err != nil {
+		return 0, err
+	}
+	return userID, nil
 }
 
 // --------------------------------------------------

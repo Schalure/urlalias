@@ -17,7 +17,7 @@ func TestFileStorage_Save(t *testing.T) {
 	file.Close()
 	defer os.Remove(file.Name())
 
-	stor, _ := NewFileStorage(file.Name())
+	stor, _ := NewStorage(file.Name())
 
 	testCases := []struct {
 		testName string
@@ -31,6 +31,7 @@ func TestFileStorage_Save(t *testing.T) {
 			testName: "simple save",
 			storNode: models.AliasURLModel{
 				ID:       1,
+				UserID: 0,
 				ShortKey: "000000000",
 				LongURL:  "https://qqq.ru",
 			},
@@ -38,7 +39,7 @@ func TestFileStorage_Save(t *testing.T) {
 				data string
 				err  error
 			}{
-				data: `{"uuid":1,"short_url":"000000000","original_url":"https://qqq.ru"}`,
+				data: `{"uuid":1,"user_id":0,"short_url":"000000000","original_url":"https://qqq.ru"}`,
 				err:  nil,
 			},
 		},

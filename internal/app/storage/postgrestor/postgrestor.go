@@ -3,6 +3,8 @@ package postgrestor
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -10,37 +12,56 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type PostgreStor struct {
+type Storage struct {
 	db *sql.DB
 }
 
-func NewPostgreStor(dbConnectionString string) (*PostgreStor, error) {
+func NewStorage(dbConnectionString string) (*Storage, error) {
 
 	db, err := sql.Open("pgx", dbConnectionString)
 	if err != nil {
 		log.Panicln(err)
 	}
 
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS aliases(
-		id serial PRIMARY KEY,
-		originalURL text NOT NULL UNIQUE,
-		shortKey varchar(9) NOT NULL
-		);`)
-
-	if err != nil {
+	if _, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS users(
+		user_id serial PRIMARY KEY
+		);
+	`); err != nil {
 		return nil, err
 	}
 
-	s := PostgreStor{
+	if _, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS aliases(
+		id serial PRIMARY KEY,
+		user_id integer NOT NULL REFERENCES users(user_id),
+		original_url text NOT NULL UNIQUE,
+		short_key varchar(9) NOT NULL
+		);
+	`); err != nil {
+		return nil, err
+	}
+
+	s := Storage{
 		db: db,
 	}
 
 	s.GetLastShortKey()
 
-	return &PostgreStor{
+	return &Storage{
 		db: db,
 	}, nil
+}
+
+func (s *Storage) CreateUser() (uint64, error) {
+
+	lastID := 0
+	err := s.db.QueryRow(`insert into users default values returning user_id`).Scan(&lastID)
+	if err != nil {
+		return 0, errors.New("can't create new user")
+	}
+	fmt.Println(lastID)
+	return uint64(lastID), nil
 }
 
 // ------------------------------------------------------------
@@ -51,9 +72,9 @@ func NewPostgreStor(dbConnectionString string) (*PostgreStor, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *PostgreStor) Save(urlAliasNode *models.AliasURLModel) error {
+func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
 
-	_, err := s.db.Exec(`INSERT INTO aliases(originalURL, shortKey) VALUES($1, $2);`, urlAliasNode.LongURL, urlAliasNode.ShortKey)
+	_, err := s.db.Exec(`INSERT INTO aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, urlAliasNode.UserID, urlAliasNode.LongURL, urlAliasNode.ShortKey)
 
 	if err != nil {
 		return err
@@ -69,7 +90,7 @@ func (s *PostgreStor) Save(urlAliasNode *models.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *PostgreStor) SaveAll(urlAliasNodes []models.AliasURLModel) error {
+func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -81,7 +102,7 @@ func (s *PostgreStor) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
-		_, err := tx.ExecContext(ctx, `insert into aliases(originalURL, shortKey) VALUES($1, $2);`, node.LongURL, node.ShortKey)
+		_, err := tx.ExecContext(ctx, `insert into aliase_url, short_key) VALUES($1, $2);`, node.LongURL, node.ShortKey)
 		// sql.Named("long_url", node.LongURL),
 		// sql.Named("short_url", node.ShortKey))
 		if err != nil {
@@ -100,14 +121,14 @@ func (s *PostgreStor) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *PostgreStor) FindByShortKey(shortKey string) *models.AliasURLModel {
+func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 
 	var aliasNode = new(models.AliasURLModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, originalURL, shortKey FROM aliases WHERE shortKey = $1;`, shortKey)
+	row := s.db.QueryRowContext(ctx, `SELECT id, original_url, short_key FROM aliases WHERE short_key = $1;`, shortKey)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
 		return nil
 	}
@@ -123,18 +144,39 @@ func (s *PostgreStor) FindByShortKey(shortKey string) *models.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *PostgreStor) FindByLongURL(longURL string) *models.AliasURLModel {
+func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 
 	var aliasNode = new(models.AliasURLModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, originalURL, shortKey FROM aliases WHERE originalURL=$1;`, longURL)
+	row := s.db.QueryRowContext(ctx, `SELECT id, original_url, short_key FROM aliases WHERE original_url=$1;`, longURL)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
 		return nil
 	}
 	return aliasNode
+}
+
+func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.AliasURLModel, error) {
+
+	rows, err := s.db.QueryContext(ctx, `select original_url, short_key from aliases where user_id=$1`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var nodes []models.AliasURLModel
+	var node models.AliasURLModel
+
+	for rows.Next() {
+		err = rows.Scan(&node.LongURL, &node.ShortKey)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, node)
+	}
+	return nodes, nil
 }
 
 // ------------------------------------------------------------
@@ -143,7 +185,7 @@ func (s *PostgreStor) FindByLongURL(longURL string) *models.AliasURLModel {
 //	This is interfase method of "Storager" interface
 //	Output:
 //		string - last saved key
-func (s *PostgreStor) GetLastShortKey() string {
+func (s *Storage) GetLastShortKey() string {
 
 	var shortKey string
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -164,7 +206,7 @@ func (s *PostgreStor) GetLastShortKey() string {
 //		bool - true: connection is
 //			   false: connection isn't
 //		error - if can not find "urlAliasNode" by long URL
-func (s *PostgreStor) IsConnected() bool {
+func (s *Storage) IsConnected() bool {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -181,7 +223,7 @@ func (s *PostgreStor) IsConnected() bool {
 //	This is interfase method of "Storager" interface
 //	Output:
 //		error
-func (s *PostgreStor) Close() error {
+func (s *Storage) Close() error {
 
 	return s.db.Close()
 }

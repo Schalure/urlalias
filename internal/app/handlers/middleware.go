@@ -1,8 +1,10 @@
 package handlers
 
+import "github.com/Schalure/urlalias/internal/app/aliasmaker"
+
 // Middleware type
 type Middleware struct {
-	logger Loggerer
+	logger aliasmaker.Loggerer
 }
 
 // ------------------------------------------------------------
@@ -12,7 +14,7 @@ type Middleware struct {
 //		logger *slog.Logger
 //	Output:
 //		*Middleware
-func NewMiddleware(logger Loggerer) *Middleware {
+func NewMiddleware(logger aliasmaker.Loggerer) *Middleware {
 
 	return &Middleware{
 		logger: logger,

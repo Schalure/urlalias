@@ -14,17 +14,18 @@ import (
 //		w http.ResponseWriter
 //		r *http.Request
 func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
+
 	shortKey := r.RequestURI
-	node, err := h.service.Storage.FindByShortKey(shortKey[1:])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Errorw(
-			"error",
-			"err", err.Error(),
+	node := h.service.Storage.FindByShortKey(shortKey[1:])
+	if node == nil {
+		http.Error(w, fmt.Sprintf("the urlAliasNode not found by key \"%s\"", shortKey), http.StatusBadRequest)
+		h.service.Logger.Infow(
+			"The urlAliasNode not found by key",
+			"Key", shortKey,
 		)
 		return
 	}
-	h.logger.Infow(
+	h.service.Logger.Infow(
 		"Long URL",
 		"URL", node.LongURL,
 	)
@@ -42,43 +43,51 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 //		r *http.Request
 func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
-	// if !h.isValidContentType(r, textPlain) {
-	// 	h.publishBadRequest(&w, fmt.Errorf("content type is not as expected"))
-	// 	return
-	// }
-
 	//	get url
 	longURL, err := io.ReadAll(r.Body)
 	if err != nil {
-		h.publishBadRequest(&w, err)
-		h.logger.Info(err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.service.Logger.Info(err.Error())
 		return
 	}
 
 	if !h.isValidURL(string(longURL)) {
-		h.publishBadRequest(&w, fmt.Errorf("url is not in the correct format"))
+		http.Error(w, fmt.Sprintf("url is not in the correct format: %s", longURL), http.StatusBadRequest)
 		return
 	}
 
-	h.logger.Infow(
+	h.service.Logger.Infow(
 		"Parsed URL",
 		"Long URL", string(longURL),
 	)
 
-	node, err := h.service.Storage.FindByLongURL(string(longURL))
-	if err != nil {
+	var statusCode int
+	node := h.service.Storage.FindByLongURL(string(longURL))
+	if node == nil {
 		if node, err = h.service.NewPairURL(string(longURL)); err != nil {
-			h.publishBadRequest(&w, err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			h.service.Logger.Info(err.Error())
+			return
 		}
+		if err = h.service.Storage.Save(node); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			h.service.Logger.Info(err.Error())
+			return
+		}
+		statusCode = http.StatusCreated
+	} else {
+		statusCode = http.StatusConflict
 	}
-	aliasURL := h.config.BaseURL() + "/" + node.ShortKey
-	h.logger.Infow(
+
+	aliasURL := h.service.Config.BaseURL() + "/" + node.ShortKey
+
+	h.service.Logger.Infow(
 		"Serch/Create alias key",
 		"Long URL", node.LongURL,
 		"Alias URL", aliasURL,
 	)
 
 	w.Header().Set("Content-Type", textPlain)
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(statusCode)
 	w.Write([]byte(aliasURL))
 }

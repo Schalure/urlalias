@@ -8,7 +8,6 @@ package memstor
 
 import (
 	"context"
-	"errors"
 
 	"github.com/Schalure/urlalias/internal/app/models"
 )
@@ -16,39 +15,44 @@ import (
 // Type for storage long URL and their alias keys
 type Storage struct {
 	//	[key, value] = [ShortKey, LongURL]
-	stor    map[string]string
+	aliases []models.AliasURLModel
+	users []models.UserModel
+
 	lastKey string
 }
 
 // ------------------------------------------------------------
 //
 //	MemStorage constructor
-//	Output:
-//		*MemStorage
 func NewStorage() (*Storage, error) {
 
 	var s Storage
-	s.stor = make(map[string]string)
+	s.aliases = make([]models.AliasURLModel, 0)
+	s.users = make([]models.UserModel, 0)
 
 	return &s, nil
 }
 
+
+// ------------------------------------------------------------
+//
+//	Create new user
 func (s *Storage) CreateUser() (uint64, error) {
 
-	return 0, errors.New("no implemented")
+	user := models.UserModel{
+		UserID: uint64(len(s.users)),
+	}
+
+	s.users = append(s.users, user)
+	return user.UserID, nil
 }
 
 // ------------------------------------------------------------
 //
 //	Save pair "shortKey, longURL" to db
-//	This is interfase method of "Storager" interface
-//	Input:
-//		urlAliasNode *repositories.AliasURLModel
-//	Output:
-//		error - if not nil, can not save "urlAliasNode" because duplicate key
 func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
 
-	s.stor[urlAliasNode.ShortKey] = urlAliasNode.LongURL
+	s.aliases = append(s.aliases, *urlAliasNode)
 	s.lastKey = urlAliasNode.ShortKey
 
 	return nil
@@ -65,7 +69,8 @@ func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
 func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 	for _, node := range urlAliasNodes {
-		s.stor[node.ShortKey] = node.LongURL
+		
+		s.aliases = append(s.aliases, node)
 		s.lastKey = node.ShortKey
 	}
 	return nil
@@ -82,11 +87,12 @@ func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 //		error - if can not find "urlAliasNode" by short key
 func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 
-	longURL, ok := s.stor[shortKey]
-	if !ok {
-		return nil
+	for _, node := range s.aliases {
+		if (node.ShortKey == shortKey) {
+			return &node
+		}
 	}
-	return &models.AliasURLModel{ID: 0, ShortKey: shortKey, LongURL: longURL}
+	return nil
 }
 
 // ------------------------------------------------------------
@@ -100,17 +106,27 @@ func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 //		error - if can not find "urlAliasNode" by long URL
 func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 
-	for k, v := range s.stor {
-		if v == longURL {
-			return &models.AliasURLModel{ID: 0, ShortKey: k, LongURL: longURL}
+	for _, node := range s.aliases {
+		if (node.LongURL == longURL) {
+			return &node
 		}
 	}
 	return nil
 }
 
+// ------------------------------------------------------------
+//
+//	Find all "urlAliasNode models.AliasURLModel" by UserID
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.AliasURLModel, error) {
 
-	return nil, errors.New("no implemented")
+	var nodes []models.AliasURLModel
+
+	for _, node := range s.aliases {
+		if node.UserID == userID {
+			nodes = append(nodes, node)
+		}
+	}
+	return nodes, nil
 }
 
 // ------------------------------------------------------------

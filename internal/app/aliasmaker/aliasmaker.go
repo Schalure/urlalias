@@ -73,7 +73,7 @@ func chooseStorage(c *config.Configuration) (Storager, error) {
 	case config.DataBaseStor:
 		return postgrestor.NewStorage(c.DBConnection())
 	case config.FileStor:
-		return filestor.NewStorage(c.StorageFile())
+		return filestor.NewStorage(c.AliasesFile(), c.UsersFile())
 	default:
 		return memstor.NewStorage()
 	}

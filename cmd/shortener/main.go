@@ -31,7 +31,7 @@ func main() {
 		"Server address", conf.Host(),
 		"Base URL", conf.BaseURL(),
 		"Save log to file", conf.LogToFile(),
-		"Storage file", conf.StorageFile(),
+		"Storage file", conf.AliasesFile(),
 		"DB connection string", conf.DBConnection(),
 		"Storage type", conf.StorageType().String(),
 	)

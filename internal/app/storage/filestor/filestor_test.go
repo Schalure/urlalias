@@ -12,12 +12,17 @@ import (
 
 func TestFileStorage_Save(t *testing.T) {
 
-	file, err := os.CreateTemp("", "storage*.json")
+	aliasesFile, err := os.CreateTemp("", "storage*.json")
 	require.NoError(t, err)
-	file.Close()
-	defer os.Remove(file.Name())
+	aliasesFile.Close()
+	defer os.Remove(aliasesFile.Name())
+	
+	usersFile, err := os.CreateTemp("", "storage*.json")
+	require.NoError(t, err)
+	aliasesFile.Close()
+	defer os.Remove(usersFile.Name())
 
-	stor, _ := NewStorage(file.Name())
+	stor, _ := NewStorage(aliasesFile.Name(), usersFile.Name())
 
 	testCases := []struct {
 		testName string
@@ -54,7 +59,7 @@ func TestFileStorage_Save(t *testing.T) {
 				return
 			}
 
-			f, err := os.Open(file.Name())
+			f, err := os.Open(aliasesFile.Name())
 			require.NoError(t, err)
 			scanner := bufio.NewScanner(f)
 

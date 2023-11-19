@@ -111,6 +111,14 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 		nodes        []models.AliasURLModel
 	)
 
+	userID := r.Context().Value(UserID)
+	uID, ok := userID.(uint64)
+	if !ok {
+		http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)
+		h.service.Logger.Info(errors.New("can't parsed user id").Error())
+		return
+	}
+
 	err := i.Unmarshal(r.Body, &requestJSON)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("can't decode JSON content, error: %s", err), http.StatusBadRequest)
@@ -134,6 +142,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 				)
 				return
 			}
+			node.UserID = uID
 		}
 		nodes = append(nodes, *node)
 		responseJSON = append(responseJSON, responseModel{req.ID, h.service.Config.BaseURL() + "/" + node.ShortKey})

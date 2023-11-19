@@ -102,7 +102,7 @@ func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
-		_, err := tx.ExecContext(ctx, `insert into aliase_url, short_key) VALUES($1, $2, $3);`, node.UserID, node.LongURL, node.ShortKey)
+		_, err := tx.ExecContext(ctx, `insert into aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, node.UserID, node.LongURL, node.ShortKey)
 		// sql.Named("long_url", node.LongURL),
 		// sql.Named("short_url", node.ShortKey))
 		if err != nil {
@@ -128,8 +128,8 @@ func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, original_url, short_key FROM aliases WHERE short_key = $1;`, shortKey)
-	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
+	row := s.db.QueryRowContext(ctx, `SELECT id, user_id, original_url, short_key FROM aliases WHERE short_key = $1;`, shortKey)
+	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
 		return nil
 	}
 	return aliasNode
@@ -151,8 +151,8 @@ func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, original_url, short_key FROM aliases WHERE original_url=$1;`, longURL)
-	if err := row.Scan(&aliasNode.ID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
+	row := s.db.QueryRowContext(ctx, `SELECT id, user_id, original_url, short_key FROM aliases WHERE original_url=$1;`, longURL)
+	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
 		return nil
 	}
 	return aliasNode
@@ -194,7 +194,7 @@ func (s *Storage) GetLastShortKey() string {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `select shortkey from aliases where id=(select max(id) from aliases);`)
+	row := s.db.QueryRowContext(ctx, `select short_key from aliases where id=(select max(id) from aliases);`)
 	if err := row.Scan(&shortKey); err != nil {
 		return ""
 	}

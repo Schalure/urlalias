@@ -187,47 +187,47 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 }
 
 
-// func Test_APIUserURLsHandlerDelete(t *testing.T) {
+func Test_APIUserURLsHandlerDelete(t *testing.T) {
 
-// 	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
-// 	require.NoError(t, err)
-// 	defer service.Stop()
+	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
+	require.NoError(t, err)
+	defer service.Stop()
 
-// 	testCases := []struct {
-// 		name string
-// 		userID uint64
-// 		data string
-// 		want struct {
-// 			statusCode int
-// 		}
-// 	}{
-// 		{
-// 			name: "sympleTest",
-// 			userID: 1,
-// 			data: `["6qxTVvsy","RTfd56hn","Jlfd67ds"]` ,
-// 			want: struct{statusCode int}{
-// 				statusCode: http.StatusAccepted,
-// 			},
-// 		},
-// 	}
+	testCases := []struct {
+		name string
+		userID uint64
+		data string
+		want struct {
+			statusCode int
+		}
+	}{
+		{
+			name: "sympleTest",
+			userID: 1,
+			data: `["6qxTVvsy","RTfd56hn","Jlfd67ds"]` ,
+			want: struct{statusCode int}{
+				statusCode: http.StatusAccepted,
+			},
+		},
+	}
 
-// 	for _, test := range testCases {
-// 		t.Run(test.name, func(t *testing.T) {
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
 
-// 			request := httptest.NewRequest(http.MethodDelete, "/api/user/urls", strings.NewReader(test.data))
-// 			request.Header.Add(contentType, appJSON)
+			request := httptest.NewRequest(http.MethodDelete, "/api/user/urls", strings.NewReader(test.data))
+			request.Header.Add(contentType, appJSON)
 
-// 			recorder := httptest.NewRecorder()
-// 			h := NewHandlers(service).APIUserURLsHandlerDelete
+			recorder := httptest.NewRecorder()
+			h := NewHandlers(service).APIUserURLsHandlerDelete
 
-// 			ctx := context.WithValue(request.Context(), UserID, test.userID)
-// 			h(recorder, request.WithContext(ctx))
+			ctx := context.WithValue(request.Context(), UserID, test.userID)
+			h(recorder, request.WithContext(ctx))
 
-// 			result := recorder.Result()
-// 			err = result.Body.Close()
-// 			require.NoError(t, err)
+			result := recorder.Result()
+			err = result.Body.Close()
+			require.NoError(t, err)
 			
-// 			assert.Equal(t, result.StatusCode, test.want.statusCode)
-// 		})
-// 	}
-// }
+			assert.Equal(t, result.StatusCode, test.want.statusCode)
+		})
+	}
+}

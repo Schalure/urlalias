@@ -215,7 +215,9 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 	}()
 
 	err := s.Storage.MarkDeleted(ctx, aliasesID)
-	s.Logger.Info(err)
+	if err != nil{
+		s.Logger.Info(err)
+	}
 }
 
 

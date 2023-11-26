@@ -268,3 +268,5 @@ func (h *Handlers) APIUserURLsHandlerDelete(w http.ResponseWriter, r *http.Reque
 
 	w.WriteHeader(http.StatusAccepted)
 }
+
+//	Authorization=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDEwMzkyOTQsIlVzZXJJRCI6MzB9.w8j0xOKSrgLwTg7_tESoscCcmIx2SBTSW0ftwtoft8g

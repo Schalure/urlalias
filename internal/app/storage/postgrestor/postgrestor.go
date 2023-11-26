@@ -193,10 +193,12 @@ func (s *Storage) MarkDeleted(ctx context.Context, aliasesID []uint64) error {
 
 	var parametrs []string
 	for ID := range aliasesID {
-		parametrs = append(parametrs, fmt.Sprintf("id = %d", ID))
+		parametrs = append(parametrs, fmt.Sprintf("id=%d", ID))
 	}
 
-	_, err := s.db.Exec(`update aliases set is_deleted = true where (` + strings.Join(parametrs, " OR ") + `);`)
+	str := strings.Join(parametrs, " OR ")
+	
+	_, err := s.db.Exec(`update aliases set is_deleted = true where (` + /*strings.Join(parametrs, " OR ")*/str + `);`)
 	return err
 }
 

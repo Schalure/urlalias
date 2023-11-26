@@ -240,3 +240,31 @@ func (h *Handlers) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusOK)
 	w.Write(buf)
 }
+
+func (h *Handlers) APIUserURLsHandlerDelete(w http.ResponseWriter, r *http.Request) {
+
+	var(
+		aliases []string
+		i interpreter.InterpreterJSON
+	)
+	userID := r.Context().Value(UserID)
+	uID, ok := userID.(uint64)
+	if !ok {
+		http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)
+		h.service.Logger.Info(errors.New("can't parsed user id").Error())
+		return
+	}
+
+	if err := i.Unmarshal(r.Body, &aliases); err != nil {
+		http.Error(w, fmt.Sprintf("can't decode JSON content, error: %s", err), http.StatusBadRequest)
+		h.service.Logger.Infow(
+			"Can't decode JSON content",
+			"err", err.Error(),
+		)
+		return
+	}
+
+	go h.service.DeleteUserURLs(uID, aliases)
+
+	w.WriteHeader(http.StatusAccepted)
+}

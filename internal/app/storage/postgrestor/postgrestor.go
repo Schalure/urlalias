@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/Schalure/urlalias/internal/app/models"
@@ -37,6 +38,7 @@ func NewStorage(dbConnectionString string) (*Storage, error) {
 		user_id integer NOT NULL REFERENCES users(user_id),
 		original_url text NOT NULL UNIQUE,
 		short_key varchar(9) NOT NULL
+		is_deleted bool DEFAULT false
 		);
 	`); err != nil {
 		return nil, err
@@ -183,12 +185,25 @@ func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.Ali
 	return nodes, nil
 }
 
+
+// ------------------------------------------------------------
+//
+//	Mark aliases like "deleted" by aliasesID
+func (s *Storage) MarkDeleted(ctx context.Context, aliasesID []uint64) error {
+
+	var parametrs []string
+	for ID := range aliasesID {
+		parametrs = append(parametrs, fmt.Sprintf("id = %d", ID))
+	}
+
+	_, err := s.db.Exec(`update aliases set is_deleted = true where (` + strings.Join(parametrs, " OR ") + `);`)
+	return err
+}
+
+
 // ------------------------------------------------------------
 //
 //	Get the last saved key
-//	This is interfase method of "Storager" interface
-//	Output:
-//		string - last saved key
 func (s *Storage) GetLastShortKey() string {
 
 	var shortKey string

@@ -14,6 +14,7 @@ type Storager interface {
 	FindByShortKey(shortKey string) *models.AliasURLModel
 	FindByLongURL(longURL string) *models.AliasURLModel
 	FindByUserID(ctx context.Context, userID uint64) ([]models.AliasURLModel, error)
+	MarkDeleted(ctx context.Context, aliasesID []uint64) error
 	GetLastShortKey() string
 	IsConnected() bool
 	Close() error

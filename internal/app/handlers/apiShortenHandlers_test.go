@@ -224,7 +224,9 @@ func TestHandlers_APIUserURLsHandlerDelete(t *testing.T) {
 			h(recorder, request.WithContext(ctx))
 
 			result := recorder.Result()
-
+			err = result.Body.Close()
+			require.NoError(t, err)
+			
 			assert.Equal(t, result.StatusCode, test.want.statusCode)
 		})
 	}

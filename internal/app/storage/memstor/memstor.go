@@ -8,6 +8,7 @@ package memstor
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Schalure/urlalias/internal/app/models"
 )
@@ -134,6 +135,18 @@ func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.Ali
 //	Mark aliases like "deleted" by aliasesID
 func (s *Storage) MarkDeleted(ctx context.Context, aliasesID []uint64) error {
 
+	for _, aliasID := range aliasesID {
+		select {
+		case <- ctx.Done():
+			return fmt.Errorf("Storage MarkDeleted: context deadline")
+		default:
+			for i := range s.aliases {
+				if s.aliases[i].ID == aliasID {
+					s.aliases[i].DeletedFlag = true
+				}
+			}
+		}
+	}
 	return nil
 }
 

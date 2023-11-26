@@ -170,7 +170,7 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 
 		for _, result := range resultChannels {
 			wg.Add(1)
-			go func () {
+			go func (result chan models.AliasURLModel) {
 				defer wg.Done()
 				for aliasNode := range result {
 					select {
@@ -180,7 +180,7 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 					case outCh <- aliasNode:
 					}
 				}
-			}()
+			}(result)
 		}
 
 		//	wait all gorutins
@@ -205,8 +205,8 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 		}
 	}
 
-	ctx, _ = context.WithTimeout(ctx, 10 * time.Second)
-
+	ctx, cancel = context.WithTimeout(ctx, 10 * time.Second)
+	defer cancel()
 	go func() {
 		<-ctx.Done()
 		if ctx.Err() == context.DeadlineExceeded {
@@ -216,7 +216,6 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 
 	err := s.Storage.MarkDeleted(ctx, aliasesID)
 	s.Logger.Info(err)
-
 }
 
 

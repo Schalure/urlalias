@@ -44,7 +44,7 @@ func TestFileStorage_Save(t *testing.T) {
 				data string
 				err  error
 			}{
-				data: `{"uuid":1,"user_id":0,"short_url":"000000000","original_url":"https://qqq.ru"}`,
+				data: `{"uuid":1,"user_id":0,"short_url":"000000000","original_url":"https://qqq.ru","is_deleted":false}`,
 				err:  nil,
 			},
 		},

@@ -37,8 +37,8 @@ func NewStorage(dbConnectionString string) (*Storage, error) {
 		id serial PRIMARY KEY,
 		user_id integer NOT NULL REFERENCES users(user_id),
 		original_url text NOT NULL UNIQUE,
-		short_key varchar(9) NOT NULL
-		is_deleted bool DEFAULT false
+		short_key varchar(9) NOT NULL,
+		is_deleted boolean NOT NULL DEFAULT false
 		);
 	`); err != nil {
 		return nil, err

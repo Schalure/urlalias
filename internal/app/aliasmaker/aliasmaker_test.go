@@ -78,6 +78,7 @@ func Test_deleteUserURLs(t *testing.T) {
 		name string
 		userID uint64
 		aliases []models.AliasURLModel
+		shortKeys []string
 	}{
 		{
 			name: "sympleTest",
@@ -105,6 +106,21 @@ func Test_deleteUserURLs(t *testing.T) {
 					DeletedFlag: false,
 				},
 			},
+			shortKeys: []string{"000000000", "000000001", "000000002"},
+		},
+		{
+			name: "nil test",
+			userID: 1,
+			aliases: []models.AliasURLModel{
+				{
+					ID: 1,
+					UserID: 1,
+					LongURL: "https://no_matter1.com",
+					ShortKey: "000000000",
+					DeletedFlag: false,
+				},
+			},
+			shortKeys: []string{"000000000", "000000001", "000000002"},
 		},
 	}
 
@@ -118,12 +134,7 @@ func Test_deleteUserURLs(t *testing.T) {
 			s.Storage.SaveAll(test.aliases)
 			require.NoError(t, err)
 
-			aliases := make([]string, 0)
-			for _, alias := range test.aliases {
-				aliases = append(aliases, alias.ShortKey)
-			}
-
-			s.DeleteUserURLs(test.userID, aliases)
+			s.DeleteUserURLs(test.userID, test.shortKeys)
 
 			for _, alias := range test.aliases {
 

@@ -129,7 +129,6 @@ func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.Ali
 	return nodes, nil
 }
 
-
 // ------------------------------------------------------------
 //
 //	Mark aliases like "deleted" by aliasesID
@@ -137,7 +136,7 @@ func (s *Storage) MarkDeleted(ctx context.Context, aliasesID []uint64) error {
 
 	for _, aliasID := range aliasesID {
 		select {
-		case <- ctx.Done():
+		case <-ctx.Done():
 			return fmt.Errorf("Storage MarkDeleted: context deadline")
 		default:
 			for i := range s.aliases {

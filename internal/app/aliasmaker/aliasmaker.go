@@ -112,14 +112,13 @@ func (s *AliasMakerServise) CreateUser() (uint64, error) {
 	return userID, nil
 }
 
-
 // --------------------------------------------------
 //
 //	Create alias by originalURL
 func (s *AliasMakerServise) CreateAlias(userID uint64, originalURL string) (*models.AliasURLModel, int, error) {
 
 	var err error
-	
+
 	node := s.Storage.FindByLongURL(originalURL)
 	if node == nil {
 		if node, err = s.NewPairURL(originalURL); err != nil {
@@ -141,17 +140,16 @@ func (s *AliasMakerServise) CreateAlias(userID uint64, originalURL string) (*mod
 //	Delete users URLs
 func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	
-	inputCh := func () chan string {
+	inputCh := func() chan string {
 		inputCh := make(chan string)
-		go func () {
+		go func() {
 			defer close(inputCh)
 			for i, shortKey := range shortKeys {
 				select {
-				case <- ctx.Done():
+				case <-ctx.Done():
 					s.Logger.Errorw("func DeleteUserURLs: context deadline", "nums ellements added to inputCh", i)
 					return
 				case inputCh <- shortKey:
@@ -162,19 +160,19 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 	}()
 
 	//	get nodes from DB
-	resultChannels := func () []chan models.AliasURLModel {
-		
+	resultChannels := func() []chan models.AliasURLModel {
+
 		numWorkers := runtime.NumCPU()
 		resultChannels := make([]chan models.AliasURLModel, numWorkers)
 
 		for i := 0; i < numWorkers; i++ {
-			resultChannels[i] = func () chan models.AliasURLModel {
+			resultChannels[i] = func() chan models.AliasURLModel {
 
 				resultCh := make(chan models.AliasURLModel)
 
-				go func (resultCh chan models.AliasURLModel) {
+				go func(resultCh chan models.AliasURLModel) {
 
-					defer close(resultCh)			
+					defer close(resultCh)
 					for shortKey := range inputCh {
 						node := s.Storage.FindByShortKey(shortKey)
 						if node == nil {
@@ -199,14 +197,14 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 	}()
 
 	//	get aliases id to mark deleted
-	outCh := func () chan models.AliasURLModel {
+	outCh := func() chan models.AliasURLModel {
 
 		var wg sync.WaitGroup
 		outCh := make(chan models.AliasURLModel)
 
 		for _, result := range resultChannels {
 			wg.Add(1)
-			go func (result chan models.AliasURLModel) {
+			go func(result chan models.AliasURLModel) {
 				defer wg.Done()
 				for aliasNode := range result {
 					select {
@@ -220,7 +218,7 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 		}
 
 		//	wait all gorutins
-		go func ()  {
+		go func() {
 			wg.Wait()
 			close(outCh)
 		}()
@@ -230,10 +228,10 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 	//	mark deleted
 	aliasesID := make([]uint64, 0)
 	for aliasNode := range outCh {
-		if aliasNode.UserID == userID{
+		if aliasNode.UserID == userID {
 			aliasesID = append(aliasesID, aliasNode.ID)
 			s.Logger.Infow(
-				"DeleteUserURLs choose to delete", 
+				"DeleteUserURLs choose to delete",
 				"user ID", aliasNode.UserID,
 				"alias ID", aliasNode.ID,
 				"original URL", aliasNode.LongURL,
@@ -241,7 +239,7 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 		}
 	}
 
-	ctx, cancel = context.WithTimeout(ctx, 10 * time.Second)
+	ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	go func() {
 		<-ctx.Done()
@@ -251,11 +249,10 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 	}()
 
 	err := s.Storage.MarkDeleted(ctx, aliasesID)
-	if err != nil{
+	if err != nil {
 		s.Logger.Info(err)
 	}
 }
-
 
 // --------------------------------------------------
 //

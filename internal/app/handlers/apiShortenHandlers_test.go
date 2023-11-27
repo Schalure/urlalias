@@ -186,7 +186,6 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 	}
 }
 
-
 func Test_APIUserURLsHandlerDelete(t *testing.T) {
 
 	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
@@ -194,18 +193,18 @@ func Test_APIUserURLsHandlerDelete(t *testing.T) {
 	defer service.Stop()
 
 	testCases := []struct {
-		name string
+		name   string
 		userID uint64
-		data string
-		want struct {
+		data   string
+		want   struct {
 			statusCode int
 		}
 	}{
 		{
-			name: "sympleTest",
+			name:   "sympleTest",
 			userID: 1,
-			data: `["6qxTVvsy","RTfd56hn","Jlfd67ds"]` ,
-			want: struct{statusCode int}{
+			data:   `["6qxTVvsy","RTfd56hn","Jlfd67ds"]`,
+			want: struct{ statusCode int }{
 				statusCode: http.StatusAccepted,
 			},
 		},
@@ -226,7 +225,7 @@ func Test_APIUserURLsHandlerDelete(t *testing.T) {
 			result := recorder.Result()
 			err = result.Body.Close()
 			require.NoError(t, err)
-			
+
 			assert.Equal(t, result.StatusCode, test.want.statusCode)
 		})
 	}

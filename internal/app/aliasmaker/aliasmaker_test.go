@@ -75,48 +75,48 @@ func Test_createAliasKey(t *testing.T) {
 func Test_deleteUserURLs(t *testing.T) {
 
 	testCases := []struct {
-		name string
-		userID uint64
-		aliases []models.AliasURLModel
+		name      string
+		userID    uint64
+		aliases   []models.AliasURLModel
 		shortKeys []string
 	}{
 		{
-			name: "sympleTest",
+			name:   "sympleTest",
 			userID: 1,
 			aliases: []models.AliasURLModel{
 				{
-					ID: 1,
-					UserID: 1,
-					LongURL: "https://no_matter1.com",
-					ShortKey: "000000000",
+					ID:          1,
+					UserID:      1,
+					LongURL:     "https://no_matter1.com",
+					ShortKey:    "000000000",
 					DeletedFlag: false,
 				},
 				{
-					ID: 2,
-					UserID: 2,
-					LongURL: "https://no_matter2.com",
-					ShortKey: "000000001",
+					ID:          2,
+					UserID:      2,
+					LongURL:     "https://no_matter2.com",
+					ShortKey:    "000000001",
 					DeletedFlag: false,
 				},
 				{
-					ID: 3,
-					UserID: 1,
-					LongURL: "https://no_matter3.com",
-					ShortKey: "000000002",
+					ID:          3,
+					UserID:      1,
+					LongURL:     "https://no_matter3.com",
+					ShortKey:    "000000002",
 					DeletedFlag: false,
 				},
 			},
 			shortKeys: []string{"000000000", "000000001", "000000002"},
 		},
 		{
-			name: "nil test",
+			name:   "nil test",
 			userID: 1,
 			aliases: []models.AliasURLModel{
 				{
-					ID: 1,
-					UserID: 1,
-					LongURL: "https://no_matter1.com",
-					ShortKey: "000000000",
+					ID:          1,
+					UserID:      1,
+					LongURL:     "https://no_matter1.com",
+					ShortKey:    "000000000",
 					DeletedFlag: false,
 				},
 			},

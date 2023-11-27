@@ -13,6 +13,7 @@ import (
 )
 
 // ------------------------------------------------------------
+//
 //	POST request - "/"
 func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) {
 
@@ -57,10 +58,9 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-
 	node, statusCode, err := h.service.CreateAlias(uID, string(requestJSON.URL))
 	if err != nil {
-		h.service.Logger.Infow("alias to save", "error", err)	
+		h.service.Logger.Infow("alias to save", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -231,9 +231,9 @@ func (h *Handlers) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request)
 
 func (h *Handlers) APIUserURLsHandlerDelete(w http.ResponseWriter, r *http.Request) {
 
-	var(
+	var (
 		aliases []string
-		i interpreter.InterpreterJSON
+		i       interpreter.InterpreterJSON
 	)
 	userID := r.Context().Value(UserID)
 	uID, ok := userID.(uint64)

@@ -259,7 +259,6 @@ func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.Ali
 	return nodes, nil
 }
 
-
 // ------------------------------------------------------------
 //
 //	Mark aliases like "deleted" by aliasesID
@@ -267,7 +266,6 @@ func (s *Storage) MarkDeleted(ctx context.Context, aliasesID []uint64) error {
 
 	return nil
 }
-
 
 // ------------------------------------------------------------
 //

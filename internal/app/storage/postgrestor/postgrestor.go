@@ -192,13 +192,13 @@ func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.Ali
 func (s *Storage) MarkDeleted(ctx context.Context, aliasesID []uint64) error {
 
 	var parametrs []string
-	for ID := range aliasesID {
-		parametrs = append(parametrs, fmt.Sprintf("id=%d", ID))
+	var argsID []interface{}
+	for i, ID := range aliasesID {
+		parametrs = append(parametrs, fmt.Sprintf("id=$%d", i + 1))
+		argsID = append(argsID, ID)
 	}
 
-	str := strings.Join(parametrs, " OR ")
-	
-	_, err := s.db.Exec(`update aliases set is_deleted = true where (` + /*strings.Join(parametrs, " OR ")*/str + `);`)
+	_, err := s.db.Exec(`update aliases set is_deleted = true where (` + strings.Join(parametrs, " OR ") + `);`, argsID...)
 	return err
 }
 

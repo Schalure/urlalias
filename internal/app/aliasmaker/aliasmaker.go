@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	aliasKeyLen int = 9
+	aliasKeyLen int = 8
 )
 
 // Type of service
@@ -266,7 +266,7 @@ func (s *AliasMakerServise) createAliasKey() (string, error) {
 	}
 
 	if s.lastKey == "" {
-		s.lastKey = "000000000"
+		s.lastKey = strings.Repeat("0", aliasKeyLen)//"000000000"
 		return s.lastKey, nil
 	}
 

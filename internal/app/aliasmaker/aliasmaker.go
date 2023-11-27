@@ -207,12 +207,12 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 
 	ctx, cancel = context.WithTimeout(ctx, 10 * time.Second)
 	defer cancel()
-	go func() {
-		<-ctx.Done()
-		if ctx.Err() == context.DeadlineExceeded {
-			s.Logger.Info("DeleteUserURLs context deadline while updating DB")
-		}
-	}()
+	// go func() {
+	// 	<-ctx.Done()
+	// 	if ctx.Err() == context.DeadlineExceeded {
+	// 		s.Logger.Info("DeleteUserURLs context deadline while updating DB")
+	// 	}
+	// }()
 
 	err := s.Storage.MarkDeleted(ctx, aliasesID)
 	if err != nil{

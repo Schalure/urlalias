@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"runtime"
 	"strings"
 	"sync"
@@ -109,6 +110,30 @@ func (s *AliasMakerServise) CreateUser() (uint64, error) {
 		return 0, err
 	}
 	return userID, nil
+}
+
+
+// --------------------------------------------------
+//
+//	Create alias by originalURL
+func (s *AliasMakerServise) CreateAlias(userID uint64, originalURL string) (*models.AliasURLModel, int, error) {
+
+	var err error
+	
+	node := s.Storage.FindByLongURL(originalURL)
+	if node == nil {
+		if node, err = s.NewPairURL(originalURL); err != nil {
+			s.Logger.Info(err.Error())
+			return nil, http.StatusBadRequest, err
+		}
+		node.UserID = userID
+		if err = s.Storage.Save(node); err != nil {
+			s.Logger.Info(err.Error())
+			return nil, http.StatusBadRequest, err
+		}
+		return node, http.StatusCreated, nil
+	}
+	return node, http.StatusConflict, nil
 }
 
 // --------------------------------------------------
@@ -218,12 +243,12 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 
 	ctx, cancel = context.WithTimeout(ctx, 10 * time.Second)
 	defer cancel()
-	// go func() {
-	// 	<-ctx.Done()
-	// 	if ctx.Err() == context.DeadlineExceeded {
-	// 		s.Logger.Info("DeleteUserURLs context deadline while updating DB")
-	// 	}
-	// }()
+	go func() {
+		<-ctx.Done()
+		if ctx.Err() == context.DeadlineExceeded {
+			s.Logger.Info("DeleteUserURLs context deadline while updating DB")
+		}
+	}()
 
 	err := s.Storage.MarkDeleted(ctx, aliasesID)
 	if err != nil{

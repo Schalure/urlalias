@@ -12,6 +12,8 @@ import (
 	"github.com/Schalure/urlalias/internal/app/models"
 )
 
+// ------------------------------------------------------------
+//	POST request - "/"
 func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	type (
@@ -55,28 +57,20 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var statusCode int
-	node := h.service.Storage.FindByLongURL(string(requestJSON.URL))
-	if node == nil {
-		if node, err = h.service.NewPairURL(string(requestJSON.URL)); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			h.service.Logger.Info(err.Error())
-			return
-		}
-		node.UserID = uID
-		h.service.Logger.Infow(
-			"Node to save",
-			"node", node,
-		)
-		if err = h.service.Storage.Save(node); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			h.service.Logger.Info(err.Error())
-			return
-		}
-		statusCode = http.StatusCreated
-	} else {
-		statusCode = http.StatusConflict
+
+	node, statusCode, err := h.service.CreateAlias(uID, string(requestJSON.URL))
+	if err != nil {
+		h.service.Logger.Infow("alias to save", "error", err)	
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+	h.service.Logger.Infow("alias to save",
+		"status", statusCode,
+		"node.ID", node.ID,
+		"node.UserID", node.UserID,
+		"node.LongURL", node.LongURL,
+		"node.ShortKey", node.ShortKey,
+	)
 
 	var resp = responseModel{
 		Result: h.service.Config.BaseURL() + "/" + node.ShortKey,
@@ -91,12 +85,6 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 		)
 		return
 	}
-
-	h.service.Logger.Infow(
-		"Serch/Create alias key",
-		"Long URL", node.LongURL,
-		"Alias URL", resp.Result,
-	)
 
 	w.Header().Set("Content-Type", appJSON)
 	w.WriteHeader(statusCode)

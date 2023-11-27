@@ -20,13 +20,13 @@ func NewRouter(handlers *Handlers) *chi.Mux {
 		r.Post("/", handlers.mainHandlerPost)
 		r.Post("/api/shorten", handlers.APIShortenHandlerPost)
 		r.Post("/api/shorten/batch", handlers.APIShortenBatchHandlerPost)
+		r.Delete("/api/user/urls", handlers.APIUserURLsHandlerDelete)
 	})
 
 	r.Group(func(r chi.Router) {
 
 		r.Use(m.WithVerification)
 		r.Get("/api/user/urls", handlers.APIUserURLsHandlerGet)
-		r.Delete("/api/user/urls", handlers.APIUserURLsHandlerDelete)
 	})
 
 	return r

@@ -130,8 +130,8 @@ func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, user_id, original_url, short_key FROM aliases WHERE short_key = $1;`, shortKey)
-	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
+	row := s.db.QueryRowContext(ctx, `SELECT id, user_id, original_url, short_key, is_deleted FROM aliases WHERE short_key = $1;`, shortKey)
+	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey, &aliasNode.DeletedFlag); err != nil {
 		return nil
 	}
 	return aliasNode
@@ -153,8 +153,8 @@ func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, user_id, original_url, short_key FROM aliases WHERE original_url=$1;`, longURL)
-	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey); err != nil {
+	row := s.db.QueryRowContext(ctx, `SELECT id, user_id, original_url, short_key, is_deleted FROM aliases WHERE original_url=$1;`, longURL)
+	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey, &aliasNode.DeletedFlag); err != nil {
 		return nil
 	}
 	return aliasNode

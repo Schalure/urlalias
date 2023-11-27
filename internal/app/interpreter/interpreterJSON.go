@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 )
 
 type InterpreterJSON struct{}
@@ -16,8 +15,6 @@ func (i *InterpreterJSON) Unmarshal(r io.Reader, v interface{}) error {
 	if _, err := buf.ReadFrom(r); err != nil {
 		return err
 	}
-
-	log.Println(buf.String())
 
 	// десериализуем JSON в Visitor
 	return json.Unmarshal(buf.Bytes(), &v)

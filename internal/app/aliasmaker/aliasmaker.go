@@ -144,19 +144,30 @@ func (s *AliasMakerServise) DeleteUserURLs(userID uint64, shortKeys []string) {
 
 		for i := 0; i < numWorkers; i++ {
 			resultChannels[i] = func () chan models.AliasURLModel {
+
 				resultCh := make(chan models.AliasURLModel)
-				go func () {
-					defer close(resultCh)
+
+				go func (resultCh chan models.AliasURLModel) {
+
+					defer close(resultCh)			
 					for shortKey := range inputCh {
+						node := s.Storage.FindByShortKey(shortKey)
+						if node == nil {
+							s.Logger.Infow("func DeleteUserURLs: can't Storage.FindByShortKey", "shortKey", shortKey)
+							return
+						}
+						s.Logger.Info(node)
 						select {
 						case <-ctx.Done():
 							s.Logger.Errorw("func DeleteUserURLs: context deadline", "nums ellements added to work", i)
 							return
-						case resultCh <- *s.Storage.FindByShortKey(shortKey):
+						case resultCh <- *node:
+							s.Logger.Infow("func DeleteUserURLs: write to resultCh", "shortKey", shortKey)
 						}
 					}
-				}()
+				}(resultCh)
 				return resultCh
+
 			}()
 		}
 		return resultChannels

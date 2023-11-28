@@ -30,23 +30,46 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 
 		tokenCookie, err := r.Cookie(authorization)
 		if err != nil {
-
+			m.service.Logger.Infow(
+				"WithAuthentication: tokenCookie, err := r.Cookie(authorization)",
+				"error", err,
+			)
 			if userID, err = m.service.CreateUser(); err != nil {
+				m.service.Logger.Infow(
+					"WithAuthentication: userID, err = m.service.CreateUser()",
+					"error", err,
+				)
 				http.Error(w, errors.New("internal error").Error(), http.StatusInternalServerError)
 				return
 			}
 			tokenString, err = createTokenJWT(userID)
 			if err != nil {
+				m.service.Logger.Infow(
+					"WithAuthentication: tokenString, err = createTokenJWT(userID)",
+					"error", err,
+				)
 				http.Error(w, errors.New("internal error").Error(), http.StatusInternalServerError)
 				return
 			}
 		} else if userID, err = getUserID(tokenCookie.Value); err != nil {
+			m.service.Logger.Infow(
+				"WithAuthentication: userID, err = getUserID(tokenCookie.Value)",
+				"error", err,
+			)
 			if userID, err = m.service.CreateUser(); err != nil {
+				m.service.Logger.Infow(
+					"WithAuthentication: userID, err = m.service.CreateUser()",
+					"error", err,
+				)	
 				http.Error(w, errors.New("internal error").Error(), http.StatusInternalServerError)
 				return
 			}
 			tokenString, err = createTokenJWT(userID)
 			if err != nil {
+				m.service.Logger.Infow(
+					"WithAuthentication: tokenString, err = createTokenJWT(userID)",
+					"error", err,
+				)
 				http.Error(w, errors.New("internal error").Error(), http.StatusInternalServerError)
 				return
 			}

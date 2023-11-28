@@ -13,9 +13,19 @@ func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 
 		tokenCookie, err := r.Cookie(authorization)
 		if err != nil {
+			m.service.Logger.Infow(
+				"WithVerification: tokenCookie, err := r.Cookie(authorization)",
+				"error", err,
+			)
 			http.Error(w, errors.New("Unauthorized").Error(), http.StatusUnauthorized)
 			return
 		} else if userID, err = getUserID(tokenCookie.Value); err != nil {
+			m.service.Logger.Infow(
+				"WithVerification: userID, err = getUserID(tokenCookie.Value)",
+				"error", err,
+				"user", userID,
+				"token", tokenCookie.Value,
+			)
 			http.Error(w, errors.New("Unauthorized").Error(), http.StatusUnauthorized)
 			return
 		}

@@ -51,6 +51,16 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 				http.Error(w, errors.New("internal error").Error(), http.StatusInternalServerError)
 				return
 			}
+
+			m.service.Logger.Infow(
+				"Add new user",
+				"userID", userID,
+			)
+			http.SetCookie(w, &http.Cookie{
+				Name:  authorization,
+				Value: tokenString,
+			})
+
 		} else if userID, err = getUserID(tokenCookie.Value); err != nil {
 			m.service.Logger.Infow(
 				"WithAuthentication: userID, err = getUserID(tokenCookie.Value)",
@@ -73,12 +83,26 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 				http.Error(w, errors.New("internal error").Error(), http.StatusInternalServerError)
 				return
 			}
+
+			m.service.Logger.Infow(
+				"Add new user",
+				"userID", userID,
+			)
+			http.SetCookie(w, &http.Cookie{
+				Name:  authorization,
+				Value: tokenString,
+			})
+		} else {
+			authCookie, _ := r.Cookie(authorization)
+			http.SetCookie(w, authCookie)
 		}
 
-		http.SetCookie(w, &http.Cookie{
-			Name:  authorization,
-			Value: tokenString,
-		})
+		m.service.Logger.Infow(
+			"Request from user",
+			"userID", userID,
+		)
+
+
 		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), UserID, userID)))
 	})
 }

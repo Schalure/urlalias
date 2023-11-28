@@ -77,6 +77,7 @@ func (m *Middleware) WithLogging(h http.Handler) http.Handler {
 			"Request URI", r.RequestURI,
 			"Request method", r.Method,
 			"Request headers", r.Header,
+			"Request cookie", r.Cookies(),
 		)
 
 		start := time.Now()
@@ -87,6 +88,7 @@ func (m *Middleware) WithLogging(h http.Handler) http.Handler {
 			"Information about response",
 			"Response status", responseData.status,
 			"Response headers", lw.ResponseWriter.Header(),
+			"Response cookie", r.Cookies(),
 			"Response data", responseData.data,
 
 			"duration", duration,

@@ -29,6 +29,13 @@ func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 			http.Error(w, errors.New("Unauthorized").Error(), http.StatusUnauthorized)
 			return
 		}
+		authCookie, _ := r.Cookie(authorization)
+		http.SetCookie(w, authCookie)
+
+		m.service.Logger.Infow(
+			"Request from user",
+			"userID", userID,
+		)
 
 		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), UserID, userID)))
 	})

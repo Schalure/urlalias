@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	aliasKeyLen int = 8
+	aliasKeyLen int = 9
 )
 
 // Type of service

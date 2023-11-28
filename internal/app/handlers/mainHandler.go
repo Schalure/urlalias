@@ -54,7 +54,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	//	get url
 	longURL, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, fmt.Errorf("can`t read request body: %s", err.Error()).Error() , http.StatusBadRequest)
+		http.Error(w, fmt.Errorf("can`t read request body: %s", err.Error()).Error(), http.StatusBadRequest)
 		h.service.Logger.Info(err.Error())
 		return
 	}

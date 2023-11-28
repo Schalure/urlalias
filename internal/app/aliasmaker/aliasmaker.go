@@ -266,7 +266,7 @@ func (s *AliasMakerServise) createAliasKey() (string, error) {
 	}
 
 	if s.lastKey == "" {
-		s.lastKey = strings.Repeat("0", aliasKeyLen)//"000000000"
+		s.lastKey = strings.Repeat("0", aliasKeyLen) //"000000000"
 		return s.lastKey, nil
 	}
 

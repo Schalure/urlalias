@@ -70,7 +70,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 				m.service.Logger.Infow(
 					"WithAuthentication: userID, err = m.service.CreateUser()",
 					"error", err,
-				)	
+				)
 				http.Error(w, errors.New("internal error").Error(), http.StatusInternalServerError)
 				return
 			}
@@ -101,7 +101,6 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 			"Request from user",
 			"userID", userID,
 		)
-
 
 		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), UserID, userID)))
 	})

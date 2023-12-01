@@ -8,19 +8,31 @@ import (
 	"testing"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
+	"github.com/Schalure/urlalias/internal/app/aliaslogger"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func newService(t *testing.T) *aliasmaker.AliasMakerServise {
+
+	logger, err := aliaslogger.NewLogger(aliaslogger.LoggerTypeZap)
+	require.NoError(t, err)
+	stor, err := memstor.NewStorage()
+	require.NoError(t, err)
+	s, err := aliasmaker.NewAliasMakerServise(config.NewConfig(), stor, logger)
+	require.NoError(t, err)
+	return s
+}
 
 // ------------------------------------------------------------
 //
 //	Test mainHandlerMethodGet: "/{shortKey}"
 func Test_mainHandlerMethodGet(t *testing.T) {
 
-	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
-	require.NoError(t, err)
+	service := newService(t)
 	defer service.Stop()
 
 	var listOfURL = []models.AliasURLModel{
@@ -93,8 +105,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 
 func Test_mainHandlerMethodPost(t *testing.T) {
 
-	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
-	require.NoError(t, err)
+	service := newService(t)
 	defer service.Stop()
 
 	listOfURL := []models.AliasURLModel{

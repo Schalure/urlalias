@@ -5,10 +5,24 @@ import (
 	"testing"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
+	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+
+func newService(t *testing.T) *AliasMakerServise {
+
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(t, err)
+	stor, err := memstor.NewStorage()
+	require.NoError(t, err)
+	s, err := NewAliasMakerServise(config.NewConfig(), stor, logger)
+	require.NoError(t, err)
+	return s
+}
 
 func Test_createAliasKey(t *testing.T) {
 
@@ -58,8 +72,8 @@ func Test_createAliasKey(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 
-			s, err := NewAliasMakerServise(config.NewConfig())
-			require.NoError(t, err)
+
+			s := newService(t)
 			defer s.Stop()
 
 			s.lastKey = test.lastKey
@@ -127,11 +141,10 @@ func Test_deleteUserURLs(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 
-			s, err := NewAliasMakerServise(config.NewConfig())
-			require.NoError(t, err)
+			s := newService(t)
 			defer s.Stop()
 
-			s.Storage.SaveAll(test.aliases)
+			err := s.Storage.SaveAll(test.aliases)
 			require.NoError(t, err)
 
 			s.DeleteUserURLs(test.userID, test.shortKeys)

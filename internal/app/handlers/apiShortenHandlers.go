@@ -181,9 +181,7 @@ func (h *Handlers) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request)
 		OriginalURL string `json:"original_url"`
 	}
 
-	var (
-		responseJSON []responseModel
-	)
+	var responseJSON []responseModel
 
 	userID := r.Context().Value(UserID)
 	uID, ok := userID.(uint64)

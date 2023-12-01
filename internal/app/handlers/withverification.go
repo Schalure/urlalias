@@ -9,8 +9,6 @@ import (
 func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		var userID uint64
-
 		tokenCookie, err := r.Cookie(authorization)
 		if err != nil {
 			m.service.Logger.Infow(
@@ -19,7 +17,10 @@ func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 			)
 			http.Error(w, errors.New("Unauthorized").Error(), http.StatusUnauthorized)
 			return
-		} else if userID, err = getUserID(tokenCookie.Value); err != nil {
+		} 
+		
+		userID, err := getUserID(tokenCookie.Value)
+		if err != nil {
 			m.service.Logger.Infow(
 				"WithVerification: userID, err = getUserID(tokenCookie.Value)",
 				"error", err,
@@ -29,6 +30,7 @@ func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 			http.Error(w, errors.New("Unauthorized").Error(), http.StatusUnauthorized)
 			return
 		}
+		
 		authCookie, _ := r.Cookie(authorization)
 		http.SetCookie(w, authCookie)
 

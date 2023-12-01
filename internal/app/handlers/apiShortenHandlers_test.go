@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,8 +17,7 @@ import (
 
 func Test_ApiShortenHandlerPost(t *testing.T) {
 
-	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
-	require.NoError(t, err)
+	service := newService(t)
 	defer service.Stop()
 
 	listOfURL := []models.AliasURLModel{
@@ -102,8 +100,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 
 func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 
-	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
-	require.NoError(t, err)
+	service := newService(t)
 	defer service.Stop()
 
 	listOfURL := []models.AliasURLModel{
@@ -188,8 +185,7 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 
 func Test_APIUserURLsHandlerDelete(t *testing.T) {
 
-	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
-	require.NoError(t, err)
+	service := newService(t)
 	defer service.Stop()
 
 	testCases := []struct {
@@ -223,7 +219,7 @@ func Test_APIUserURLsHandlerDelete(t *testing.T) {
 			h(recorder, request.WithContext(ctx))
 
 			result := recorder.Result()
-			err = result.Body.Close()
+			err := result.Body.Close()
 			require.NoError(t, err)
 
 			assert.Equal(t, result.StatusCode, test.want.statusCode)

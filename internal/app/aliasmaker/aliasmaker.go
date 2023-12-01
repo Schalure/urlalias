@@ -2,7 +2,6 @@ package aliasmaker
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -11,11 +10,7 @@ import (
 	"time"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 	"github.com/Schalure/urlalias/internal/app/models"
-	"github.com/Schalure/urlalias/internal/app/storage/filestor"
-	"github.com/Schalure/urlalias/internal/app/storage/memstor"
-	"github.com/Schalure/urlalias/internal/app/storage/postgrestor"
 )
 
 const (
@@ -27,61 +22,58 @@ type AliasMakerServise struct {
 	Config  *config.Configuration
 	Logger  Loggerer
 	Storage Storager
+
 	lastKey string
+
+	aliasToDeleteCh chan struct {
+		userID uint64
+		alias string
+	}
+}
+
+type Loggerer interface {
+	Info(args ...interface{})
+	Infow(msg string, keysAndValues ...interface{})
+	Errorw(msg string, keysAndValues ...interface{})
+	Fatalw(msg string, keysAndValues ...interface{})
+	Close()
+}
+
+// Access interface to storage
+type Storager interface {
+	CreateUser() (uint64, error)
+	Save(urlAliasNode *models.AliasURLModel) error
+	SaveAll(urlAliasNode []models.AliasURLModel) error
+	FindByShortKey(shortKey string) *models.AliasURLModel
+	FindByLongURL(longURL string) *models.AliasURLModel
+	FindByUserID(ctx context.Context, userID uint64) ([]models.AliasURLModel, error)
+	MarkDeleted(ctx context.Context, aliasesID []uint64) error
+	GetLastShortKey() string
+	IsConnected() bool
+	Close() error
 }
 
 // --------------------------------------------------
 //
 //	Constructor
-func NewAliasMakerServise(c *config.Configuration) (*AliasMakerServise, error) {
+func NewAliasMakerServise(c *config.Configuration, s Storager, l Loggerer) (*AliasMakerServise, error) {
 
-	var errs []error
 
-	logger, loggerErr := chooseLogger(LoggerTypeZap)
-	errs = append(errs, loggerErr)
+	lastKey := s.GetLastShortKey()
 
-	storage, storageErr := chooseStorage(c)
-	errs = append(errs, storageErr)
+	aliasToDeleteCh := make(chan struct {
+		userID uint64
+		alias string
+	}, 50)
 
-	if errors.Join(errs...) != nil {
-		return nil, errors.Join(errs...)
-	}
-
-	lastKey := storage.GetLastShortKey()
 
 	return &AliasMakerServise{
 		Config:  c,
-		Logger:  logger,
-		Storage: storage,
+		Storage: s,
+		Logger:  l,
 		lastKey: lastKey,
+		aliasToDeleteCh: aliasToDeleteCh,
 	}, nil
-}
-
-// --------------------------------------------------
-//
-//	Choose logger for service
-func chooseLogger(loggerType LoggerType) (Loggerer, error) {
-	switch loggerType {
-	case LoggerTypeZap:
-		return zaplogger.NewZapLogger("")
-	default:
-		return nil, fmt.Errorf("logger type is not supported: %s", loggerType.String())
-	}
-}
-
-// --------------------------------------------------
-//
-//	Choose storage for service
-func chooseStorage(c *config.Configuration) (Storager, error) {
-
-	switch c.StorageType() {
-	case config.DataBaseStor:
-		return postgrestor.NewStorage(c.DBConnection())
-	case config.FileStor:
-		return filestor.NewStorage(c.AliasesFile(), c.UsersFile())
-	default:
-		return memstor.NewStorage()
-	}
 }
 
 // --------------------------------------------------
@@ -111,7 +103,7 @@ func (s *AliasMakerServise) CreateUser() (uint64, error) {
 	}
 	return userID, nil
 }
-
+ревью
 // --------------------------------------------------
 //
 //	Create alias by originalURL
@@ -133,6 +125,34 @@ func (s *AliasMakerServise) CreateAlias(userID uint64, originalURL string) (*mod
 		return node, http.StatusCreated, nil
 	}
 	return node, http.StatusConflict, nil
+}
+
+// --------------------------------------------------
+//
+//	Add aliases to delete
+func (s *AliasMakerServise) AddAliasesToDelete(userID uint64, aliases ...string) error {
+
+	ctx, _ := context.WithTimeout(context.Background(), 10 * time.Second)
+	go func ()  {
+		
+	}
+	for _, alias := range aliases {
+		select {
+		case <-ctx.Done():
+			s.Logger.Infow(
+				"AddAliasesToDelete: context Done",
+				"userID", userID,
+				"aliases", aliases,
+			)
+			return fmt.Errorf("error when requesting to delete an alias: %s", alias)
+		default:
+			s.aliasToDeleteCh <- struct{userID uint64; alias string}{
+				userID: userID,
+				alias: alias,
+			}
+		}
+	}
+	return nil
 }
 
 // --------------------------------------------------

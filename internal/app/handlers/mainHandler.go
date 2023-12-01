@@ -31,15 +31,14 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 		"URL", node.LongURL,
 	)
 
-	var status int
 	if node.DeletedFlag {
-		status = http.StatusGone
-	} else {
-		w.Header().Add("Location", node.LongURL)
-		status = http.StatusTemporaryRedirect
-	}
+		w.WriteHeader(http.StatusGone)
+		return
+	} 
+	
+	w.Header().Add("Location", node.LongURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 
-	w.WriteHeader(status)
 }
 
 // ------------------------------------------------------------

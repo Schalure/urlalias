@@ -7,7 +7,8 @@ import (
 	"errors"
 	"os"
 
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
+	"github.com/Schalure/urlalias/internal/app/models/userentity"
 )
 
 type Storage struct {
@@ -37,7 +38,7 @@ func NewStorage(aliasesFileName, usersFileName string) (*Storage, error) {
 	var lastID uint64
 
 	for i := 0; scanner.Scan(); i++ {
-		var node models.AliasURLModel
+		var node aliasentity.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil, errors.New("invalid file format")
 		}
@@ -57,7 +58,7 @@ func NewStorage(aliasesFileName, usersFileName string) (*Storage, error) {
 	var lastUserID uint64
 
 	for i := 0; scanner.Scan(); i++ {
-		var node models.UserModel
+		var node userentity.UserModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil, errors.New("invalid file format")
 		}
@@ -88,7 +89,7 @@ func (s *Storage) CreateUser() (uint64, error) {
 	defer file.Close()
 
 	newUserID := s.lastUserID + 1
-	user := models.UserModel{
+	user := userentity.UserModel{
 		UserID: newUserID,
 	}
 
@@ -112,7 +113,7 @@ func (s *Storage) CreateUser() (uint64, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
+func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
 
 	var data []byte
 	file, err := os.OpenFile(s.aliasesFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -144,7 +145,7 @@ func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
+func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
 
 	var data []byte
 	file, err := os.OpenFile(s.aliasesFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -178,7 +179,7 @@ func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
+func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
 
 	file, err := os.OpenFile(s.aliasesFileName, os.O_RDONLY, 0644)
 	if err != nil {
@@ -189,7 +190,7 @@ func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 	scanner := bufio.NewScanner(file)
 
 	for i := 0; scanner.Scan(); i++ {
-		var node models.AliasURLModel
+		var node aliasentity.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil
 		}
@@ -211,7 +212,7 @@ func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
+func (s *Storage) FindByLongURL(longURL string) *aliasentity.AliasURLModel {
 
 	file, err := os.OpenFile(s.aliasesFileName, os.O_RDONLY, 0644)
 	if err != nil {
@@ -222,7 +223,7 @@ func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 	scanner := bufio.NewScanner(file)
 
 	for i := 0; scanner.Scan(); i++ {
-		var node models.AliasURLModel
+		var node aliasentity.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil
 		}
@@ -235,7 +236,7 @@ func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 	return nil
 }
 
-func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.AliasURLModel, error) {
+func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {
 
 	file, err := os.OpenFile(s.aliasesFileName, os.O_RDONLY, 0644)
 	if err != nil {
@@ -243,11 +244,11 @@ func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.Ali
 	}
 	defer file.Close()
 
-	var nodes []models.AliasURLModel
+	var nodes []aliasentity.AliasURLModel
 	scanner := bufio.NewScanner(file)
 
 	for i := 0; scanner.Scan(); i++ {
-		var node models.AliasURLModel
+		var node aliasentity.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil, err
 		}

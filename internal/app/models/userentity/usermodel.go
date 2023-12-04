@@ -1,4 +1,4 @@
-package models
+package userentity
 
 // Storage model for users
 type UserModel struct {

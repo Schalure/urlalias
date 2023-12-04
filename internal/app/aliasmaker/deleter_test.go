@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,13 +16,13 @@ func Test_deleteUserURLs(t *testing.T) {
 	testCases := []struct {
 		name      string
 		userID    uint64
-		aliases   []models.AliasURLModel
+		aliases   []aliasentity.AliasURLModel
 		shortKeys []string
 	}{
 		{
 			name:   "sympleTest",
 			userID: 1,
-			aliases: []models.AliasURLModel{
+			aliases: []aliasentity.AliasURLModel{
 				{
 					ID:          1,
 					UserID:      1,
@@ -50,7 +50,7 @@ func Test_deleteUserURLs(t *testing.T) {
 		{
 			name:   "nil test",
 			userID: 1,
-			aliases: []models.AliasURLModel{
+			aliases: []aliasentity.AliasURLModel{
 				{
 					ID:          1,
 					UserID:      1,

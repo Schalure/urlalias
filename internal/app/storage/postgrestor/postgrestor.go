@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -74,7 +74,7 @@ func (s *Storage) CreateUser() (uint64, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
+func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
 
 	_, err := s.db.Exec(`INSERT INTO aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, urlAliasNode.UserID, urlAliasNode.LongURL, urlAliasNode.ShortKey)
 
@@ -92,7 +92,7 @@ func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
+func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -123,9 +123,9 @@ func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
+func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
 
-	var aliasNode = new(models.AliasURLModel)
+	var aliasNode = new(aliasentity.AliasURLModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -146,9 +146,9 @@ func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
+func (s *Storage) FindByLongURL(longURL string) *aliasentity.AliasURLModel {
 
-	var aliasNode = new(models.AliasURLModel)
+	var aliasNode = new(aliasentity.AliasURLModel)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -160,7 +160,7 @@ func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 	return aliasNode
 }
 
-func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.AliasURLModel, error) {
+func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {
 
 	rows, err := s.db.QueryContext(ctx, `select original_url, short_key from aliases where user_id=$1`, userID)
 	if err != nil {
@@ -168,8 +168,8 @@ func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.Ali
 	}
 	defer rows.Close()
 
-	var nodes []models.AliasURLModel
-	var node models.AliasURLModel
+	var nodes []aliasentity.AliasURLModel
+	var node aliasentity.AliasURLModel
 
 	for rows.Next() {
 		err = rows.Scan(&node.LongURL, &node.ShortKey)

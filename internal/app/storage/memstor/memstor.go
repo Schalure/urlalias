@@ -10,14 +10,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
+	"github.com/Schalure/urlalias/internal/app/models/userentity"
 )
 
 // Type for storage long URL and their alias keys
 type Storage struct {
 	//	[key, value] = [ShortKey, LongURL]
-	aliases []models.AliasURLModel
-	users   []models.UserModel
+	aliases []aliasentity.AliasURLModel
+	users   []userentity.UserModel
 
 	lastKey string
 }
@@ -28,8 +29,8 @@ type Storage struct {
 func NewStorage() (*Storage, error) {
 
 	var s Storage
-	s.aliases = make([]models.AliasURLModel, 0)
-	s.users = make([]models.UserModel, 0)
+	s.aliases = make([]aliasentity.AliasURLModel, 0)
+	s.users = make([]userentity.UserModel, 0)
 
 	return &s, nil
 }
@@ -39,7 +40,7 @@ func NewStorage() (*Storage, error) {
 //	Create new user
 func (s *Storage) CreateUser() (uint64, error) {
 
-	user := models.UserModel{
+	user := userentity.UserModel{
 		UserID: uint64(len(s.users)),
 	}
 
@@ -50,7 +51,7 @@ func (s *Storage) CreateUser() (uint64, error) {
 // ------------------------------------------------------------
 //
 //	Save pair "shortKey, longURL" to db
-func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
+func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
 
 	s.aliases = append(s.aliases, *urlAliasNode)
 	s.lastKey = urlAliasNode.ShortKey
@@ -66,7 +67,7 @@ func (s *Storage) Save(urlAliasNode *models.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
+func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
 
 	for _, node := range urlAliasNodes {
 
@@ -85,7 +86,7 @@ func (s *Storage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
+func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
 
 	for _, node := range s.aliases {
 		if node.ShortKey == shortKey {
@@ -104,7 +105,7 @@ func (s *Storage) FindByShortKey(shortKey string) *models.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
+func (s *Storage) FindByLongURL(longURL string) *aliasentity.AliasURLModel {
 
 	for _, node := range s.aliases {
 		if node.LongURL == longURL {
@@ -117,9 +118,9 @@ func (s *Storage) FindByLongURL(longURL string) *models.AliasURLModel {
 // ------------------------------------------------------------
 //
 //	Find all "urlAliasNode models.AliasURLModel" by UserID
-func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]models.AliasURLModel, error) {
+func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {
 
-	var nodes []models.AliasURLModel
+	var nodes []aliasentity.AliasURLModel
 
 	for _, node := range s.aliases {
 		if node.UserID == userID {

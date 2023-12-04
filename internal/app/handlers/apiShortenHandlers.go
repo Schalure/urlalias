@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/Schalure/urlalias/internal/app/interpreter"
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
 // ------------------------------------------------------------
@@ -109,7 +109,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 		requestJSON  []requestModel
 		responseJSON []responseModel
 		i            interpreter.InterpreterJSON
-		nodes        []models.AliasURLModel
+		nodes        []aliasentity.AliasURLModel
 	)
 
 	userID := r.Context().Value(UserID)

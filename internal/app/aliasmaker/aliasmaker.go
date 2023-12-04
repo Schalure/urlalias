@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
 const (
@@ -40,11 +40,11 @@ type Loggerer interface {
 // Access interface to storage
 type Storager interface {
 	CreateUser() (uint64, error)
-	Save(urlAliasNode *models.AliasURLModel) error
-	SaveAll(urlAliasNode []models.AliasURLModel) error
-	FindByShortKey(shortKey string) *models.AliasURLModel
-	FindByLongURL(longURL string) *models.AliasURLModel
-	FindByUserID(ctx context.Context, userID uint64) ([]models.AliasURLModel, error)
+	Save(urlAliasNode *aliasentity.AliasURLModel) error
+	SaveAll(urlAliasNode []aliasentity.AliasURLModel) error
+	FindByShortKey(shortKey string) *aliasentity.AliasURLModel
+	FindByLongURL(longURL string) *aliasentity.AliasURLModel
+	FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error)
 	MarkDeleted(ctx context.Context, aliasesID []uint64) error
 	GetLastShortKey() string
 	IsConnected() bool
@@ -78,14 +78,14 @@ func NewAliasMakerServise(c *config.Configuration, s Storager, l Loggerer) (*Ali
 // --------------------------------------------------
 //
 //	Create new URL pair
-func (s *AliasMakerServise) NewPairURL(longURL string) (*models.AliasURLModel, error) {
+func (s *AliasMakerServise) NewPairURL(longURL string) (*aliasentity.AliasURLModel, error) {
 
 	newAliasKey, err := s.createAliasKey()
 	if err != nil {
 		return nil, err
 	}
 
-	return &models.AliasURLModel{
+	return &aliasentity.AliasURLModel{
 		LongURL:  longURL,
 		ShortKey: newAliasKey,
 	}, nil
@@ -106,7 +106,7 @@ func (s *AliasMakerServise) CreateUser() (uint64, error) {
 // --------------------------------------------------
 //
 //	Create alias by originalURL
-func (s *AliasMakerServise) CreateAlias(userID uint64, originalURL string) (*models.AliasURLModel, int, error) {
+func (s *AliasMakerServise) CreateAlias(userID uint64, originalURL string) (*aliasentity.AliasURLModel, int, error) {
 
 	var err error
 

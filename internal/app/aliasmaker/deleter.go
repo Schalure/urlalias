@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
 type deleter struct {
@@ -78,17 +78,17 @@ func (d *deleter) deleteUserURLs(ctx context.Context, userID uint64, shortKeys [
 	}()
 
 	//	get nodes from DB
-	resultChannels := func() []chan models.AliasURLModel {
+	resultChannels := func() []chan aliasentity.AliasURLModel {
 
 		numWorkers := runtime.NumCPU()
-		resultChannels := make([]chan models.AliasURLModel, numWorkers)
+		resultChannels := make([]chan aliasentity.AliasURLModel, numWorkers)
 
 		for i := 0; i < numWorkers; i++ {
-			resultChannels[i] = func() chan models.AliasURLModel {
+			resultChannels[i] = func() chan aliasentity.AliasURLModel {
 
-				resultCh := make(chan models.AliasURLModel)
+				resultCh := make(chan aliasentity.AliasURLModel)
 
-				go func(resultCh chan models.AliasURLModel) {
+				go func(resultCh chan aliasentity.AliasURLModel) {
 
 					defer close(resultCh)
 					for shortKey := range inputCh {
@@ -115,14 +115,14 @@ func (d *deleter) deleteUserURLs(ctx context.Context, userID uint64, shortKeys [
 	}()
 
 	//	get aliases id to mark deleted
-	outCh := func() chan models.AliasURLModel {
+	outCh := func() chan aliasentity.AliasURLModel {
 
 		var wg sync.WaitGroup
-		outCh := make(chan models.AliasURLModel)
+		outCh := make(chan aliasentity.AliasURLModel)
 
 		for _, result := range resultChannels {
 			wg.Add(1)
-			go func(result chan models.AliasURLModel) {
+			go func(result chan aliasentity.AliasURLModel) {
 				defer wg.Done()
 				for aliasNode := range result {
 					select {

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +26,7 @@ func TestFileStorage_Save(t *testing.T) {
 
 	testCases := []struct {
 		testName string
-		storNode models.AliasURLModel
+		storNode aliasentity.AliasURLModel
 		want     struct {
 			data string
 			err  error
@@ -34,7 +34,7 @@ func TestFileStorage_Save(t *testing.T) {
 	}{
 		{
 			testName: "simple save",
-			storNode: models.AliasURLModel{
+			storNode: aliasentity.AliasURLModel{
 				ID:       1,
 				UserID:   0,
 				ShortKey: "000000000",

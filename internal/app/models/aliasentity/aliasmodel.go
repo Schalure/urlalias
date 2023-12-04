@@ -1,4 +1,4 @@
-package models
+package aliasentity
 
 // Storage model for long URL and their alias keys
 type AliasURLModel struct {

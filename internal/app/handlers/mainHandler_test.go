@@ -10,7 +10,7 @@ import (
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliaslogger"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 	"github.com/Schalure/urlalias/internal/app/storage/memstor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,13 +35,13 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 	service := newService(t)
 	defer service.Stop()
 
-	var listOfURL = []models.AliasURLModel{
+	var listOfURL = []aliasentity.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 	}
 
 	for i, nodeURL := range listOfURL {
-		if err := service.Storage.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := service.Storage.Save(&aliasentity.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
@@ -108,14 +108,14 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 	service := newService(t)
 	defer service.Stop()
 
-	listOfURL := []models.AliasURLModel{
+	listOfURL := []aliasentity.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
 	}
 
 	for i, nodeURL := range listOfURL {
-		if err := service.Storage.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := service.Storage.Save(&aliasentity.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}

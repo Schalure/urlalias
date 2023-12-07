@@ -2,17 +2,21 @@ package filestor
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
 
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
+	"github.com/Schalure/urlalias/internal/app/models/userentity"
 )
 
-type FileStorage struct {
-	fileName string
-	lastKey  string
-	lastID   uint64
+type Storage struct {
+	aliasesFileName string
+	usersFileName   string
+	lastKey         string
+	lastID          uint64
+	lastUserID      uint64
 }
 
 // ------------------------------------------------------------
@@ -20,21 +24,21 @@ type FileStorage struct {
 //	FileStorage constructor
 //	Output:
 //		*FileStorage
-func NewFileStorage(fileName string) (*FileStorage, error) {
+func NewStorage(aliasesFileName, usersFileName string) (*Storage, error) {
 
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	aliasesFile, err := os.OpenFile(aliasesFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer aliasesFile.Close()
 
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(aliasesFile)
 
 	var lastKey string
 	var lastID uint64
 
 	for i := 0; scanner.Scan(); i++ {
-		var node models.AliasURLModel
+		var node aliasentity.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil, errors.New("invalid file format")
 		}
@@ -43,11 +47,62 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 		lastKey = node.ShortKey
 	}
 
-	return &FileStorage{
-		fileName: fileName,
-		lastKey:  lastKey,
-		lastID:   lastID,
+	usersFile, err := os.OpenFile(usersFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, err
+	}
+	defer usersFile.Close()
+
+	scanner = bufio.NewScanner(usersFile)
+
+	var lastUserID uint64
+
+	for i := 0; scanner.Scan(); i++ {
+		var node userentity.UserModel
+		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
+			return nil, errors.New("invalid file format")
+		}
+
+		lastUserID = node.UserID
+	}
+
+	return &Storage{
+		aliasesFileName: aliasesFileName,
+		usersFileName:   usersFileName,
+		lastKey:         lastKey,
+		lastID:          lastID,
+		lastUserID:      lastUserID,
 	}, nil
+}
+
+// ------------------------------------------------------------
+//
+//	Create new user
+func (s *Storage) CreateUser() (uint64, error) {
+
+	var data []byte
+
+	file, err := os.OpenFile(s.usersFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	newUserID := s.lastUserID + 1
+	user := userentity.UserModel{
+		UserID: newUserID,
+	}
+
+	if data, err = json.Marshal(user); err != nil {
+		return 0, err
+	}
+
+	if _, err = file.Write(append(data, '\n')); err != nil {
+		return 0, err
+	}
+
+	s.lastUserID = newUserID
+	return s.lastUserID, nil
 }
 
 // ------------------------------------------------------------
@@ -58,10 +113,10 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *FileStorage) Save(urlAliasNode *models.AliasURLModel) error {
+func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
 
 	var data []byte
-	file, err := os.OpenFile(s.fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	file, err := os.OpenFile(s.aliasesFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}
@@ -90,10 +145,10 @@ func (s *FileStorage) Save(urlAliasNode *models.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *FileStorage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
+func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
 
 	var data []byte
-	file, err := os.OpenFile(s.fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	file, err := os.OpenFile(s.aliasesFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}
@@ -124,9 +179,9 @@ func (s *FileStorage) SaveAll(urlAliasNodes []models.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *FileStorage) FindByShortKey(shortKey string) *models.AliasURLModel {
+func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
 
-	file, err := os.OpenFile(s.fileName, os.O_RDONLY, 0644)
+	file, err := os.OpenFile(s.aliasesFileName, os.O_RDONLY, 0644)
 	if err != nil {
 		return nil
 	}
@@ -135,7 +190,7 @@ func (s *FileStorage) FindByShortKey(shortKey string) *models.AliasURLModel {
 	scanner := bufio.NewScanner(file)
 
 	for i := 0; scanner.Scan(); i++ {
-		var node models.AliasURLModel
+		var node aliasentity.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil
 		}
@@ -157,9 +212,9 @@ func (s *FileStorage) FindByShortKey(shortKey string) *models.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *FileStorage) FindByLongURL(longURL string) *models.AliasURLModel {
+func (s *Storage) FindByLongURL(longURL string) *aliasentity.AliasURLModel {
 
-	file, err := os.OpenFile(s.fileName, os.O_RDONLY, 0644)
+	file, err := os.OpenFile(s.aliasesFileName, os.O_RDONLY, 0644)
 	if err != nil {
 		return nil
 	}
@@ -168,7 +223,7 @@ func (s *FileStorage) FindByLongURL(longURL string) *models.AliasURLModel {
 	scanner := bufio.NewScanner(file)
 
 	for i := 0; scanner.Scan(); i++ {
-		var node models.AliasURLModel
+		var node aliasentity.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
 			return nil
 		}
@@ -181,13 +236,45 @@ func (s *FileStorage) FindByLongURL(longURL string) *models.AliasURLModel {
 	return nil
 }
 
+func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {
+
+	file, err := os.OpenFile(s.aliasesFileName, os.O_RDONLY, 0644)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var nodes []aliasentity.AliasURLModel
+	scanner := bufio.NewScanner(file)
+
+	for i := 0; scanner.Scan(); i++ {
+		var node aliasentity.AliasURLModel
+		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
+			return nil, err
+		}
+
+		if node.UserID == userID {
+			nodes = append(nodes, node)
+		}
+	}
+	return nodes, nil
+}
+
+// ------------------------------------------------------------
+//
+//	Mark aliases like "deleted" by aliasesID
+func (s *Storage) MarkDeleted(ctx context.Context, aliasesID []uint64) error {
+
+	return nil
+}
+
 // ------------------------------------------------------------
 //
 //	Get the last saved key
 //	This is interfase method of "Storager" interface
 //	Output:
 //		string - last saved key
-func (s *FileStorage) GetLastShortKey() string {
+func (s *Storage) GetLastShortKey() string {
 	return s.lastKey
 }
 
@@ -199,7 +286,7 @@ func (s *FileStorage) GetLastShortKey() string {
 //		bool - true: connection is
 //			   false: connection isn't
 //		error - if can not find "urlAliasNode" by long URL
-func (s *FileStorage) IsConnected() bool {
+func (s *Storage) IsConnected() bool {
 	return true
 }
 
@@ -209,6 +296,6 @@ func (s *FileStorage) IsConnected() bool {
 //	This is interfase method of "Storager" interface
 //	Output:
 //		error
-func (s *FileStorage) Close() error {
+func (s *Storage) Close() error {
 	return nil
 }

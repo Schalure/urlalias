@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,27 +10,24 @@ import (
 	"testing"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/internal/app/aliasmaker"
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_ApiShortenHandlerPost(t *testing.T) {
 
-	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
-	require.NoError(t, err)
+	service := newService(t)
 	defer service.Stop()
 
-
-	listOfURL := []models.AliasURLModel{
+	listOfURL := []aliasentity.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
 	}
 
 	for i, nodeURL := range listOfURL {
-		if err := service.Storage.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := service.Storage.Save(&aliasentity.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
@@ -78,7 +76,9 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 
 			recorder := httptest.NewRecorder()
 			h := NewHandlers(service).APIShortenHandlerPost
-			h(recorder, request)
+			ctx := context.WithValue(request.Context(), UserID, uint64(0))
+
+			h(recorder, request.WithContext(ctx))
 
 			result := recorder.Result()
 
@@ -100,18 +100,17 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 
 func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 
-	service, err := aliasmaker.NewAliasMakerServise(config.NewConfig())
-	require.NoError(t, err)
+	service := newService(t)
 	defer service.Stop()
 
-	listOfURL := []models.AliasURLModel{
+	listOfURL := []aliasentity.AliasURLModel{
 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
 	}
 
 	for i, nodeURL := range listOfURL {
-		if err := service.Storage.Save(&models.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
+		if err := service.Storage.Save(&aliasentity.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
 			require.NotNil(t, err)
 		}
 	}
@@ -127,7 +126,7 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 	}{
 		//	memstor simple test
 		{
-			testName: "memstor simple test",
+			testName: "memstor_simple_test",
 			data: `[
 				{
 					"correlation_id": "1",
@@ -161,7 +160,9 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 
 			recorder := httptest.NewRecorder()
 			h := NewHandlers(service).APIShortenBatchHandlerPost
-			h(recorder, request)
+
+			ctx := context.WithValue(request.Context(), UserID, uint64(0))
+			h(recorder, request.WithContext(ctx))
 
 			result := recorder.Result()
 
@@ -178,6 +179,50 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want.response, string(data))
+		})
+	}
+}
+
+func Test_APIUserURLsHandlerDelete(t *testing.T) {
+
+	service := newService(t)
+	defer service.Stop()
+
+	testCases := []struct {
+		name   string
+		userID uint64
+		data   string
+		want   struct {
+			statusCode int
+		}
+	}{
+		{
+			name:   "sympleTest",
+			userID: 1,
+			data:   `["6qxTVvsy","RTfd56hn","Jlfd67ds"]`,
+			want: struct{ statusCode int }{
+				statusCode: http.StatusAccepted,
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+
+			request := httptest.NewRequest(http.MethodDelete, "/api/user/urls", strings.NewReader(test.data))
+			request.Header.Add(contentType, appJSON)
+
+			recorder := httptest.NewRecorder()
+			h := NewHandlers(service).APIUserURLsHandlerDelete
+
+			ctx := context.WithValue(request.Context(), UserID, test.userID)
+			h(recorder, request.WithContext(ctx))
+
+			result := recorder.Result()
+			err := result.Body.Close()
+			require.NoError(t, err)
+
+			assert.Equal(t, result.StatusCode, test.want.statusCode)
 		})
 	}
 }

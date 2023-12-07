@@ -10,6 +10,7 @@ const (
 	contentType     string = "Content-Type"
 	contentEncoding string = "Content-Encoding"
 	acceptEncoding  string = "Accept-Encoding"
+	authorization   string = "Authorization"
 )
 
 const (

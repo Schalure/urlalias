@@ -1,16 +1,13 @@
 package aliasmaker
 
 import (
-	"errors"
+	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
-	"github.com/Schalure/urlalias/internal/app/models"
-	"github.com/Schalure/urlalias/internal/app/storage/filestor"
-	"github.com/Schalure/urlalias/internal/app/storage/memstor"
-	"github.com/Schalure/urlalias/internal/app/storage/postgrestor"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
 const (
@@ -19,77 +16,145 @@ const (
 
 // Type of service
 type AliasMakerServise struct {
-	Config *config.Configuration
-	Logger Loggerer
+	stopServiceCtx context.Context
+
+	Config  *config.Configuration
+	Logger  Loggerer
 	Storage Storager
+
+	deleter           *deleter
+	aliasesToDeleteCh chan struct {
+		userID  uint64
+		aliases []string
+	}
+
 	lastKey string
 }
 
+type Loggerer interface {
+	Info(args ...interface{})
+	Infow(msg string, keysAndValues ...interface{})
+	Errorw(msg string, keysAndValues ...interface{})
+	Fatalw(msg string, keysAndValues ...interface{})
+	Close()
+}
+
+// Access interface to storage
+type Storager interface {
+	CreateUser() (uint64, error)
+	Save(urlAliasNode *aliasentity.AliasURLModel) error
+	SaveAll(urlAliasNode []aliasentity.AliasURLModel) error
+	FindByShortKey(shortKey string) *aliasentity.AliasURLModel
+	FindByLongURL(longURL string) *aliasentity.AliasURLModel
+	FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error)
+	MarkDeleted(ctx context.Context, aliasesID []uint64) error
+	GetLastShortKey() string
+	IsConnected() bool
+	Close() error
+}
+
 // --------------------------------------------------
+//
 //	Constructor
-func NewAliasMakerServise(c *config.Configuration) (*AliasMakerServise, error){
+func NewAliasMakerServise(c *config.Configuration, s Storager, l Loggerer) (*AliasMakerServise, error) {
 
-	var errs []error
+	lastKey := s.GetLastShortKey()
 
-	logger, loggerErr := chooseLogger(LoggerTypeZap)
-	errs = append(errs, loggerErr)
-
-	storage, storageErr := chooseStorage(c)
-	errs = append(errs, storageErr)
-
-	lastKey := storage.GetLastShortKey()
+	ctx, cancel := context.WithCancel(context.Background())
+	aliasesToDeleteCh := make(chan struct {
+		userID  uint64
+		aliases []string
+	}, 50)
+	deleter := newDeleter(cancel, s, l, aliasesToDeleteCh)
+	deleter.run(ctx)
 
 	return &AliasMakerServise{
-		Config: c,
-		Logger: logger,
-		Storage: storage,
+		Config:  c,
+		Storage: s,
+		Logger:  l,
+
 		lastKey: lastKey,
-	}, errors.Join(errs...)
+
+		deleter:           deleter,
+		aliasesToDeleteCh: aliasesToDeleteCh,
+	}, nil
 }
-
-
-// --------------------------------------------------
-//
-//	Choose logger for service
-func chooseLogger(loggerType LoggerType) (Loggerer, error) {
-	switch loggerType {
-	case LoggerTypeZap:
-		return zaplogger.NewZapLogger("")
-	default:
-		return nil, fmt.Errorf("logger type is not supported: %s", loggerType.String())
-	}
-}
-
-// --------------------------------------------------
-//
-//	Choose storage for service
-func chooseStorage(c *config.Configuration) (Storager, error) {
-
-	switch c.StorageType() {
-	case config.DataBaseStor:
-		return postgrestor.NewPostgreStor(c.DBConnection())
-	case config.FileStor:
-		return filestor.NewFileStorage(c.StorageFile())
-	default:
-		return memstor.NewMemStorage()
-	}
-}
-
 
 // --------------------------------------------------
 //
 //	Create new URL pair
-func (s *AliasMakerServise) NewPairURL(longURL string) (*models.AliasURLModel, error) {
+func (s *AliasMakerServise) NewPairURL(longURL string) (*aliasentity.AliasURLModel, error) {
 
 	newAliasKey, err := s.createAliasKey()
 	if err != nil {
 		return nil, err
 	}
 
-	return &models.AliasURLModel{
+	return &aliasentity.AliasURLModel{
 		LongURL:  longURL,
 		ShortKey: newAliasKey,
 	}, nil
+}
+
+// --------------------------------------------------
+//
+//	Create new user
+func (s *AliasMakerServise) CreateUser() (uint64, error) {
+
+	userID, err := s.Storage.CreateUser()
+	if err != nil {
+		return 0, err
+	}
+	return userID, nil
+}
+
+// --------------------------------------------------
+//
+//	Create alias by originalURL
+func (s *AliasMakerServise) CreateAlias(userID uint64, originalURL string) (*aliasentity.AliasURLModel, int, error) {
+
+	var err error
+
+	node := s.Storage.FindByLongURL(originalURL)
+	if node == nil {
+		if node, err = s.NewPairURL(originalURL); err != nil {
+			s.Logger.Info(err.Error())
+			return nil, http.StatusBadRequest, err
+		}
+		node.UserID = userID
+		if err = s.Storage.Save(node); err != nil {
+			s.Logger.Info(err.Error())
+			return nil, http.StatusBadRequest, err
+		}
+		return node, http.StatusCreated, nil
+	}
+	return node, http.StatusConflict, nil
+}
+
+// --------------------------------------------------
+//
+//	Add aliases to delete
+func (s *AliasMakerServise) AddAliasesToDelete(ctx context.Context, userID uint64, aliases ...string) error {
+
+	select {
+	case <-ctx.Done():
+		s.Logger.Infow(
+			"AddAliasesToDelete: context Done",
+			"userID", userID,
+			"aliases", aliases,
+		)
+		return fmt.Errorf("can't create a delete request, try again later")
+	case s.aliasesToDeleteCh <- struct {
+		userID  uint64
+		aliases []string
+	}{userID: userID, aliases: aliases}:
+		s.Logger.Infow(
+			"AddAliasesToDelete: add aliases to delete",
+			"userID", userID,
+			"aliases", aliases,
+		)
+	}
+	return nil
 }
 
 // --------------------------------------------------
@@ -99,12 +164,12 @@ func (s *AliasMakerServise) createAliasKey() (string, error) {
 
 	var charset = []string{
 		"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
 	}
 
 	if s.lastKey == "" {
-		s.lastKey = "000000000"
+		s.lastKey = strings.Repeat("0", aliasKeyLen) //"000000000"
 		return s.lastKey, nil
 	}
 
@@ -135,6 +200,7 @@ func (s *AliasMakerServise) createAliasKey() (string, error) {
 //	Stop service and full release
 func (s *AliasMakerServise) Stop() {
 
+	s.deleter.stop()
 	s.Storage.Close()
 	s.Logger.Close()
 }

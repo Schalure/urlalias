@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,8 +31,14 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 		"URL", node.LongURL,
 	)
 
+	if node.DeletedFlag {
+		w.WriteHeader(http.StatusGone)
+		return
+	}
+
 	w.Header().Add("Location", node.LongURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
+
 }
 
 // ------------------------------------------------------------
@@ -46,7 +53,7 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 	//	get url
 	longURL, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, fmt.Errorf("can`t read request body: %s", err.Error()).Error(), http.StatusBadRequest)
 		h.service.Logger.Info(err.Error())
 		return
 	}
@@ -69,6 +76,16 @@ func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 			h.service.Logger.Info(err.Error())
 			return
 		}
+
+		userID := r.Context().Value(UserID)
+		uID, ok := userID.(uint64)
+		if !ok {
+			http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)
+			h.service.Logger.Info(errors.New("can't parsed user id").Error())
+			return
+		}
+		node.UserID = uID
+
 		if err = h.service.Storage.Save(node); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			h.service.Logger.Info(err.Error())

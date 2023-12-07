@@ -5,23 +5,28 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Schalure/urlalias/internal/app/models"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestFileStorage_Save(t *testing.T) {
 
-	file, err := os.CreateTemp("", "storage*.json")
+	aliasesFile, err := os.CreateTemp("", "storage*.json")
 	require.NoError(t, err)
-	file.Close()
-	defer os.Remove(file.Name())
+	aliasesFile.Close()
+	defer os.Remove(aliasesFile.Name())
 
-	stor, _ := NewFileStorage(file.Name())
+	usersFile, err := os.CreateTemp("", "storage*.json")
+	require.NoError(t, err)
+	aliasesFile.Close()
+	defer os.Remove(usersFile.Name())
+
+	stor, _ := NewStorage(aliasesFile.Name(), usersFile.Name())
 
 	testCases := []struct {
 		testName string
-		storNode models.AliasURLModel
+		storNode aliasentity.AliasURLModel
 		want     struct {
 			data string
 			err  error
@@ -29,8 +34,9 @@ func TestFileStorage_Save(t *testing.T) {
 	}{
 		{
 			testName: "simple save",
-			storNode: models.AliasURLModel{
+			storNode: aliasentity.AliasURLModel{
 				ID:       1,
+				UserID:   0,
 				ShortKey: "000000000",
 				LongURL:  "https://qqq.ru",
 			},
@@ -38,7 +44,7 @@ func TestFileStorage_Save(t *testing.T) {
 				data string
 				err  error
 			}{
-				data: `{"uuid":1,"short_url":"000000000","original_url":"https://qqq.ru"}`,
+				data: `{"uuid":1,"user_id":0,"short_url":"000000000","original_url":"https://qqq.ru","is_deleted":false}`,
 				err:  nil,
 			},
 		},
@@ -53,7 +59,7 @@ func TestFileStorage_Save(t *testing.T) {
 				return
 			}
 
-			f, err := os.Open(file.Name())
+			f, err := os.Open(aliasesFile.Name())
 			require.NoError(t, err)
 			scanner := bufio.NewScanner(f)
 

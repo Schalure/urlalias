@@ -40,8 +40,9 @@ func (s StorageType) String() string {
 const (
 	hostDefault        = string("localhost:8080")        //	Host default value
 	baseURLDefault     = string("http://localhost:8080") //	Base URL default value
-	storageFileDefault = "/tmp/short-url-db.json"        //	Default file name of URLs storage
-	logToFileDefault   = false                           //	How to save log default value
+	aliasesFileDefault = "/tmp/short-url-db.json"        //	Default file name of URLs storage
+	usersFileDefault   = "/tmp/users-db.json"
+	logToFileDefault   = false //	How to save log default value
 )
 
 // ------------------------------------------------------------
@@ -51,7 +52,8 @@ type Configuration struct {
 	host    string //	Server addres
 	baseURL string //	Base URL for create alias
 
-	storageFile  string // File name of URLs storage
+	aliasesFile  string // File name of URLs storage
+	usersFile    string
 	dbConnection string
 
 	storageType StorageType
@@ -93,7 +95,7 @@ func NewConfig() *Configuration {
 	case DataBaseStor:
 		log.Printf("DB conection string: \"%s\"\n", config.dbConnection)
 	case FileStor:
-		log.Printf("Storage file: \"%s\"\n", config.storageFile)
+		log.Printf("Storage file: \"%s\"\n", config.aliasesFile)
 	default:
 		log.Print("memory storage is used")
 	}
@@ -114,35 +116,34 @@ func (c *Configuration) Host() string {
 // ------------------------------------------------------------
 //
 //	Getter "Configuration.baseURL"
-//	Output:
-//		c.baseURL string
 func (c *Configuration) BaseURL() string {
 	return c.baseURL
 }
 
 // ------------------------------------------------------------
 //
-//	Getter "Configuration.baseURL"
-//	Output:
-//		c.baseURL string
-func (c *Configuration) StorageFile() string {
-	return c.storageFile
+//	Getter "Configuration.AliasesFile"
+func (c *Configuration) AliasesFile() string {
+	return c.aliasesFile
 }
 
 // ------------------------------------------------------------
 //
-//	Getter "Configuration.baseURL"
-//	Output:
-//		c.baseURL string
+//	Getter "Configuration.UsersFile"
+func (c *Configuration) UsersFile() string {
+	return c.usersFile
+}
+
+// ------------------------------------------------------------
+//
+//	Getter "Configuration.DBConnection"
 func (c *Configuration) DBConnection() string {
 	return c.dbConnection
 }
 
 // ------------------------------------------------------------
 //
-//	Getter "Configuration.baseURL"
-//	Output:
-//		c.baseURL string
+//	Getter "Configuration.StorageType"
 func (c *Configuration) StorageType() StorageType {
 	return c.storageType
 }
@@ -170,7 +171,7 @@ func (c *Configuration) parseFlags() {
 
 		//	TODO need to parce file path to check valid
 		if s == "" {
-			storageFile = storageFileDefault
+			storageFile = aliasesFileDefault
 		} else {
 			storageFile = s
 		}
@@ -192,7 +193,8 @@ func (c *Configuration) parseFlags() {
 	c.logToFile = *logToFile
 
 	c.dbConnection = *dbConnection
-	c.storageFile = storageFile
+	c.aliasesFile = storageFile
+	c.usersFile = storageFile + "-users"
 }
 
 // ------------------------------------------------------------
@@ -219,7 +221,8 @@ func (c *Configuration) parseEnv() {
 
 	//	get storage file from environment variables
 	if storageFile, ok := os.LookupEnv(storageFileEnvKey); ok {
-		c.storageFile = storageFile
+		c.aliasesFile = storageFile
+		c.usersFile = storageFile + "-users"
 	}
 
 	//	get storage file from environment variables
@@ -235,7 +238,7 @@ func (c *Configuration) chooseStorageType() {
 
 	if c.dbConnection != "" {
 		c.storageType = DataBaseStor
-	} else if c.storageFile != "" {
+	} else if c.aliasesFile != "" {
 		c.storageType = FileStor
 	} else {
 		c.storageType = MemoryStor

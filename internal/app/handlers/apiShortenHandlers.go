@@ -250,8 +250,9 @@ func (h *Handlers) APIUserURLsHandlerDelete(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-
-	if err := h.service.AddAliasesToDelete(r.Context(), uID, aliases...); err != nil {
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second * 5)
+	defer cancel()
+	if err := h.service.AddAliasesToDelete(ctx, uID, aliases...); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

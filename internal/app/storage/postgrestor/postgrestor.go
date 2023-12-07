@@ -2,29 +2,33 @@ package postgrestor
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Storage struct {
-	db *sql.DB
+	//db *sql.DB
+	db *pgxpool.Pool
 }
 
 func NewStorage(dbConnectionString string) (*Storage, error) {
 
-	db, err := sql.Open("pgx", dbConnectionString)
+	//db, err := sql.Open("pgx", dbConnectionString)
+	db, err := pgxpool.New(context.Background(), dbConnectionString)
+
 	if err != nil {
 		log.Panicln(err)
 	}
 
-	if _, err = db.Exec(`
+	if _, err = db.Exec(context.Background(),
+	`
 		CREATE TABLE IF NOT EXISTS users(
 		user_id serial PRIMARY KEY
 		);
@@ -32,7 +36,8 @@ func NewStorage(dbConnectionString string) (*Storage, error) {
 		return nil, err
 	}
 
-	if _, err = db.Exec(`
+	if _, err = db.Exec(context.Background(),
+	`
 		CREATE TABLE IF NOT EXISTS aliases(
 		id serial PRIMARY KEY,
 		user_id integer NOT NULL REFERENCES users(user_id),
@@ -58,7 +63,7 @@ func NewStorage(dbConnectionString string) (*Storage, error) {
 func (s *Storage) CreateUser() (uint64, error) {
 
 	lastID := 0
-	err := s.db.QueryRow(`insert into users default values returning user_id`).Scan(&lastID)
+	err := s.db.QueryRow(context.Background(), `insert into users default values returning user_id`).Scan(&lastID)
 	if err != nil {
 		return 0, errors.New("can't create new user")
 	}
@@ -76,7 +81,7 @@ func (s *Storage) CreateUser() (uint64, error) {
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
 func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
 
-	_, err := s.db.Exec(`INSERT INTO aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, urlAliasNode.UserID, urlAliasNode.LongURL, urlAliasNode.ShortKey)
+	_, err := s.db.Exec(context.Background(), `INSERT INTO aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, urlAliasNode.UserID, urlAliasNode.LongURL, urlAliasNode.ShortKey)
 
 	if err != nil {
 		return err
@@ -94,24 +99,24 @@ func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
 //		error - if not nil, can not save "[]storage.AliasURLModel"
 func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.Begin(context.Background())
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(context.Background())
 
 	for _, node := range urlAliasNodes {
 
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 1 * time.Second)
 		defer cancel()
-		_, err := tx.ExecContext(ctx, `insert into aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, node.UserID, node.LongURL, node.ShortKey)
+		_, err := tx.Exec(ctx, `insert into aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, node.UserID, node.LongURL, node.ShortKey)
 		// sql.Named("long_url", node.LongURL),
 		// sql.Named("short_url", node.ShortKey))
 		if err != nil {
 			return err
 		}
 	}
-	return tx.Commit()
+	return tx.Commit(context.Background())
 }
 
 // ------------------------------------------------------------
@@ -130,7 +135,7 @@ func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, user_id, original_url, short_key, is_deleted FROM aliases WHERE short_key = $1;`, shortKey)
+	row := s.db.QueryRow(ctx, `SELECT id, user_id, original_url, short_key, is_deleted FROM aliases WHERE short_key = $1;`, shortKey)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey, &aliasNode.DeletedFlag); err != nil {
 		return nil
 	}
@@ -153,7 +158,7 @@ func (s *Storage) FindByLongURL(longURL string) *aliasentity.AliasURLModel {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `SELECT id, user_id, original_url, short_key, is_deleted FROM aliases WHERE original_url=$1;`, longURL)
+	row := s.db.QueryRow(ctx, `SELECT id, user_id, original_url, short_key, is_deleted FROM aliases WHERE original_url=$1;`, longURL)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey, &aliasNode.DeletedFlag); err != nil {
 		return nil
 	}
@@ -162,7 +167,7 @@ func (s *Storage) FindByLongURL(longURL string) *aliasentity.AliasURLModel {
 
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {
 
-	rows, err := s.db.QueryContext(ctx, `select original_url, short_key from aliases where user_id=$1`, userID)
+	rows, err := s.db.Query(ctx, `select original_url, short_key from aliases where user_id=$1`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -190,15 +195,13 @@ func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentit
 //	Mark aliases like "deleted" by aliasesID
 func (s *Storage) MarkDeleted(ctx context.Context, aliasesID []uint64) error {
 
-	var parametrs []string
-	var argsID []interface{}
-	for i, ID := range aliasesID {
-		parametrs = append(parametrs, fmt.Sprintf("id=$%d", i+1))
-		argsID = append(argsID, ID)
+	query := `UPDATE aliases SET is_deleted = TRUE where id=$1;`
+	batch := &pgx.Batch{}
+	for _, ID := range aliasesID {
+		batch.Queue(query, ID)
 	}
-
-	_, err := s.db.Exec(`update aliases set is_deleted = true where (`+strings.Join(parametrs, " OR ")+`);`, argsID...)
-	return err
+	results := s.db.SendBatch(ctx, batch)
+	return results.Close()
 }
 
 // ------------------------------------------------------------
@@ -210,7 +213,7 @@ func (s *Storage) GetLastShortKey() string {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, `select short_key from aliases where id=(select max(id) from aliases);`)
+	row := s.db.QueryRow(ctx, `select short_key from aliases where id=(select max(id) from aliases);`)
 	if err := row.Scan(&shortKey); err != nil {
 		return ""
 	}
@@ -230,7 +233,7 @@ func (s *Storage) IsConnected() bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	if err := s.db.PingContext(ctx); err != nil {
+	if err := s.db.Ping(ctx); err != nil {
 		return false
 	}
 	return true
@@ -244,5 +247,6 @@ func (s *Storage) IsConnected() bool {
 //		error
 func (s *Storage) Close() error {
 
-	return s.db.Close()
+	s.db.Close()
+	return nil
 }

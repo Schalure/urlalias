@@ -145,7 +145,7 @@ func (s *AliasMakerServise) AddAliasesToDelete(ctx context.Context, userID uint6
 				"userID", userID,
 				"aliases", aliases,
 			)
-	}	
+	}
 	return nil
 }
 

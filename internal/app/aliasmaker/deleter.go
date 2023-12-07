@@ -171,34 +171,3 @@ func (d *deleter) deleteUserURLs(ctx context.Context, userID uint64, shortKeys [
 		d.logger.Info(err)
 	}
 }
-// func (d *Deleter) addAliasesToDelete(userID uint64, aliases ...string) {
-
-// 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-// 	go func () {
-// 		select {
-// 		case <-ctx.Done():
-
-// 		}
-// 		d.aliasesToDelete <- struct{userID uint64; aliases []string}{userID, aliases}
-// 	}()
-
-// 	for _, alias := range aliases {
-// 		d.deleterMutex.Lock()
-// 		d.aliasesToDelete = append(d.aliasesToDelete, struct{userID uint64; alias string}{userID, alias})
-// 		d.deleterMutex.Unlock()
-// 	}
-// }
-
-// func (d *Deleter) getAliasToDelete() (struct{userID uint64; alias string}, error) {
-
-// 	if len(d.aliasesToDelete) == 0 {
-// 		return struct{userID uint64; alias string}{}, fmt.Errorf("the list of aliases to be deleted is empty")
-// 	}
-
-// 	d.deleterMutex.Lock()
-// 	aliasToDelete := d.aliasesToDelete[0]
-// 	d.aliasesToDelete = d.aliasesToDelete[1:]
-// 	d.deleterMutex.Unlock()
-
-// 	return aliasToDelete, nil
-// }

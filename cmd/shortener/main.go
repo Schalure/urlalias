@@ -20,7 +20,7 @@ func main() {
 
 	log.Println("Start initialize application...")
 
-	log.Println("Cofiguration initialize...")	
+	log.Println("Cofiguration initialize...")
 	conf := config.NewConfig()
 
 	log.Println("Logger initialize...")

@@ -67,13 +67,16 @@ func Test_deleteUserURLs(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 
 			ctx, cancel := context.WithCancel(context.Background())
-			
+
 			logger, err := zaplogger.NewZapLogger("")
 			require.NoError(t, err)
 			stor, err := memstor.NewStorage()
 			require.NoError(t, err)
 
-			aliasesToDeleteCh := make(chan struct{userID uint64; aliases []string}, 1)
+			aliasesToDeleteCh := make(chan struct {
+				userID  uint64
+				aliases []string
+			}, 1)
 
 			d := newDeleter(cancel, stor, logger, aliasesToDeleteCh)
 

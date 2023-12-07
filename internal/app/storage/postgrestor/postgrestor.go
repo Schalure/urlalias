@@ -28,7 +28,7 @@ func NewStorage(dbConnectionString string) (*Storage, error) {
 	}
 
 	if _, err = db.Exec(context.Background(),
-	`
+		`
 		CREATE TABLE IF NOT EXISTS users(
 		user_id serial PRIMARY KEY
 		);
@@ -37,7 +37,7 @@ func NewStorage(dbConnectionString string) (*Storage, error) {
 	}
 
 	if _, err = db.Exec(context.Background(),
-	`
+		`
 		CREATE TABLE IF NOT EXISTS aliases(
 		id serial PRIMARY KEY,
 		user_id integer NOT NULL REFERENCES users(user_id),
@@ -107,7 +107,7 @@ func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
 
 	for _, node := range urlAliasNodes {
 
-		ctx, cancel := context.WithTimeout(context.Background(), 1 * time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 		_, err := tx.Exec(ctx, `insert into aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, node.UserID, node.LongURL, node.ShortKey)
 		// sql.Named("long_url", node.LongURL),

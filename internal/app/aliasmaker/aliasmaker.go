@@ -16,15 +16,17 @@ const (
 
 // Type of service
 type AliasMakerServise struct {
-
 	stopServiceCtx context.Context
 
 	Config  *config.Configuration
 	Logger  Loggerer
 	Storage Storager
 
-	deleter *deleter
-	aliasesToDeleteCh chan struct{userID uint64; aliases []string}
+	deleter           *deleter
+	aliasesToDeleteCh chan struct {
+		userID  uint64
+		aliases []string
+	}
 
 	lastKey string
 }
@@ -59,7 +61,10 @@ func NewAliasMakerServise(c *config.Configuration, s Storager, l Loggerer) (*Ali
 	lastKey := s.GetLastShortKey()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	aliasesToDeleteCh := make(chan struct{userID uint64; aliases []string}, 50)
+	aliasesToDeleteCh := make(chan struct {
+		userID  uint64
+		aliases []string
+	}, 50)
 	deleter := newDeleter(cancel, s, l, aliasesToDeleteCh)
 	deleter.run(ctx)
 
@@ -70,7 +75,7 @@ func NewAliasMakerServise(c *config.Configuration, s Storager, l Loggerer) (*Ali
 
 		lastKey: lastKey,
 
-		deleter: deleter,
+		deleter:           deleter,
 		aliasesToDeleteCh: aliasesToDeleteCh,
 	}, nil
 }
@@ -132,19 +137,22 @@ func (s *AliasMakerServise) CreateAlias(userID uint64, originalURL string) (*ali
 func (s *AliasMakerServise) AddAliasesToDelete(ctx context.Context, userID uint64, aliases ...string) error {
 
 	select {
-		case <-ctx.Done():
-			s.Logger.Infow(
-				"AddAliasesToDelete: context Done",
-				"userID", userID,
-				"aliases", aliases,
-			)
-			return fmt.Errorf("can't create a delete request, try again later")
-		case s.aliasesToDeleteCh <- struct{userID uint64; aliases []string}{userID: userID, aliases: aliases}:
-			s.Logger.Infow(
-				"AddAliasesToDelete: add aliases to delete",
-				"userID", userID,
-				"aliases", aliases,
-			)
+	case <-ctx.Done():
+		s.Logger.Infow(
+			"AddAliasesToDelete: context Done",
+			"userID", userID,
+			"aliases", aliases,
+		)
+		return fmt.Errorf("can't create a delete request, try again later")
+	case s.aliasesToDeleteCh <- struct {
+		userID  uint64
+		aliases []string
+	}{userID: userID, aliases: aliases}:
+		s.Logger.Infow(
+			"AddAliasesToDelete: add aliases to delete",
+			"userID", userID,
+			"aliases", aliases,
+		)
 	}
 	return nil
 }

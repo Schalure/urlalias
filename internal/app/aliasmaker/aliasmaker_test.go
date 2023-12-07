@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func newService(t *testing.T) *AliasMakerServise {
 
 	logger, err := zaplogger.NewZapLogger("")
@@ -70,7 +69,6 @@ func Test_createAliasKey(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-
 
 			s := newService(t)
 			defer s.Stop()

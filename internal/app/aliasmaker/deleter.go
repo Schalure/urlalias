@@ -10,27 +10,32 @@ import (
 )
 
 type deleter struct {
-
 	storage Storager
-	logger Loggerer
+	logger  Loggerer
 
-	aliasesToDelete chan struct {userID uint64;aliases  []string}
+	aliasesToDelete chan struct {
+		userID  uint64
+		aliases []string
+	}
 	cancel context.CancelFunc
 }
 
-func newDeleter(cansel context.CancelFunc, s Storager, l Loggerer, aliasesToDelete chan struct {userID uint64;aliases  []string}) *deleter{
+func newDeleter(cansel context.CancelFunc, s Storager, l Loggerer, aliasesToDelete chan struct {
+	userID  uint64
+	aliases []string
+}) *deleter {
 
 	return &deleter{
-		cancel: cansel,
-		storage: s,
-		logger: l,
+		cancel:          cansel,
+		storage:         s,
+		logger:          l,
 		aliasesToDelete: aliasesToDelete,
 	}
 }
 
 func (d *deleter) run(ctx context.Context) {
 
-	go func () {
+	go func() {
 		for {
 			select {
 			case <-ctx.Done():
@@ -38,7 +43,7 @@ func (d *deleter) run(ctx context.Context) {
 					"func (d *Deleter) RunDeleter(ctx context.Context)",
 					"error", "function stopped by ctx.Done()",
 				)
-			case aliasesToDelete := <- d.aliasesToDelete:
+			case aliasesToDelete := <-d.aliasesToDelete:
 				d.deleteUserURLs(ctx, aliasesToDelete.userID, aliasesToDelete.aliases)
 			}
 		}
@@ -53,6 +58,7 @@ func (d *deleter) stop() {
 	)
 	d.cancel()
 }
+
 // --------------------------------------------------
 //
 //	Delete users URLs

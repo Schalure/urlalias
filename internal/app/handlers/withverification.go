@@ -17,8 +17,8 @@ func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 			)
 			http.Error(w, errors.New("Unauthorized").Error(), http.StatusUnauthorized)
 			return
-		} 
-		
+		}
+
 		userID, err := getUserID(tokenCookie.Value)
 		if err != nil {
 			m.service.Logger.Infow(
@@ -30,7 +30,7 @@ func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 			http.Error(w, errors.New("Unauthorized").Error(), http.StatusUnauthorized)
 			return
 		}
-		
+
 		authCookie, _ := r.Cookie(authorization)
 		http.SetCookie(w, authCookie)
 

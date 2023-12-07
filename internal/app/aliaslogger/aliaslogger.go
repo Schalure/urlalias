@@ -7,7 +7,6 @@ import (
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 )
 
-
 type LoggerType int
 
 const (

@@ -8,81 +8,58 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/interpreter"
 	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
-// ------------------------------------------------------------
-//
-//	POST request - "/"
-func (h *Handler) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) {
+//	Handler retuns short URL by original URL. Handler can returns three HTTP statuses:
+//	1. StatusBadRequest (400) - if an internal service error occurred;
+//	2. StatusConflict (409) - if the original URL is already saved in the service;
+//	3. StatusCreated (201) - if original URL is saved successfully and alias is created.
+func (h *Handler) apiGetShortURL(w http.ResponseWriter, r *http.Request) {
 
 	type (
-		requestModel struct {
-			URL string `json:"url"`
+		RequestJSON struct {
+			OriginalURL string `json:"url"`
 		}
-		responseModel struct {
-			Result string `json:"result"`
+		ResponseJSON struct {
+			ShortURL string `json:"result"`
 		}
 	)
 
-	var (
-		requestJSON requestModel
-		i           interpreter.InterpreterJSON
-	)
+	var i interpreter.InterpreterJSON
 
-	userID := r.Context().Value(UserID)
-	uID, ok := userID.(uint64)
-	if !ok {
+	userID, err := h.getUserIDFromContext(r.Context())
+	if err != nil {
 		http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)
-		h.service.Logger.Info(errors.New("can't parsed user id").Error())
 		return
 	}
 
-	err := i.Unmarshal(r.Body, &requestJSON)
+	var requestJSON RequestJSON
+	err = i.Unmarshal(r.Body, &requestJSON)
 	if err != nil {
 		http.Error(w, "can't decode JSON content", http.StatusBadRequest)
-		h.service.Logger.Infow(
-			"Can't decode JSON content",
-			"err", err.Error(),
-		)
 		return
 	}
 
-	if !h.isValidURL(requestJSON.URL) {
-		http.Error(w, "url is not in the correct format", http.StatusBadRequest)
-		h.service.Logger.Infow(
-			"url is not in the correct format",
-			"url", requestJSON.URL,
-		)
-		return
-	}
-
-	node, statusCode, err := h.service.CreateAlias(uID, string(requestJSON.URL))
+	var statusCode int
+	shortURL, err := h.service.GetShortKey(r.Context(), userID, requestJSON.OriginalURL)
 	if err != nil {
-		h.service.Logger.Infow("alias to save", "error", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		if errors.Is(err, aliasmaker.ErrInternal) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, aliasmaker.ErrConflictURL) {
+			statusCode = http.StatusConflict
+		}
+	} else {
+		statusCode = http.StatusCreated
 	}
-	h.service.Logger.Infow("alias to save",
-		"status", statusCode,
-		"node.ID", node.ID,
-		"node.UserID", node.UserID,
-		"node.LongURL", node.LongURL,
-		"node.ShortKey", node.ShortKey,
-	)
 
-	var resp = responseModel{
-		Result: h.service.Config.BaseURL() + "/" + node.ShortKey,
-	}
-	buf, err := json.Marshal(&resp)
+	buf, err := json.Marshal(&ResponseJSON{ShortURL: h.baseURL + "/" + shortURL})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.service.Logger.Infow(
-			"Can not encode data",
-			"data", resp,
-			"err", err,
-		)
 		return
 	}
 
@@ -91,44 +68,44 @@ func (h *Handler) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) 
 	w.Write(buf)
 }
 
-func (h *Handler) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Request) {
+
+func (h *Handler) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 
 	type (
-		requestModel struct {
+		RequestJSON struct {
 			ID          string `json:"correlation_id"`
 			OriginalURL string `json:"original_url"`
 		}
 
-		responseModel struct {
+		ResponseJSON struct {
 			ID       string `json:"correlation_id"`
 			ShortURL string `json:"short_url"`
 		}
 	)
 
 	var (
-		requestJSON  []requestModel
-		responseJSON []responseModel
+		requestJSON  []RequestJSON
+		responseJSON []ResponseJSON
 		i            interpreter.InterpreterJSON
-		nodes        []aliasentity.AliasURLModel
 	)
 
-	userID := r.Context().Value(UserID)
-	uID, ok := userID.(uint64)
-	if !ok {
+	userID, err := h.getUserIDFromContext(r.Context())
+	if err != nil {
 		http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)
-		h.service.Logger.Info(errors.New("can't parsed user id").Error())
 		return
 	}
 
-	err := i.Unmarshal(r.Body, &requestJSON)
+	err = i.Unmarshal(r.Body, &requestJSON)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("can't decode JSON content, error: %s", err), http.StatusBadRequest)
-		h.service.Logger.Infow(
-			"Can't decode JSON content",
-			"err", err.Error(),
-		)
 		return
 	}
+
+	nodes := make([]aliasentity.AliasURLModel, len(requestJSON))
+	for i, request := range requestJSON {
+		nodes[i].LongURL = request.OriginalURL
+	}
+
 
 	for _, req := range requestJSON {
 

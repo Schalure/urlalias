@@ -75,7 +75,7 @@ func Test_ApiShortenHandlerPost(t *testing.T) {
 			request.Header.Add("Content-type", appJSON)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service).APIShortenHandlerPost
+			h := New(service).APIShortenHandlerPost
 			ctx := context.WithValue(request.Context(), UserID, uint64(0))
 
 			h(recorder, request.WithContext(ctx))
@@ -159,7 +159,7 @@ func Test_ApiShortenBatchHandlerPost(t *testing.T) {
 			request.Header.Add(contentType, appJSON)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service).APIShortenBatchHandlerPost
+			h := New(service).APIShortenBatchHandlerPost
 
 			ctx := context.WithValue(request.Context(), UserID, uint64(0))
 			h(recorder, request.WithContext(ctx))
@@ -213,7 +213,7 @@ func Test_APIUserURLsHandlerDelete(t *testing.T) {
 			request.Header.Add(contentType, appJSON)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service).APIUserURLsHandlerDelete
+			h := New(service).APIUserURLsHandlerDelete
 
 			ctx := context.WithValue(request.Context(), UserID, test.userID)
 			h(recorder, request.WithContext(ctx))

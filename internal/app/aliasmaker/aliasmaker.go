@@ -3,11 +3,9 @@ package aliasmaker
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
-	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
@@ -52,10 +50,9 @@ type AliasMakerServise struct {
 }
 
 
-// --------------------------------------------------
-//
+
 //	Constructor
-func New(c *config.Configuration, s Storager, l Loggerer) (*AliasMakerServise, error) {
+func New(s Storager, l Loggerer) (*AliasMakerServise, error) {
 
 	aliasesToDeleteCh := make(chan struct {
 		userID  uint64
@@ -74,6 +71,7 @@ func New(c *config.Configuration, s Storager, l Loggerer) (*AliasMakerServise, e
 		aliasesToDeleteCh: aliasesToDeleteCh,
 	}, nil
 }
+
 
 //	GetOriginalURL returns original url by shortKey. If original url not found or was deleted, return error
 func (s *AliasMakerServise) GetOriginalURL(ctx context.Context, shortKey string) (string, error) {
@@ -99,9 +97,24 @@ func (s *AliasMakerServise) GetOriginalURL(ctx context.Context, shortKey string)
 }
 
 //	AddNewURL add new URL to service and return alias entity
-func (s *AliasMakerServise) GetShortURL(ctx context.Context, userID uint64, originalURL string) (string, error) {
+func (s *AliasMakerServise) GetShortKey(ctx context.Context, userID uint64, originalURL string) (string, error) {
 
+	var err error
 
+	node := s.Storage.FindByLongURL(originalURL)
+	if node == nil {
+		if node, err = s.NewPairURL(originalURL); err != nil {
+			s.Logger.Info(err.Error())
+			return "", ErrInternal
+		}
+		node.UserID = userID
+		if err = s.Storage.Save(node); err != nil {
+			s.Logger.Info(err.Error())
+			return "", ErrInternal
+		}
+		return node.ShortKey, nil
+	}
+	return node.ShortKey, ErrConflictURL
 }
 
 // --------------------------------------------------
@@ -130,29 +143,6 @@ func (s *AliasMakerServise) CreateUser() (uint64, error) {
 		return 0, err
 	}
 	return userID, nil
-}
-
-// --------------------------------------------------
-//
-//	Create alias by originalURL
-func (s *AliasMakerServise) CreateAlias(userID uint64, originalURL string) (*aliasentity.AliasURLModel, int, error) {
-
-	var err error
-
-	node := s.Storage.FindByLongURL(originalURL)
-	if node == nil {
-		if node, err = s.NewPairURL(originalURL); err != nil {
-			s.Logger.Info(err.Error())
-			return nil, http.StatusBadRequest, err
-		}
-		node.UserID = userID
-		if err = s.Storage.Save(node); err != nil {
-			s.Logger.Info(err.Error())
-			return nil, http.StatusBadRequest, err
-		}
-		return node, http.StatusCreated, nil
-	}
-	return node, http.StatusConflict, nil
 }
 
 // --------------------------------------------------

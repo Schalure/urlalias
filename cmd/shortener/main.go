@@ -43,7 +43,7 @@ func main() {
 	defer service.Stop()
 
 	log.Println("Router initialize...")
-	router := handlers.NewRouter(handlers.NewHandlers(service))
+	router := handlers.NewRouter(handlers.New(service))
 
 	service.Logger.Infow(
 		fmt.Sprintf("%s service have been started...", config.AppName),

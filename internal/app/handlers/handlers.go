@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"net/url"
+	"io"
+	"net/http"
 
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 )
@@ -31,43 +33,103 @@ type Shortner interface {
 }
 
 
-
 type Handler struct {
 	service *aliasmaker.AliasMakerServise
+
+	baseURL string
 }
 
-// ------------------------------------------------------------
-//
-//	Constructor of Handlers type
-func NewHandlers(service *aliasmaker.AliasMakerServise) *Handler {
+
+//	Constructor of Handler type
+func New(service *aliasmaker.AliasMakerServise, baseURL string) *Handler {
 
 	return &Handler{
 		service: service,
+		baseURL: baseURL,
 	}
 }
 
-// ------------------------------------------------------------
-//
-//	Check to valid URL - method of Handlers type
-func (h *Handler) isValidURL(u string) bool {
 
-	if _, err := url.ParseRequestURI(u); err != nil {
-		h.service.Logger.Infow(
-			"URL is not in the correct format",
-			"URL", u,
-		)
-		return false
+//	Handler retuns original URL by short key in HTTP header "Location" and redirect status code (307).
+//	If URL not found or was deleted, returns error
+func (h *Handler) redirect(w http.ResponseWriter, r *http.Request) {
+
+	shortKey := r.RequestURI[1:]
+
+	originalURL, err := h.service.GetOriginalURL(r.Context(), shortKey)
+	if err != nil {
+		if errors.Is(err, aliasmaker.ErrURLNotFound){
+			http.Error(w, fmt.Sprintf("the url alias not found by key \"%s\"", shortKey), http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, aliasmaker.ErrURLWasDeleted){
+			http.Error(w, fmt.Sprintf("the url alias was deleted \"%s\"", shortKey), http.StatusGone)
+			return		
+		}
 	}
-	return true
+
+	w.Header().Add("Location", originalURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-// Get login from request context
-func (h *Handler) getLoginFromContext(ctx context.Context) (string, error) {
 
-	login := ctx.Value(UserID)
-	l, ok := login.(string)
+//	Handler retuns short URL by original URL. Handler can returns three HTTP statuses:
+//	1. StatusBadRequest (400) - if an internal service error occurred;
+//	2. StatusConflict (409) - if the original URL is already saved in the service;
+//	3. StatusCreated (201) - if original URL is saved successfully and alias is created.
+func (h *Handler) getShortURL(w http.ResponseWriter, r *http.Request) {
+
+	userID, err := h.getUserIDFromContext(r.Context())
+	if err != nil {
+		http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)
+		return
+	}
+
+	originalURL, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, fmt.Errorf("can`t read request body: %s", err.Error()).Error(), http.StatusBadRequest)
+		return
+	}
+
+
+	var statusCode int
+	shortURL, err := h.service.GetShortKey(r.Context(), userID, string(originalURL))
+	if err != nil {
+		if errors.Is(err, aliasmaker.ErrInternal) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, aliasmaker.ErrConflictURL) {
+			statusCode = http.StatusConflict
+		}
+	} else {
+		statusCode = http.StatusCreated
+	}
+
+	w.Header().Set("Content-Type", textPlain)
+	w.WriteHeader(statusCode)
+	w.Write([]byte(h.baseURL + "/" + shortURL))
+}
+
+
+//	Get state of database service
+func (h *Handler) PingGet(w http.ResponseWriter, r *http.Request) {
+
+	if !h.service.Storage.IsConnected() {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+
+// Get User ID from request context
+func (h *Handler) getUserIDFromContext(ctx context.Context) (uint64, error) {
+
+	userID := ctx.Value(UserID)
+	ID, ok := userID.(uint64)
 	if !ok {
-		return "", fmt.Errorf("login is not valid")
+		return 0, fmt.Errorf("login is not valid")
 	}
-	return l, nil
+	return ID, nil
 }

@@ -87,7 +87,7 @@ func Test_mainHandlerMethodGet(t *testing.T) {
 			request.Header.Add("Content-type", testCase.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service).mainHandlerGet
+			h := New(service).mainHandlerGet
 			h(recorder, request)
 
 			result := recorder.Result()
@@ -162,7 +162,7 @@ func Test_mainHandlerMethodPost(t *testing.T) {
 			request.Header.Add("Content-type", tt.request.contentType)
 
 			recorder := httptest.NewRecorder()
-			h := NewHandlers(service).mainHandlerPost
+			h := New(service).mainHandlerPost
 			h(recorder, request)
 
 			result := recorder.Result()

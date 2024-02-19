@@ -5,40 +5,30 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 )
 
-// ------------------------------------------------------------
-//
-//	"/" GET request handler.
-//	Execut GET request to make short alias from URL
-//	Input:
-//		w http.ResponseWriter
-//		r *http.Request
-func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
+//	Handler retuns original URL by short key in HTTP header "Location" and redirect status code (307).
+//	If URL not found or was deleted, returns error
+func (h *Handler) redirect(w http.ResponseWriter, r *http.Request) {
 
-	shortKey := r.RequestURI
-	node := h.service.Storage.FindByShortKey(shortKey[1:])
-	if node == nil {
-		http.Error(w, fmt.Sprintf("the urlAliasNode not found by key \"%s\"", shortKey), http.StatusBadRequest)
-		h.service.Logger.Infow(
-			"The urlAliasNode not found by key",
-			"Key", shortKey,
-		)
-		return
-	}
-	h.service.Logger.Infow(
-		"Long URL",
-		"URL", node.LongURL,
-	)
+	shortKey := r.RequestURI[1:]
 
-	if node.DeletedFlag {
-		w.WriteHeader(http.StatusGone)
-		return
+	originalURL, err := h.service.GetOriginalURL(r.Context(), shortKey)
+	if err != nil {
+		if errors.Is(err, aliasmaker.ErrURLNotFound){
+			http.Error(w, fmt.Sprintf("the url alias not found by key \"%s\"", shortKey), http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, aliasmaker.ErrURLWasDeleted){
+			http.Error(w, fmt.Sprintf("the url alias was deleted \"%s\"", shortKey), http.StatusGone)
+			return		
+		}
 	}
 
-	w.Header().Add("Location", node.LongURL)
+	w.Header().Add("Location", originalURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
-
 }
 
 // ------------------------------------------------------------
@@ -48,30 +38,33 @@ func (h *Handlers) mainHandlerGet(w http.ResponseWriter, r *http.Request) {
 //	Input:
 //		w http.ResponseWriter
 //		r *http.Request
-func (h *Handlers) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) mainHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	//	get url
-	longURL, err := io.ReadAll(r.Body)
+	originalURL, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, fmt.Errorf("can`t read request body: %s", err.Error()).Error(), http.StatusBadRequest)
 		h.service.Logger.Info(err.Error())
 		return
 	}
 
-	if !h.isValidURL(string(longURL)) {
-		http.Error(w, fmt.Sprintf("url is not in the correct format: %s", longURL), http.StatusBadRequest)
+	if !h.isValidURL(string(originalURL)) {
+		http.Error(w, fmt.Sprintf("url is not in the correct format: %s", originalURL), http.StatusBadRequest)
 		return
 	}
 
 	h.service.Logger.Infow(
 		"Parsed URL",
-		"Long URL", string(longURL),
+		"Long URL", string(originalURL),
 	)
 
+	
+
+
 	var statusCode int
-	node := h.service.Storage.FindByLongURL(string(longURL))
+	node := h.service.Storage.FindByLongURL(string(originalURL))
 	if node == nil {
-		if node, err = h.service.NewPairURL(string(longURL)); err != nil {
+		if node, err = h.service.NewPairURL(string(originalURL)); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			h.service.Logger.Info(err.Error())
 			return

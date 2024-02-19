@@ -15,7 +15,7 @@ import (
 // ------------------------------------------------------------
 //
 //	POST request - "/"
-func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	type (
 		requestModel struct {
@@ -91,7 +91,7 @@ func (h *Handlers) APIShortenHandlerPost(w http.ResponseWriter, r *http.Request)
 	w.Write(buf)
 }
 
-func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	type (
 		requestModel struct {
@@ -174,7 +174,7 @@ func (h *Handlers) APIShortenBatchHandlerPost(w http.ResponseWriter, r *http.Req
 	w.Write(buf)
 }
 
-func (h *Handlers) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request) {
 
 	type responseModel struct {
 		ShortURL    string `json:"short_url"`
@@ -227,7 +227,7 @@ func (h *Handlers) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request)
 	w.Write(buf)
 }
 
-func (h *Handlers) APIUserURLsHandlerDelete(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) APIUserURLsHandlerDelete(w http.ResponseWriter, r *http.Request) {
 
 	var (
 		aliases []string

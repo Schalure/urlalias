@@ -5,31 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
-const (
-	aliasKeyLen int = 9
-)
-
-// Type of service
-type AliasMakerServise struct {
-	stopServiceCtx context.Context
-
-	Config  *config.Configuration
-	Logger  Loggerer
-	Storage Storager
-
-	deleter           *deleter
-	aliasesToDeleteCh chan struct {
-		userID  uint64
-		aliases []string
-	}
-
-	lastKey string
-}
+const aliasKeyLen int = 9
 
 type Loggerer interface {
 	Info(args ...interface{})
@@ -44,7 +26,7 @@ type Storager interface {
 	CreateUser() (uint64, error)
 	Save(urlAliasNode *aliasentity.AliasURLModel) error
 	SaveAll(urlAliasNode []aliasentity.AliasURLModel) error
-	FindByShortKey(shortKey string) *aliasentity.AliasURLModel
+	FindByShortKey(ctx context.Context, shortKey string) (*aliasentity.AliasURLModel, error)
 	FindByLongURL(longURL string) *aliasentity.AliasURLModel
 	FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error)
 	MarkDeleted(ctx context.Context, aliasesID []uint64) error
@@ -53,14 +35,28 @@ type Storager interface {
 	Close() error
 }
 
+
+// Type of service
+type AliasMakerServise struct {
+
+	Logger  Loggerer
+	Storage Storager
+
+	deleter           *deleter
+	aliasesToDeleteCh chan struct {
+		userID  uint64
+		aliases []string
+	}
+
+	lastKey string
+}
+
+
 // --------------------------------------------------
 //
 //	Constructor
-func NewAliasMakerServise(c *config.Configuration, s Storager, l Loggerer) (*AliasMakerServise, error) {
+func New(c *config.Configuration, s Storager, l Loggerer) (*AliasMakerServise, error) {
 
-	lastKey := s.GetLastShortKey()
-
-	ctx, cancel := context.WithCancel(context.Background())
 	aliasesToDeleteCh := make(chan struct {
 		userID  uint64
 		aliases []string
@@ -69,15 +65,43 @@ func NewAliasMakerServise(c *config.Configuration, s Storager, l Loggerer) (*Ali
 	deleter.run(ctx)
 
 	return &AliasMakerServise{
-		Config:  c,
 		Storage: s,
 		Logger:  l,
 
-		lastKey: lastKey,
+		lastKey: s.GetLastShortKey(),
 
 		deleter:           deleter,
 		aliasesToDeleteCh: aliasesToDeleteCh,
 	}, nil
+}
+
+//	GetOriginalURL returns original url by shortKey. If original url not found or was deleted, return error
+func (s *AliasMakerServise) GetOriginalURL(ctx context.Context, shortKey string) (string, error) {
+
+	c, cancel := context.WithTimeout(ctx, time.Second * 1)
+	defer cancel()
+
+	node, err := s.Storage.FindByShortKey(c, shortKey)
+	if err != nil {
+		s.Logger.Infow(
+			"original url not found", 
+			"short key", shortKey, 
+			"error", err,
+		)
+		return "", ErrURLNotFound
+	}
+
+	if node.DeletedFlag {
+		return "", ErrURLWasDeleted
+	}
+
+	return node.LongURL, nil
+}
+
+//	AddNewURL add new URL to service and return alias entity
+func (s *AliasMakerServise) GetShortURL(ctx context.Context, userID uint64, originalURL string) (string, error) {
+
+
 }
 
 // --------------------------------------------------

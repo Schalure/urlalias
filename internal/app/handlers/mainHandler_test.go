@@ -22,7 +22,7 @@ func newService(t *testing.T) *aliasmaker.AliasMakerServise {
 	require.NoError(t, err)
 	stor, err := memstor.NewStorage()
 	require.NoError(t, err)
-	s, err := aliasmaker.NewAliasMakerServise(config.NewConfig(), stor, logger)
+	s, err := aliasmaker.New(config.NewConfig(), stor, logger)
 	require.NoError(t, err)
 	return s
 }

@@ -36,7 +36,7 @@ func main() {
 	}
 
 	log.Println("Alias maker service initialize...")
-	service, err := aliasmaker.NewAliasMakerServise(conf, stor, logger)
+	service, err := aliasmaker.New(conf, stor, logger)
 	if err != nil {
 		log.Fatalln("Error, while initialization Alias maker service!", err)
 	}

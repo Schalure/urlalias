@@ -17,7 +17,7 @@ func newService(t *testing.T) *AliasMakerServise {
 	require.NoError(t, err)
 	stor, err := memstor.NewStorage()
 	require.NoError(t, err)
-	s, err := NewAliasMakerServise(config.NewConfig(), stor, logger)
+	s, err := New(config.NewConfig(), stor, logger)
 	require.NoError(t, err)
 	return s
 }
@@ -80,5 +80,20 @@ func Test_createAliasKey(t *testing.T) {
 			assert.Equal(t, aliasKey, test.want.newKey)
 			assert.Equal(t, err, test.want.err)
 		})
+	}
+}
+
+func Benchmark_createAliasKey(b *testing.B) {
+
+	b.StopTimer()
+	logger, _ := zaplogger.NewZapLogger("")
+	stor, _ := memstor.NewStorage()
+	s, _ := New(config.NewConfig(), stor, logger)
+	defer s.Stop()
+
+	s.lastKey = "YZZZZZZZZ"
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		s.createAliasKey()
 	}
 }

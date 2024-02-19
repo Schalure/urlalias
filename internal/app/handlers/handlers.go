@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"fmt"
 	"net/url"
 
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
@@ -23,16 +25,23 @@ var ContentTypeToCompress = []string{
 	appJSON,
 }
 
-type Handlers struct {
+//go:generate mockgen -destination=../mocks/mock_shortner.go -package=mocks github.com/Schalure/gofermart/internal/handlers Shortner
+type Shortner interface {
+	GetOriginalURL(ctx context.Context, shortKey string) (string, error)
+}
+
+
+
+type Handler struct {
 	service *aliasmaker.AliasMakerServise
 }
 
 // ------------------------------------------------------------
 //
 //	Constructor of Handlers type
-func NewHandlers(service *aliasmaker.AliasMakerServise) *Handlers {
+func NewHandlers(service *aliasmaker.AliasMakerServise) *Handler {
 
-	return &Handlers{
+	return &Handler{
 		service: service,
 	}
 }
@@ -40,7 +49,7 @@ func NewHandlers(service *aliasmaker.AliasMakerServise) *Handlers {
 // ------------------------------------------------------------
 //
 //	Check to valid URL - method of Handlers type
-func (h *Handlers) isValidURL(u string) bool {
+func (h *Handler) isValidURL(u string) bool {
 
 	if _, err := url.ParseRequestURI(u); err != nil {
 		h.service.Logger.Infow(
@@ -50,4 +59,15 @@ func (h *Handlers) isValidURL(u string) bool {
 		return false
 	}
 	return true
+}
+
+// Get login from request context
+func (h *Handler) getLoginFromContext(ctx context.Context) (string, error) {
+
+	login := ctx.Value(UserID)
+	l, ok := login.(string)
+	if !ok {
+		return "", fmt.Errorf("login is not valid")
+	}
+	return l, nil
 }

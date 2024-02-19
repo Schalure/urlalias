@@ -4,29 +4,29 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func NewRouter(handlers *Handlers) *chi.Mux {
+func NewRouter(handler *Handler) *chi.Mux {
 
 	r := chi.NewRouter()
-	m := NewMiddleware(handlers.service)
+	m := NewMiddleware(handler.service)
 
 	r.Use(m.WithLogging, m.WithCompress)
 
-	r.Get("/{shortkey}", handlers.mainHandlerGet)
-	r.Get("/ping", handlers.PingGet)
+	r.Get("/{shortkey}", handler.redirect)
+	r.Get("/ping", handler.PingGet)
 
 	r.Group(func(r chi.Router) {
 
 		r.Use(m.WithAuthentication)
-		r.Post("/", handlers.mainHandlerPost)
-		r.Post("/api/shorten", handlers.APIShortenHandlerPost)
-		r.Post("/api/shorten/batch", handlers.APIShortenBatchHandlerPost)
+		r.Post("/", handler.mainHandlerPost)
+		r.Post("/api/shorten", handler.APIShortenHandlerPost)
+		r.Post("/api/shorten/batch", handler.APIShortenBatchHandlerPost)
 	})
 
 	r.Group(func(r chi.Router) {
 
 		r.Use(m.WithVerification)
-		r.Get("/api/user/urls", handlers.APIUserURLsHandlerGet)
-		r.Delete("/api/user/urls", handlers.APIUserURLsHandlerDelete)
+		r.Get("/api/user/urls", handler.APIUserURLsHandlerGet)
+		r.Delete("/api/user/urls", handler.APIUserURLsHandlerDelete)
 	})
 
 	return r

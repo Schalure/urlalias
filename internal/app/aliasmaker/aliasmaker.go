@@ -3,7 +3,9 @@ package aliasmaker
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
@@ -23,7 +25,7 @@ type Loggerer interface {
 type Storager interface {
 	CreateUser() (uint64, error)
 	Save(ctx context.Context, urlAliasNode *aliasentity.AliasURLModel) error
-	SaveAll(ctx context.Context, urlAliasNode []aliasentity.AliasURLModel) error
+	SaveAll(ctx context.Context, urlAliasNodes []aliasentity.AliasURLModel) error
 	FindByShortKey(ctx context.Context, shortKey string) (*aliasentity.AliasURLModel, error)
 	FindByLongURL(ctx context.Context, longURL string) (*aliasentity.AliasURLModel, error)
 	FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error)
@@ -34,18 +36,18 @@ type Storager interface {
 }
 
 
+type Deleter struct {
+	userID  uint64
+	aliases []string	
+}
+
 // Type of service
 type AliasMakerServise struct {
 
 	Logger  Loggerer
 	Storage Storager
 
-	deleter           *deleter
-	aliasesToDeleteCh chan struct {
-		userID  uint64
-		aliases []string
-	}
-
+	deleterCh chan Deleter
 	lastKey string
 }
 
@@ -54,21 +56,12 @@ type AliasMakerServise struct {
 //	Constructor
 func New(s Storager, l Loggerer) (*AliasMakerServise, error) {
 
-	aliasesToDeleteCh := make(chan struct {
-		userID  uint64
-		aliases []string
-	}, 50)
-	deleter := newDeleter(cancel, s, l, aliasesToDeleteCh)
-	deleter.run(ctx)
-
 	return &AliasMakerServise{
 		Storage: s,
 		Logger:  l,
 
 		lastKey: s.GetLastShortKey(),
-
-		deleter:           deleter,
-		aliasesToDeleteCh: aliasesToDeleteCh,
+		deleterCh: make(chan Deleter, 50),
 	}, nil
 }
 
@@ -193,13 +186,143 @@ func (s *AliasMakerServise) AddAliasesToDelete(ctx context.Context, userID uint6
 	case <-ctx.Done():
 		s.Logger.Infow("AddAliasesToDelete: context Done","userID", userID,"aliases", aliases)
 		return fmt.Errorf("can't create a delete request, try again later")
-	case s.aliasesToDeleteCh <- struct {
-		userID  uint64
-		aliases []string
-	}{userID: userID, aliases: aliases}:
+	case s.deleterCh <- Deleter{userID: userID, aliases: aliases}:
 		s.Logger.Infow("AddAliasesToDelete: add aliases to delete", "userID", userID, "aliases", aliases)
 	}
 	return nil
+}
+
+
+func (s *AliasMakerServise) deleteWorker(ctx context.Context) {
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				s.Logger.Info("deleteWorker stopped by ctx.Done()")
+				return
+			case deleter := <-s.deleterCh:
+				s.deleteAliases(ctx, deleter.userID, deleter.aliases)
+			}
+		}
+	}()
+}
+
+
+func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, shortKeys []string) {
+
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	inputCh := func() chan string {
+		inputCh := make(chan string)
+		go func() {
+			defer close(inputCh)
+			for i, shortKey := range shortKeys {
+				select {
+				case <-ctx.Done():
+					s.Logger.Errorw("func DeleteUserURLs: context deadline", "nums ellements added to inputCh", i)
+					return
+				case inputCh <- shortKey:
+				}
+			}
+		}()
+		return inputCh
+	}()
+
+	//	get nodes from DB
+	resultChannels := func() []chan aliasentity.AliasURLModel {
+
+		numWorkers := runtime.NumCPU()
+		resultChannels := make([]chan aliasentity.AliasURLModel, numWorkers)
+
+		for i := 0; i < numWorkers; i++ {
+			resultChannels[i] = func() chan aliasentity.AliasURLModel {
+
+				resultCh := make(chan aliasentity.AliasURLModel)
+
+				go func(resultCh chan aliasentity.AliasURLModel) {
+
+					defer close(resultCh)
+					for shortKey := range inputCh {
+						node, err := s.Storage.FindByShortKey(ctx, shortKey)
+						if err != nil {
+							s.Logger.Infow("func DeleteUserURLs: can't Storage.FindByShortKey", "shortKey", shortKey)
+							break
+						}
+						s.Logger.Info(node)
+						select {
+						case <-ctx.Done():
+							s.Logger.Errorw("func DeleteUserURLs: context deadline", "nums ellements added to work", i)
+							return
+						case resultCh <- *node:
+							s.Logger.Infow("func DeleteUserURLs: write to resultCh", "shortKey", shortKey)
+						}
+					}
+				}(resultCh)
+				return resultCh
+
+			}()
+		}
+		return resultChannels
+	}()
+
+	//	get aliases id to mark deleted
+	outCh := func() chan aliasentity.AliasURLModel {
+
+		var wg sync.WaitGroup
+		outCh := make(chan aliasentity.AliasURLModel)
+
+		for _, result := range resultChannels {
+			wg.Add(1)
+			go func(result chan aliasentity.AliasURLModel) {
+				defer wg.Done()
+				for aliasNode := range result {
+					select {
+					case <-ctx.Done():
+						s.Logger.Errorw("func DeleteUserURLs: context deadline")
+						return
+					case outCh <- aliasNode:
+					}
+				}
+			}(result)
+		}
+
+		//	wait all gorutins
+		go func() {
+			wg.Wait()
+			close(outCh)
+		}()
+		return outCh
+	}()
+
+	//	mark deleted
+	aliasesID := make([]uint64, 0)
+	for aliasNode := range outCh {
+		if aliasNode.UserID == userID {
+			aliasesID = append(aliasesID, aliasNode.ID)
+			s.Logger.Infow(
+				"DeleteUserURLs choose to delete",
+				"user ID", aliasNode.UserID,
+				"alias ID", aliasNode.ID,
+				"original URL", aliasNode.LongURL,
+			)
+		}
+	}
+
+	ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	go func() {
+		<-ctx.Done()
+		if ctx.Err() == context.DeadlineExceeded {
+			s.Logger.Info("DeleteUserURLs context deadline while updating DB")
+		}
+	}()
+
+	err := s.Storage.MarkDeleted(ctx, aliasesID)
+	if err != nil {
+		s.Logger.Info(err)
+	}
 }
 
 
@@ -214,10 +337,14 @@ func (s *AliasMakerServise) CreateUser() (uint64, error) {
 }
 
 
+func (s *AliasMakerServise) Run(ctx context.Context) {
+	s.deleteWorker(ctx)
+}
+
+
 //	Stop service and full release
 func (s *AliasMakerServise) Stop() {
 
-	s.deleter.stop()
 	s.Storage.Close()
 	s.Logger.Close()
 }

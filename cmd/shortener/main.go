@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -19,6 +20,8 @@ import (
 func main() {
 
 	log.Println("Start initialize application...")
+	ctxStop, cancelStop := context.WithCancel(context.Background())
+	defer cancelStop()
 
 	log.Println("Cofiguration initialize...")
 	conf := config.NewConfig()
@@ -40,6 +43,7 @@ func main() {
 	if err != nil {
 		log.Fatalln("Error, while initialization Alias maker service!", err)
 	}
+	service.Run(ctxStop)
 	defer service.Stop()
 
 	log.Println("Router initialize...")

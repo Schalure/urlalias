@@ -2,6 +2,7 @@ package filestor
 
 import (
 	"bufio"
+	"context"
 	"os"
 	"testing"
 
@@ -53,7 +54,7 @@ func TestFileStorage_Save(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
 
-			err := stor.Save(&test.storNode)
+			err := stor.Save(context.Background(), &test.storNode)
 			if err != nil {
 				assert.Equal(t, test.want.err, err)
 				return

@@ -20,7 +20,6 @@ type Storage struct {
 
 func NewStorage(dbConnectionString string) (*Storage, error) {
 
-	//db, err := sql.Open("pgx", dbConnectionString)
 	db, err := pgxpool.New(context.Background(), dbConnectionString)
 
 	if err != nil {
@@ -48,12 +47,6 @@ func NewStorage(dbConnectionString string) (*Storage, error) {
 	`); err != nil {
 		return nil, err
 	}
-
-	s := Storage{
-		db: db,
-	}
-
-	s.GetLastShortKey()
 
 	return &Storage{
 		db: db,
@@ -124,15 +117,15 @@ func (s *Storage) SaveAll(ctx context.Context, urlAliasNodes []aliasentity.Alias
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *Storage) FindByShortKey(ctx context.Context, shortKey string) *aliasentity.AliasURLModel {
+func (s *Storage) FindByShortKey(ctx context.Context, shortKey string) (*aliasentity.AliasURLModel, error) {
 
 	var aliasNode = new(aliasentity.AliasURLModel)
 
 	row := s.db.QueryRow(ctx, `SELECT id, user_id, original_url, short_key, is_deleted FROM aliases WHERE short_key = $1;`, shortKey)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey, &aliasNode.DeletedFlag); err != nil {
-		return nil
+		return nil, err
 	}
-	return aliasNode
+	return aliasNode, nil
 }
 
 // ------------------------------------------------------------
@@ -144,15 +137,15 @@ func (s *Storage) FindByShortKey(ctx context.Context, shortKey string) *aliasent
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *Storage) FindByLongURL(ctx context.Context, longURL string) *aliasentity.AliasURLModel {
+func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasentity.AliasURLModel, error) {
 
 	var aliasNode = new(aliasentity.AliasURLModel)
 
 	row := s.db.QueryRow(ctx, `SELECT id, user_id, original_url, short_key, is_deleted FROM aliases WHERE original_url=$1;`, longURL)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey, &aliasNode.DeletedFlag); err != nil {
-		return nil
+		return nil, err
 	}
-	return aliasNode
+	return aliasNode, nil
 }
 
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {
@@ -197,11 +190,11 @@ func (s *Storage) MarkDeleted(ctx context.Context, aliasesID []uint64) error {
 // ------------------------------------------------------------
 //
 //	Get the last saved key
-func (s *Storage) GetLastShortKey(ctx context.Context) string {
+func (s *Storage) GetLastShortKey() string {
 
 	var shortKey string
 
-	row := s.db.QueryRow(ctx, `select short_key from aliases where id=(select max(id) from aliases);`)
+	row := s.db.QueryRow(context.Background(), `select short_key from aliases where id=(select max(id) from aliases);`)
 	if err := row.Scan(&shortKey); err != nil {
 		return ""
 	}

@@ -51,7 +51,7 @@ func (s *Storage) CreateUser() (uint64, error) {
 // ------------------------------------------------------------
 //
 //	Save pair "shortKey, longURL" to db
-func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
+func (s *Storage) Save(ctx context.Context, urlAliasNode *aliasentity.AliasURLModel) error {
 
 	s.aliases = append(s.aliases, *urlAliasNode)
 	s.lastKey = urlAliasNode.ShortKey
@@ -67,7 +67,7 @@ func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
+func (s *Storage) SaveAll(ctx context.Context, urlAliasNodes []aliasentity.AliasURLModel) error {
 
 	for _, node := range urlAliasNodes {
 
@@ -86,14 +86,14 @@ func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
+func (s *Storage) FindByShortKey(ctx context.Context, shortKey string) (*aliasentity.AliasURLModel, error) {
 
 	for _, node := range s.aliases {
 		if node.ShortKey == shortKey {
-			return &node
+			return &node, nil
 		}
 	}
-	return nil
+	return nil, fmt.Errorf("not found")
 }
 
 // ------------------------------------------------------------
@@ -105,14 +105,14 @@ func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *Storage) FindByLongURL(longURL string) *aliasentity.AliasURLModel {
+func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasentity.AliasURLModel, error) {
 
 	for _, node := range s.aliases {
 		if node.LongURL == longURL {
-			return &node
+			return &node, nil
 		}
 	}
-	return nil
+	return nil, fmt.Errorf("not found")
 }
 
 // ------------------------------------------------------------

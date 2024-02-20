@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
@@ -113,7 +114,7 @@ func (s *Storage) CreateUser() (uint64, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
+func (s *Storage) Save(ctx context.Context, urlAliasNode *aliasentity.AliasURLModel) error {
 
 	var data []byte
 	file, err := os.OpenFile(s.aliasesFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -145,7 +146,7 @@ func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
+func (s *Storage) SaveAll(ctx context.Context, urlAliasNodes []aliasentity.AliasURLModel) error {
 
 	var data []byte
 	file, err := os.OpenFile(s.aliasesFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -179,11 +180,11 @@ func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
+func (s *Storage) FindByShortKey(ctx context.Context, shortKey string) (*aliasentity.AliasURLModel, error) {
 
 	file, err := os.OpenFile(s.aliasesFileName, os.O_RDONLY, 0644)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer file.Close()
 
@@ -192,15 +193,15 @@ func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
 	for i := 0; scanner.Scan(); i++ {
 		var node aliasentity.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
-			return nil
+			return nil, err
 		}
 
 		if shortKey == node.ShortKey {
-			return &node
+			return &node, nil
 		}
 
 	}
-	return nil
+	return nil, fmt.Errorf("not found")
 }
 
 // ------------------------------------------------------------
@@ -212,11 +213,11 @@ func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *Storage) FindByLongURL(longURL string) *aliasentity.AliasURLModel {
+func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasentity.AliasURLModel, error) {
 
 	file, err := os.OpenFile(s.aliasesFileName, os.O_RDONLY, 0644)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer file.Close()
 
@@ -225,15 +226,15 @@ func (s *Storage) FindByLongURL(longURL string) *aliasentity.AliasURLModel {
 	for i := 0; scanner.Scan(); i++ {
 		var node aliasentity.AliasURLModel
 		if err := json.Unmarshal([]byte(scanner.Text()), &node); err != nil {
-			return nil
+			return nil, err
 		}
 
 		if longURL == node.LongURL {
-			return &node
+			return &node, nil
 		}
 
 	}
-	return nil
+	return nil, fmt.Errorf("not found")
 }
 
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {

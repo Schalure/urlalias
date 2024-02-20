@@ -79,9 +79,9 @@ func (s *Storage) CreateUser() (uint64, error) {
 //		urlAliasNode *repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "urlAliasNode" because duplicate key
-func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
+func (s *Storage) Save(ctx context.Context, urlAliasNode *aliasentity.AliasURLModel) error {
 
-	_, err := s.db.Exec(context.Background(), `INSERT INTO aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, urlAliasNode.UserID, urlAliasNode.LongURL, urlAliasNode.ShortKey)
+	_, err := s.db.Exec(ctx, `INSERT INTO aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, urlAliasNode.UserID, urlAliasNode.LongURL, urlAliasNode.ShortKey)
 
 	if err != nil {
 		return err
@@ -97,26 +97,22 @@ func (s *Storage) Save(urlAliasNode *aliasentity.AliasURLModel) error {
 //		urlAliasNode []repositories.AliasURLModel
 //	Output:
 //		error - if not nil, can not save "[]storage.AliasURLModel"
-func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
+func (s *Storage) SaveAll(ctx context.Context, urlAliasNodes []aliasentity.AliasURLModel) error {
 
-	tx, err := s.db.Begin(context.Background())
+	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(context.Background())
+	defer tx.Rollback(ctx)
 
 	for _, node := range urlAliasNodes {
 
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
 		_, err := tx.Exec(ctx, `insert into aliases(user_id, original_url, short_key) VALUES($1, $2, $3);`, node.UserID, node.LongURL, node.ShortKey)
-		// sql.Named("long_url", node.LongURL),
-		// sql.Named("short_url", node.ShortKey))
 		if err != nil {
 			return err
 		}
 	}
-	return tx.Commit(context.Background())
+	return tx.Commit(ctx)
 }
 
 // ------------------------------------------------------------
@@ -128,12 +124,9 @@ func (s *Storage) SaveAll(urlAliasNodes []aliasentity.AliasURLModel) error {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by short key
-func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
+func (s *Storage) FindByShortKey(ctx context.Context, shortKey string) *aliasentity.AliasURLModel {
 
 	var aliasNode = new(aliasentity.AliasURLModel)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
 
 	row := s.db.QueryRow(ctx, `SELECT id, user_id, original_url, short_key, is_deleted FROM aliases WHERE short_key = $1;`, shortKey)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey, &aliasNode.DeletedFlag); err != nil {
@@ -151,12 +144,9 @@ func (s *Storage) FindByShortKey(shortKey string) *aliasentity.AliasURLModel {
 //	Output:
 //		*repositories.AliasURLModel
 //		error - if can not find "urlAliasNode" by long URL
-func (s *Storage) FindByLongURL(longURL string) *aliasentity.AliasURLModel {
+func (s *Storage) FindByLongURL(ctx context.Context, longURL string) *aliasentity.AliasURLModel {
 
 	var aliasNode = new(aliasentity.AliasURLModel)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
 
 	row := s.db.QueryRow(ctx, `SELECT id, user_id, original_url, short_key, is_deleted FROM aliases WHERE original_url=$1;`, longURL)
 	if err := row.Scan(&aliasNode.ID, &aliasNode.UserID, &aliasNode.LongURL, &aliasNode.ShortKey, &aliasNode.DeletedFlag); err != nil {
@@ -207,11 +197,9 @@ func (s *Storage) MarkDeleted(ctx context.Context, aliasesID []uint64) error {
 // ------------------------------------------------------------
 //
 //	Get the last saved key
-func (s *Storage) GetLastShortKey() string {
+func (s *Storage) GetLastShortKey(ctx context.Context) string {
 
 	var shortKey string
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
 
 	row := s.db.QueryRow(ctx, `select short_key from aliases where id=(select max(id) from aliases);`)
 	if err := row.Scan(&shortKey); err != nil {

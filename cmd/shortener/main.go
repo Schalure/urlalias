@@ -36,14 +36,14 @@ func main() {
 	}
 
 	log.Println("Alias maker service initialize...")
-	service, err := aliasmaker.New(conf, stor, logger)
+	service, err := aliasmaker.New(stor, logger)
 	if err != nil {
 		log.Fatalln("Error, while initialization Alias maker service!", err)
 	}
 	defer service.Stop()
 
 	log.Println("Router initialize...")
-	router := handlers.NewRouter(handlers.New(service))
+	router := handlers.NewRouter(handlers.New(service, conf.BaseURL()))
 
 	service.Logger.Infow(
 		fmt.Sprintf("%s service have been started...", config.AppName),

@@ -10,7 +10,6 @@ import (
 
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/interpreter"
-	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
 //	Handler retuns short URL by original URL. Handler can returns three HTTP statuses:
@@ -101,48 +100,29 @@ func (h *Handler) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nodes := make([]aliasentity.AliasURLModel, len(requestJSON))
+	batchOriginalURL := make([]string, len(requestJSON))
 	for i, request := range requestJSON {
-		nodes[i].LongURL = request.OriginalURL
+		batchOriginalURL[i] = request.OriginalURL
 	}
 
-
-	for _, req := range requestJSON {
-
-		node := h.service.Storage.FindByLongURL(req.OriginalURL)
-		if node == nil {
-			node, err = h.service.NewPairURL(req.OriginalURL)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				h.service.Logger.Infow(
-					"Can't create pair url",
-					"err", err.Error(),
-				)
-				return
-			}
-			node.UserID = uID
-		}
-		nodes = append(nodes, *node)
-		responseJSON = append(responseJSON, responseModel{req.ID, h.service.Config.BaseURL() + "/" + node.ShortKey})
-	}
-
-	if err := h.service.Storage.SaveAll(nodes); err != nil {
+	batchShortKey, err := h.service.GetBatchShortURL(r.Context(), userID, batchOriginalURL)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.service.Logger.Infow(
-			"Can't save to storage",
-			"err", err.Error(),
-		)
-		return
+		h.service.Logger.Infow("Can't save to storage", "err", err.Error(),)
+		return		
 	}
+
+	responseJSON = make([]ResponseJSON, len(requestJSON))
+	for i, shortKey := range batchShortKey {
+		responseJSON[i].ID = requestJSON[i].ID
+		responseJSON[i].ShortURL = h.baseURL + "/" + shortKey
+	}
+
 
 	buf, err := json.Marshal(&responseJSON)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.service.Logger.Infow(
-			"Can't dekode to JSON",
-			"buf", string(buf),
-			"err", err.Error(),
-		)
+		h.service.Logger.Infow("Can't dekode to JSON", "buf", string(buf), "err", err.Error())
 		return
 	}
 
@@ -151,7 +131,8 @@ func (h *Handler) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf)
 }
 
-func (h *Handler) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request) {
+
+func (h *Handler) apiGetUserAliases(w http.ResponseWriter, r *http.Request) {
 
 	type responseModel struct {
 		ShortURL    string `json:"short_url"`
@@ -160,19 +141,20 @@ func (h *Handler) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request) 
 
 	var responseJSON []responseModel
 
-	userID := r.Context().Value(UserID)
-	uID, ok := userID.(uint64)
-	if !ok {
+	userID, err := h.getUserIDFromContext(r.Context())
+	if err != nil {
 		http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)
-		h.service.Logger.Info(errors.New("can't parsed user id").Error())
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
-	defer cancel()
-	nodes, err := h.service.Storage.FindByUserID(ctx, uID)
 
+
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second * 1)
+	defer cancel()
+
+	nodes, err := h.service.GetUserAliases(ctx, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if len(nodes) == 0 {
@@ -182,7 +164,7 @@ func (h *Handler) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request) 
 
 	for _, node := range nodes {
 		responseNodeJSON := responseModel{
-			ShortURL:    h.service.Config.BaseURL() + "/" + node.ShortKey,
+			ShortURL:    h.baseURL + "/" + node.ShortKey,
 			OriginalURL: node.LongURL,
 		}
 		responseJSON = append(responseJSON, responseNodeJSON)
@@ -191,11 +173,6 @@ func (h *Handler) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request) 
 	buf, err := json.Marshal(&responseJSON)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		h.service.Logger.Infow(
-			"Can't dekode to JSON",
-			"buf", string(buf),
-			"err", err.Error(),
-		)
 		return
 	}
 
@@ -204,32 +181,28 @@ func (h *Handler) APIUserURLsHandlerGet(w http.ResponseWriter, r *http.Request) 
 	w.Write(buf)
 }
 
+
 func (h *Handler) APIUserURLsHandlerDelete(w http.ResponseWriter, r *http.Request) {
 
 	var (
 		aliases []string
 		i       interpreter.InterpreterJSON
 	)
-	userID := r.Context().Value(UserID)
-	uID, ok := userID.(uint64)
-	if !ok {
+
+	userID, err := h.getUserIDFromContext(r.Context())
+	if err != nil {
 		http.Error(w, errors.New("can't parsed user id").Error(), http.StatusBadRequest)
-		h.service.Logger.Info(errors.New("can't parsed user id").Error())
 		return
 	}
 
 	if err := i.Unmarshal(r.Body, &aliases); err != nil {
 		http.Error(w, fmt.Sprintf("can't decode JSON content, error: %s", err), http.StatusBadRequest)
-		h.service.Logger.Infow(
-			"Can't decode JSON content",
-			"err", err.Error(),
-		)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second * 5)
 	defer cancel()
-	if err := h.service.AddAliasesToDelete(ctx, uID, aliases...); err != nil {
+	if err := h.service.AddAliasesToDelete(ctx, userID, aliases...); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

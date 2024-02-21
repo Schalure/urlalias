@@ -1,13 +1,15 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 )
 
-func NewRouter(handler *Handler) *chi.Mux {
+func NewRouter(handler *Handler) http.Handler/*chi.Mux*/ {
 
 	r := chi.NewRouter()
-	m := NewMiddleware(handler.service)
+	m := NewMiddleware(handler.userManager, handler.logger)
 
 	r.Use(m.WithLogging, m.WithCompress)
 

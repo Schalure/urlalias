@@ -1,5 +1,70 @@
 package handlers
 
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
+	"github.com/Schalure/urlalias/internal/app/mocks"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func Test_redirect(t *testing.T) {
+
+	testMethod := "GET"
+
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	userManager := mocks.NewMockUserManager(mockController)
+	shortner := mocks.NewMockShortner(mockController)
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(t, err)
+
+	server := NewRouter(New(userManager, shortner, logger, "http://localhost/"))
+
+	testServer := httptest.NewServer(server)
+	defer testServer.Close()
+
+	//	originalURL, err := h.shortner.GetOriginalURL(r.Context(), shortKey)
+	testCases := []struct {
+		name string
+		requesURI string
+		want struct {
+			statusCode int
+			responseURL string
+		}
+	}{
+		{
+			name: "simple test",
+			requesURI: "/000000000",
+			want: struct{statusCode int; responseURL string}{
+				statusCode: http.StatusTemporaryRedirect,
+				responseURL: "https://ya.ru",
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+
+			shortner.EXPECT().GetOriginalURL(gomock.Any(), test.requesURI[1:]).Return(test.want.responseURL, nil)
+
+			req, err := http.NewRequest(testMethod, testServer.URL + test.requesURI, nil)
+			require.NoError(t, err)
+			resp, err := testServer.Client().Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			assert.Equal(t, test.want.statusCode, resp.StatusCode)
+			assert.Equal(t, test.want.responseURL, resp.Header.Get("Location"))
+		})
+	}
+}
+
 // import (
 // 	"io"
 // 	"net/http"

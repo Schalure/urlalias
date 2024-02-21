@@ -8,10 +8,12 @@ import (
 	"net/http"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/internal/app/aliaslogger"
+	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/handlers"
 	"github.com/Schalure/urlalias/internal/app/storage"
+
+	_ "net/http/pprof"
 )
 
 // ------------------------------------------------------------
@@ -27,7 +29,7 @@ func main() {
 	conf := config.NewConfig()
 
 	log.Println("Logger initialize...")
-	logger, err := aliaslogger.NewLogger(aliaslogger.LoggerTypeZap)
+	logger, err := zaplogger.NewZapLogger("")
 	if err != nil {
 		log.Fatalln("Error, while initialization logger!", err)
 	}
@@ -47,9 +49,9 @@ func main() {
 	defer service.Stop()
 
 	log.Println("Router initialize...")
-	router := handlers.NewRouter(handlers.New(service, conf.BaseURL()))
+	router := handlers.NewRouter(handlers.New(service, service, logger, conf.BaseURL()))
 
-	service.Logger.Infow(
+	logger.Infow(
 		fmt.Sprintf("%s service have been started...", config.AppName),
 		"Server address", conf.Host(),
 		"Base URL", conf.BaseURL(),
@@ -60,7 +62,7 @@ func main() {
 	)
 
 	err = http.ListenAndServe(conf.Host(), router)
-	service.Logger.Fatalw(
+	logger.Fatalw(
 		"aliasURL service stoped!",
 		"error", err,
 	)

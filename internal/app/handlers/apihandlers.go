@@ -43,7 +43,7 @@ func (h *Handler) apiGetShortURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var statusCode int
-	shortURL, err := h.service.GetShortKey(r.Context(), userID, requestJSON.OriginalURL)
+	shortURL, err := h.shortner.GetShortKey(r.Context(), userID, requestJSON.OriginalURL)
 	if err != nil {
 		if errors.Is(err, aliasmaker.ErrInternal) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -105,10 +105,10 @@ func (h *Handler) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 		batchOriginalURL[i] = request.OriginalURL
 	}
 
-	batchShortKey, err := h.service.GetBatchShortURL(r.Context(), userID, batchOriginalURL)
+	batchShortKey, err := h.shortner.GetBatchShortURL(r.Context(), userID, batchOriginalURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.service.Logger.Infow("Can't save to storage", "err", err.Error(),)
+		h.logger.Infow("Can't save to storage", "err", err.Error(),)
 		return		
 	}
 
@@ -122,7 +122,7 @@ func (h *Handler) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 	buf, err := json.Marshal(&responseJSON)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.service.Logger.Infow("Can't dekode to JSON", "buf", string(buf), "err", err.Error())
+		h.logger.Infow("Can't dekode to JSON", "buf", string(buf), "err", err.Error())
 		return
 	}
 
@@ -151,7 +151,7 @@ func (h *Handler) apiGetUserAliases(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second * 1)
 	defer cancel()
 
-	nodes, err := h.service.GetUserAliases(ctx, userID)
+	nodes, err := h.userManager.GetUserAliases(ctx, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -202,7 +202,7 @@ func (h *Handler) APIUserURLsHandlerDelete(w http.ResponseWriter, r *http.Reques
 
 	ctx, cancel := context.WithTimeout(r.Context(), time.Second * 5)
 	defer cancel()
-	if err := h.service.AddAliasesToDelete(ctx, userID, aliases...); err != nil {
+	if err := h.shortner.AddAliasesToDelete(ctx, userID, aliases...); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

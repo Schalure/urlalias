@@ -1,10 +1,11 @@
 package handlers
 
-import "github.com/Schalure/urlalias/internal/app/aliasmaker"
+import "github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 
 // Middleware type
 type Middleware struct {
-	service *aliasmaker.AliasMakerServise
+	userManager UserManager
+	logger *zaplogger.ZapLogger
 }
 
 // ------------------------------------------------------------
@@ -14,9 +15,10 @@ type Middleware struct {
 //		logger *slog.Logger
 //	Output:
 //		*Middleware
-func NewMiddleware(service *aliasmaker.AliasMakerServise) *Middleware {
+func NewMiddleware(userManager UserManager, logger *zaplogger.ZapLogger) *Middleware {
 
 	return &Middleware{
-		service: service,
+		userManager: userManager,
+		logger: logger,
 	}
 }

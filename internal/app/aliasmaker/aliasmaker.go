@@ -8,20 +8,23 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
 const aliasKeyLen int = 9
 
-type Loggerer interface {
-	Info(args ...interface{})
-	Infow(msg string, keysAndValues ...interface{})
-	Errorw(msg string, keysAndValues ...interface{})
-	Fatalw(msg string, keysAndValues ...interface{})
-	Close()
-}
+// //go:generate mockgen -destination=../mocks/mock_loggerer.go -package=mocks github.com/Schalure/urlalias/internal/app/aliasmaker Loggerer
+// type Loggerer interface {
+// 	Info(args ...interface{})
+// 	Infow(msg string, keysAndValues ...interface{})
+// 	Errorw(msg string, keysAndValues ...interface{})
+// 	Fatalw(msg string, keysAndValues ...interface{})
+// 	Close()
+// }
 
 // Access interface to storage
+//go:generate mockgen -destination=../mocks/mock_storager.go -package=mocks github.com/Schalure/urlalias/internal/app/aliasmaker Storager
 type Storager interface {
 	CreateUser() (uint64, error)
 	Save(ctx context.Context, urlAliasNode *aliasentity.AliasURLModel) error
@@ -44,8 +47,8 @@ type Deleter struct {
 // Type of service
 type AliasMakerServise struct {
 
-	Logger  Loggerer
-	Storage Storager
+	logger  *zaplogger.ZapLogger
+	storage Storager
 
 	deleterCh chan Deleter
 	lastKey string
@@ -54,11 +57,11 @@ type AliasMakerServise struct {
 
 
 //	Constructor
-func New(s Storager, l Loggerer) (*AliasMakerServise, error) {
+func New(s Storager, l *zaplogger.ZapLogger) (*AliasMakerServise, error) {
 
 	return &AliasMakerServise{
-		Storage: s,
-		Logger:  l,
+		storage: s,
+		logger:  l,
 
 		lastKey: s.GetLastShortKey(),
 		deleterCh: make(chan Deleter, 50),
@@ -72,9 +75,9 @@ func (s *AliasMakerServise) GetOriginalURL(ctx context.Context, shortKey string)
 	c, cancel := context.WithTimeout(ctx, time.Second * 1)
 	defer cancel()
 
-	node, err := s.Storage.FindByShortKey(c, shortKey)
+	node, err := s.storage.FindByShortKey(c, shortKey)
 	if err != nil {
-		s.Logger.Infow(
+		s.logger.Infow(
 			"original url not found", 
 			"short key", shortKey, 
 			"error", err,
@@ -95,19 +98,19 @@ func (s *AliasMakerServise) GetShortKey(ctx context.Context, userID uint64, orig
 
 	ctxFind, cancelFind := context.WithTimeout(ctx, time.Second * 1)
 	defer cancelFind()
-	node, err := s.Storage.FindByLongURL(ctxFind, originalURL)
+	node, err := s.storage.FindByLongURL(ctxFind, originalURL)
 	if err != nil {
 		node, err := s.NewAliasEntity(userID, originalURL)
 		if err != nil {
-			s.Logger.Errorw("error by create new short key", "error", err, "last key", s.lastKey)
+			s.logger.Errorw("error by create new short key", "error", err, "last key", s.lastKey)
 			return "", ErrInternal
 		}
 
 		ctxSave, cancelSave := context.WithTimeout(ctx, time.Second * 1)
 		defer cancelSave()
-		err = s.Storage.Save(ctxSave, node)
+		err = s.storage.Save(ctxSave, node)
 		if err != nil {
-			s.Logger.Errorw("error by save new entity of alias", "error", err, "last key", s.lastKey)
+			s.logger.Errorw("error by save new entity of alias", "error", err, "last key", s.lastKey)
 			return "", ErrInternal
 		}
 		return node.ShortKey, nil
@@ -124,12 +127,12 @@ func (s *AliasMakerServise) GetBatchShortURL(ctx context.Context, userID uint64,
 
 	for i, originalURL := range batchOriginalURL {
 		ctxFind, cancelFind := context.WithTimeout(ctx, time.Second * 1)
-		node, err := s.Storage.FindByLongURL(ctxFind, originalURL)
+		node, err := s.storage.FindByLongURL(ctxFind, originalURL)
 		cancelFind()
 		if err != nil {
 			node, err = s.NewAliasEntity(userID, originalURL)
 			if err != nil {
-				s.Logger.Errorw("error by create new short key", "error", err, "last key", s.lastKey)
+				s.logger.Errorw("error by create new short key", "error", err, "last key", s.lastKey)
 				return nil, ErrInternal
 			}
 			batchNodesToSave = append(batchNodesToSave, *node)
@@ -139,12 +142,23 @@ func (s *AliasMakerServise) GetBatchShortURL(ctx context.Context, userID uint64,
 
 	ctxSaveAll, cancelSaveAll := context.WithTimeout(ctx, time.Second * 1)
 	defer cancelSaveAll()
-	if err := s.Storage.SaveAll(ctxSaveAll, batchNodesToSave); err != nil {
-		s.Logger.Errorw("can't save all URLs", "error", err)
+	if err := s.storage.SaveAll(ctxSaveAll, batchNodesToSave); err != nil {
+		s.logger.Errorw("can't save all URLs", "error", err)
 		return nil, ErrInternal
 	}
 
 	return batchShortURL, nil
+}
+
+
+//	Create new user
+func (s *AliasMakerServise) CreateUser() (uint64, error) {
+
+	userID, err := s.storage.CreateUser()
+	if err != nil {
+		return 0, err
+	}
+	return userID, nil
 }
 
 
@@ -154,12 +168,32 @@ func (s *AliasMakerServise) GetUserAliases(ctx context.Context, userID uint64) (
 	ctxGetAliases, cancelGetAliases := context.WithTimeout(ctx, time.Second * 1)
 	defer cancelGetAliases()
 
-	nodes, err := s.Storage.FindByUserID(ctxGetAliases, userID)
+	nodes, err := s.storage.FindByUserID(ctxGetAliases, userID)
 	if err != nil {
-		s.Logger.Errorw("can't found aliases by user ID", "error", err, "user ID", userID)
+		s.logger.Errorw("can't found aliases by user ID", "error", err, "user ID", userID)
 		return nil, ErrInternal
 	}
 	return nodes, nil
+}
+
+
+//	Add aliases to delete
+func (s *AliasMakerServise) AddAliasesToDelete(ctx context.Context, userID uint64, aliases ...string) error {
+
+	select {
+	case <-ctx.Done():
+		s.logger.Infow("AddAliasesToDelete: context Done","userID", userID,"aliases", aliases)
+		return fmt.Errorf("can't create a delete request, try again later")
+	case s.deleterCh <- Deleter{userID: userID, aliases: aliases}:
+		s.logger.Infow("AddAliasesToDelete: add aliases to delete", "userID", userID, "aliases", aliases)
+	}
+	return nil
+}
+
+
+func (s *AliasMakerServise) IsDatabaseActive() bool {
+
+	return s.storage.IsConnected()
 }
 
 
@@ -179,27 +213,13 @@ func (s *AliasMakerServise) NewAliasEntity(userID uint64, longURL string) (*alia
 }
 
 
-//	Add aliases to delete
-func (s *AliasMakerServise) AddAliasesToDelete(ctx context.Context, userID uint64, aliases ...string) error {
-
-	select {
-	case <-ctx.Done():
-		s.Logger.Infow("AddAliasesToDelete: context Done","userID", userID,"aliases", aliases)
-		return fmt.Errorf("can't create a delete request, try again later")
-	case s.deleterCh <- Deleter{userID: userID, aliases: aliases}:
-		s.Logger.Infow("AddAliasesToDelete: add aliases to delete", "userID", userID, "aliases", aliases)
-	}
-	return nil
-}
-
-
 func (s *AliasMakerServise) deleteWorker(ctx context.Context) {
 
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
-				s.Logger.Info("deleteWorker stopped by ctx.Done()")
+				s.logger.Info("deleteWorker stopped by ctx.Done()")
 				return
 			case deleter := <-s.deleterCh:
 				s.deleteAliases(ctx, deleter.userID, deleter.aliases)
@@ -221,7 +241,7 @@ func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, sh
 			for i, shortKey := range shortKeys {
 				select {
 				case <-ctx.Done():
-					s.Logger.Errorw("func DeleteUserURLs: context deadline", "nums ellements added to inputCh", i)
+					s.logger.Errorw("func DeleteUserURLs: context deadline", "nums ellements added to inputCh", i)
 					return
 				case inputCh <- shortKey:
 				}
@@ -245,18 +265,18 @@ func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, sh
 
 					defer close(resultCh)
 					for shortKey := range inputCh {
-						node, err := s.Storage.FindByShortKey(ctx, shortKey)
+						node, err := s.storage.FindByShortKey(ctx, shortKey)
 						if err != nil {
-							s.Logger.Infow("func DeleteUserURLs: can't Storage.FindByShortKey", "shortKey", shortKey)
+							s.logger.Infow("func DeleteUserURLs: can't Storage.FindByShortKey", "shortKey", shortKey)
 							break
 						}
-						s.Logger.Info(node)
+						s.logger.Info(node)
 						select {
 						case <-ctx.Done():
-							s.Logger.Errorw("func DeleteUserURLs: context deadline", "nums ellements added to work", i)
+							s.logger.Errorw("func DeleteUserURLs: context deadline", "nums ellements added to work", i)
 							return
 						case resultCh <- *node:
-							s.Logger.Infow("func DeleteUserURLs: write to resultCh", "shortKey", shortKey)
+							s.logger.Infow("func DeleteUserURLs: write to resultCh", "shortKey", shortKey)
 						}
 					}
 				}(resultCh)
@@ -280,7 +300,7 @@ func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, sh
 				for aliasNode := range result {
 					select {
 					case <-ctx.Done():
-						s.Logger.Errorw("func DeleteUserURLs: context deadline")
+						s.logger.Errorw("func DeleteUserURLs: context deadline")
 						return
 					case outCh <- aliasNode:
 					}
@@ -301,7 +321,7 @@ func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, sh
 	for aliasNode := range outCh {
 		if aliasNode.UserID == userID {
 			aliasesID = append(aliasesID, aliasNode.ID)
-			s.Logger.Infow(
+			s.logger.Infow(
 				"DeleteUserURLs choose to delete",
 				"user ID", aliasNode.UserID,
 				"alias ID", aliasNode.ID,
@@ -315,25 +335,14 @@ func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, sh
 	go func() {
 		<-ctx.Done()
 		if ctx.Err() == context.DeadlineExceeded {
-			s.Logger.Info("DeleteUserURLs context deadline while updating DB")
+			s.logger.Info("DeleteUserURLs context deadline while updating DB")
 		}
 	}()
 
-	err := s.Storage.MarkDeleted(ctx, aliasesID)
+	err := s.storage.MarkDeleted(ctx, aliasesID)
 	if err != nil {
-		s.Logger.Info(err)
+		s.logger.Info(err)
 	}
-}
-
-
-//	Create new user
-func (s *AliasMakerServise) CreateUser() (uint64, error) {
-
-	userID, err := s.Storage.CreateUser()
-	if err != nil {
-		return 0, err
-	}
-	return userID, nil
 }
 
 
@@ -345,8 +354,8 @@ func (s *AliasMakerServise) Run(ctx context.Context) {
 //	Stop service and full release
 func (s *AliasMakerServise) Stop() {
 
-	s.Storage.Close()
-	s.Logger.Close()
+	s.storage.Close()
+	s.logger.Close()
 }
 
 

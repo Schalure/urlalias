@@ -30,12 +30,12 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 
 		tokenCookie, err := r.Cookie(authorization)
 		if err != nil {
-			m.service.Logger.Infow(
+			m.logger.Infow(
 				"WithAuthentication: tokenCookie, err := r.Cookie(authorization)",
 				"error", err,
 			)
-			if userID, err = m.service.CreateUser(); err != nil {
-				m.service.Logger.Infow(
+			if userID, err = m.userManager.CreateUser(); err != nil {
+				m.logger.Infow(
 					"WithAuthentication: userID, err = m.service.CreateUser()",
 					"error", err,
 				)
@@ -44,7 +44,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 			}
 			tokenString, err = createTokenJWT(userID)
 			if err != nil {
-				m.service.Logger.Infow(
+				m.logger.Infow(
 					"WithAuthentication: tokenString, err = createTokenJWT(userID)",
 					"error", err,
 				)
@@ -52,7 +52,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 				return
 			}
 
-			m.service.Logger.Infow(
+			m.logger.Infow(
 				"Add new user",
 				"userID", userID,
 			)
@@ -62,12 +62,12 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 			})
 
 		} else if userID, err = getUserID(tokenCookie.Value); err != nil {
-			m.service.Logger.Infow(
+			m.logger.Infow(
 				"WithAuthentication: userID, err = getUserID(tokenCookie.Value)",
 				"error", err,
 			)
-			if userID, err = m.service.CreateUser(); err != nil {
-				m.service.Logger.Infow(
+			if userID, err = m.userManager.CreateUser(); err != nil {
+				m.logger.Infow(
 					"WithAuthentication: userID, err = m.service.CreateUser()",
 					"error", err,
 				)
@@ -76,7 +76,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 			}
 			tokenString, err = createTokenJWT(userID)
 			if err != nil {
-				m.service.Logger.Infow(
+				m.logger.Infow(
 					"WithAuthentication: tokenString, err = createTokenJWT(userID)",
 					"error", err,
 				)
@@ -84,7 +84,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 				return
 			}
 
-			m.service.Logger.Infow(
+			m.logger.Infow(
 				"Add new user",
 				"userID", userID,
 			)
@@ -97,7 +97,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 			http.SetCookie(w, authCookie)
 		}
 
-		m.service.Logger.Infow(
+		m.logger.Infow(
 			"Request from user",
 			"userID", userID,
 		)

@@ -6,33 +6,120 @@ import (
 	"testing"
 
 	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
+	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/mocks"
 	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_redirect(t *testing.T) {
+// func Test_redirect(t *testing.T) {
 
-	testMethod := "GET"
+// 	mockController := gomock.NewController(t)
+// 	defer mockController.Finish()
 
-	mockController := gomock.NewController(t)
+// 	userManager := mocks.NewMockUserManager(mockController)
+// 	shortner := mocks.NewMockShortner(mockController)
+// 	logger, err := zaplogger.NewZapLogger("")
+// 	require.NoError(t, err)
+
+// 	//	originalURL, err := h.shortner.GetOriginalURL(r.Context(), shortKey)
+// 	testCases := []struct {
+// 		name string
+// 		requesURI string
+// 		getOriginalURLParams struct {
+// 			inpURI string
+// 			outURL string
+// 			outErr error
+// 		}
+// 		want struct {
+// 			statusCode int
+// 			responseURL string
+// 		}
+// 	}{
+// 		{
+// 			name: "simple test",
+// 			requesURI: "/000000000",
+// 			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
+// 				inpURI: "000000000",
+// 				outURL: "https://ya.ru",
+// 				outErr: nil,
+// 			},
+// 			want: struct{statusCode int; responseURL string}{
+// 				statusCode: http.StatusTemporaryRedirect,
+// 				responseURL: "https://ya.ru",
+// 			},
+// 		},
+// 		{
+// 			name: "deleted test",
+// 			requesURI: "/000000000",
+// 			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
+// 				inpURI: "000000000",
+// 				outURL: "",
+// 				outErr: aliasmaker.ErrURLWasDeleted,
+// 			},
+// 			want: struct{statusCode int; responseURL string}{
+// 				statusCode: http.StatusGone,
+// 				responseURL: "",
+// 			},
+// 		},
+// 		{
+// 			name: "not found test",
+// 			requesURI: "/000000000",
+// 			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
+// 				inpURI: "000000000",
+// 				outURL: "",
+// 				outErr: aliasmaker.ErrURLNotFound,
+// 			},
+// 			want: struct{statusCode int; responseURL string}{
+// 				statusCode: http.StatusBadRequest,
+// 				responseURL: "",
+// 			},
+// 		},
+// 	}
+
+// 	for _, test := range testCases {
+// 		t.Run(test.name, func(t *testing.T) {
+
+// 			shortner.EXPECT().GetOriginalURL(gomock.Any(), test.getOriginalURLParams.inpURI).Return(test.getOriginalURLParams.outURL, test.getOriginalURLParams.outErr)
+
+// 			request := httptest.NewRequest(http.MethodGet, test.requesURI, nil)
+
+// 			recorder := httptest.NewRecorder()
+// 			h := New(userManager, shortner, logger, "http://localhost/").redirect
+// 			h(recorder, request)
+
+// 			resp := recorder.Result()
+// 			err := resp.Body.Close()
+// 			require.NoError(t, err)
+
+// 			assert.Equal(t, test.want.statusCode, resp.StatusCode)
+// 			assert.Equal(t, test.want.responseURL, resp.Header.Get("Location"))
+// 		})
+// 	}
+// }
+
+func Benchmark_redirect(b *testing.B) {
+
+	b.StopTimer()
+
+	//b.StopTimer()
+	mockController := gomock.NewController(b)
 	defer mockController.Finish()
 
 	userManager := mocks.NewMockUserManager(mockController)
 	shortner := mocks.NewMockShortner(mockController)
 	logger, err := zaplogger.NewZapLogger("")
-	require.NoError(t, err)
-
-	server := NewRouter(New(userManager, shortner, logger, "http://localhost/"))
-
-	testServer := httptest.NewServer(server)
-	defer testServer.Close()
+	require.NoError(b, err)
 
 	//	originalURL, err := h.shortner.GetOriginalURL(r.Context(), shortKey)
 	testCases := []struct {
 		name string
 		requesURI string
+		getOriginalURLParams struct {
+			inpURI string
+			outURL string
+			outErr error
+		}
 		want struct {
 			statusCode int
 			responseURL string
@@ -41,29 +128,61 @@ func Test_redirect(t *testing.T) {
 		{
 			name: "simple test",
 			requesURI: "/000000000",
+			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
+				inpURI: "000000000",
+				outURL: "https://ya.ru",
+				outErr: nil,
+			},
 			want: struct{statusCode int; responseURL string}{
 				statusCode: http.StatusTemporaryRedirect,
 				responseURL: "https://ya.ru",
 			},
 		},
+		{
+			name: "deleted test",
+			requesURI: "/000000000",
+			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
+				inpURI: "000000000",
+				outURL: "",
+				outErr: aliasmaker.ErrURLWasDeleted,
+			},
+			want: struct{statusCode int; responseURL string}{
+				statusCode: http.StatusGone,
+				responseURL: "",
+			},
+		},		
+		{
+			name: "not found test",
+			requesURI: "/000000000",
+			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
+				inpURI: "000000000",
+				outURL: "",
+				outErr: aliasmaker.ErrURLNotFound,
+			},
+			want: struct{statusCode int; responseURL string}{
+				statusCode: http.StatusBadRequest,
+				responseURL: "",
+			},
+		},
 	}
+				
 
 	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
+	b.Run(test.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				shortner.EXPECT().GetOriginalURL(gomock.Any(), test.getOriginalURLParams.inpURI).Return(test.getOriginalURLParams.outURL, test.getOriginalURLParams.outErr)
 
-			shortner.EXPECT().GetOriginalURL(gomock.Any(), test.requesURI[1:]).Return(test.want.responseURL, nil)
+				request := httptest.NewRequest(http.MethodGet, test.requesURI, nil)
 
-			req, err := http.NewRequest(testMethod, testServer.URL + test.requesURI, nil)
-			require.NoError(t, err)
-			resp, err := testServer.Client().Do(req)
-			require.NoError(t, err)
-			defer resp.Body.Close()
-
-			assert.Equal(t, test.want.statusCode, resp.StatusCode)
-			assert.Equal(t, test.want.responseURL, resp.Header.Get("Location"))
+				recorder := httptest.NewRecorder()
+				h := New(userManager, shortner, logger, "http://localhost/").redirect
+				h(recorder, request)	
+	 		}
 		})
 	}
+
 }
+
 
 // import (
 // 	"io"

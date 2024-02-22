@@ -1,4 +1,4 @@
-package handlers
+package server
 
 import (
 	"context"
@@ -45,7 +45,7 @@ type UserManager interface {
 }
 
 
-type Handler struct {
+type Server struct {
 	userManager UserManager
 	shortner Shortner
 
@@ -56,9 +56,9 @@ type Handler struct {
 
 
 //	Constructor of Handler type
-func New(userManager UserManager, shortner Shortner, logger *zaplogger.ZapLogger, baseURL string) *Handler {
+func New(userManager UserManager, shortner Shortner, logger *zaplogger.ZapLogger, baseURL string) *Server {
 
-	return &Handler{
+	return &Server{
 		userManager: userManager,
 		shortner: shortner,
 		logger: logger,
@@ -69,7 +69,7 @@ func New(userManager UserManager, shortner Shortner, logger *zaplogger.ZapLogger
 
 //	Handler retuns original URL by short key in HTTP header "Location" and redirect status code (307).
 //	If URL not found or was deleted, returns error
-func (h *Handler) redirect(w http.ResponseWriter, r *http.Request) {
+func (h *Server) redirect(w http.ResponseWriter, r *http.Request) {
 
 	shortKey := r.RequestURI[1:]
 
@@ -94,7 +94,7 @@ func (h *Handler) redirect(w http.ResponseWriter, r *http.Request) {
 //	1. StatusBadRequest (400) - if an internal service error occurred;
 //	2. StatusConflict (409) - if the original URL is already saved in the service;
 //	3. StatusCreated (201) - if original URL is saved successfully and alias is created.
-func (h *Handler) getShortURL(w http.ResponseWriter, r *http.Request) {
+func (h *Server) getShortURL(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := h.getUserIDFromContext(r.Context())
 	if err != nil {
@@ -130,7 +130,7 @@ func (h *Handler) getShortURL(w http.ResponseWriter, r *http.Request) {
 
 
 //	Get state of database service
-func (h *Handler) PingGet(w http.ResponseWriter, r *http.Request) {
+func (h *Server) PingGet(w http.ResponseWriter, r *http.Request) {
 
 	if !h.shortner.IsDatabaseActive() {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -141,7 +141,7 @@ func (h *Handler) PingGet(w http.ResponseWriter, r *http.Request) {
 
 
 // Get User ID from request context
-func (h *Handler) getUserIDFromContext(ctx context.Context) (uint64, error) {
+func (h *Server) getUserIDFromContext(ctx context.Context) (uint64, error) {
 
 	userID := ctx.Value(UserID)
 	ID, ok := userID.(uint64)

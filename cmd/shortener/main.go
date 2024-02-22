@@ -10,7 +10,7 @@ import (
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
-	"github.com/Schalure/urlalias/internal/app/handlers"
+	"github.com/Schalure/urlalias/internal/app/server"
 	"github.com/Schalure/urlalias/internal/app/storage"
 
 	_ "net/http/pprof"
@@ -49,7 +49,7 @@ func main() {
 	defer service.Stop()
 
 	log.Println("Router initialize...")
-	router := handlers.NewRouter(handlers.New(service, service, logger, conf.BaseURL()))
+	router := server.NewRouter(server.New(service, service, logger, conf.BaseURL()))
 
 	logger.Infow(
 		fmt.Sprintf("%s service have been started...", config.AppName),

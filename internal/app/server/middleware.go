@@ -1,4 +1,4 @@
-package handlers
+package server
 
 import "github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 

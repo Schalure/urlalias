@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -276,15 +277,16 @@ func Benchmark_getShortURL(b *testing.B) {
 
 	// testServer := httptest.NewServer(NewRouter(New(service, service, logger, testLocalHost)))
 	// defer testServer.Close()
-	request := httptest.NewRequest(testMethod, testURL, strings.NewReader("https://ya.ru"))
-	request.Header.Add("Content-type", "text/plain")
-
-	recorder := httptest.NewRecorder()
-	h := New(service, service, logger, testLocalHost).getShortURL
 
 	for i := 0; i < b.N; i++ {
 
-		h(recorder, request)
+		request := httptest.NewRequest(testMethod, testURL, strings.NewReader("https://ya.ru"))
+		request.Header.Add("Content-type", "text/plain")
+
+		recorder := httptest.NewRecorder()
+		h := New(service, service, logger, testLocalHost).getShortURL
+
+		h(recorder, request.WithContext(context.WithValue(request.Context(), UserID, userID)))
 	}
 }
 

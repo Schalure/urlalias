@@ -104,85 +104,41 @@ func Test_redirect(t *testing.T) {
 
 func Benchmark_redirect(b *testing.B) {
 
-	b.StopTimer()
+	testMethod := "GET"
+	testURL := "/000000002"
+	testLocalHost := "http://localhost"
+	userID := uint64(1)
 
 	//b.StopTimer()
 	mockController := gomock.NewController(b)
 	defer mockController.Finish()
 
-	userManager := mocks.NewMockUserManager(mockController)
-	shortner := mocks.NewMockShortner(mockController)
+	storage := mocks.NewMockStorager(mockController)
+	storage.EXPECT().GetLastShortKey().Return("000000001").AnyTimes()
+	storage.EXPECT().CreateUser().Return(userID, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
+		ID: 1,
+		UserID: userID,
+		ShortKey: "000000002",
+		LongURL: "https://ya.ru",
+		DeletedFlag: false,
+	}, nil).AnyTimes()
+
 	logger, err := zaplogger.NewZapLogger("")
 	require.NoError(b, err)
 
-	//	originalURL, err := h.shortner.GetOriginalURL(r.Context(), shortKey)
-	testCases := []struct {
-		name string
-		requesURI string
-		getOriginalURLParams struct {
-			inpURI string
-			outURL string
-			outErr error
-		}
-		want struct {
-			statusCode int
-			responseURL string
-		}
-	}{
-		{
-			name: "simple test",
-			requesURI: "/000000000",
-			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
-				inpURI: "000000000",
-				outURL: "https://ya.ru",
-				outErr: nil,
-			},
-			want: struct{statusCode int; responseURL string}{
-				statusCode: http.StatusTemporaryRedirect,
-				responseURL: "https://ya.ru",
-			},
-		},
-		{
-			name: "deleted test",
-			requesURI: "/000000000",
-			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
-				inpURI: "000000000",
-				outURL: "",
-				outErr: aliasmaker.ErrURLWasDeleted,
-			},
-			want: struct{statusCode int; responseURL string}{
-				statusCode: http.StatusGone,
-				responseURL: "",
-			},
-		},		
-		{
-			name: "not found test",
-			requesURI: "/000000000",
-			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
-				inpURI: "000000000",
-				outURL: "",
-				outErr: aliasmaker.ErrURLNotFound,
-			},
-			want: struct{statusCode int; responseURL string}{
-				statusCode: http.StatusBadRequest,
-				responseURL: "",
-			},
-		},
-	}
-				
+	service, err := aliasmaker.New(storage, logger)
+	require.NoError(b, err)
 
-	for _, test := range testCases {
-	b.Run(test.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				shortner.EXPECT().GetOriginalURL(gomock.Any(), test.getOriginalURLParams.inpURI).Return(test.getOriginalURLParams.outURL, test.getOriginalURLParams.outErr)
+	request := httptest.NewRequest(testMethod, testURL, nil)
+	request.Header.Add("Content-type", "text/plain")
 
-				request := httptest.NewRequest(http.MethodGet, test.requesURI, nil)
+	recorder := httptest.NewRecorder()
+	h := New(service, service, logger, testLocalHost).redirect
 
-				recorder := httptest.NewRecorder()
-				h := New(userManager, shortner, logger, "http://localhost/").redirect
-				h(recorder, request)	
-	 		}
-		})
+	for i := 0; i < b.N; i++ {
+
+		h(recorder, request)
 	}
 }
 
@@ -318,18 +274,17 @@ func Benchmark_getShortURL(b *testing.B) {
 	service, err := aliasmaker.New(storage, logger)
 	require.NoError(b, err)
 
-	testServer := httptest.NewServer(NewRouter(New(service, service, logger, testLocalHost)))
-	defer testServer.Close()
+	// testServer := httptest.NewServer(NewRouter(New(service, service, logger, testLocalHost)))
+	// defer testServer.Close()
+	request := httptest.NewRequest(testMethod, testURL, strings.NewReader("https://ya.ru"))
+	request.Header.Add("Content-type", "text/plain")
 
+	recorder := httptest.NewRecorder()
+	h := New(service, service, logger, testLocalHost).getShortURL
 
 	for i := 0; i < b.N; i++ {
 
-		request, err := http.NewRequest(testMethod, testServer.URL + testURL, strings.NewReader("https://ya.ru"))
-		require.NoError(b, err)
-		request.Header.Add("Content-type", "text/plain")
-
-		_, err = testServer.Client().Do(request)
-		//require.NoError(b, err)
+		h(recorder, request)
 	}
 }
 

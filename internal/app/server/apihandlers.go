@@ -182,7 +182,7 @@ func (h *Server) apiGetUserAliases(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func (h *Server) APIUserURLsHandlerDelete(w http.ResponseWriter, r *http.Request) {
+func (h *Server) aipDeleteUserAliases(w http.ResponseWriter, r *http.Request) {
 
 	var (
 		aliases []string

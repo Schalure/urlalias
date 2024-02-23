@@ -1,187 +1,577 @@
 package server
 
-// import (
-// 	"context"
-// 	"fmt"
-// 	"io"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"strings"
-// 	"testing"
+import (
+	"context"
+	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 
-// 	"github.com/Schalure/urlalias/cmd/shortener/config"
-// 	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
-// 	"github.com/stretchr/testify/assert"
-// 	"github.com/stretchr/testify/require"
-// )
+	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
+	"github.com/Schalure/urlalias/internal/app/aliasmaker"
+	"github.com/Schalure/urlalias/internal/app/mocks"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-// func Test_ApiShortenHandlerPost(t *testing.T) {
+func Test_apiGetShortURL(t *testing.T)  {
 
-// 	service := newService(t)
-// 	defer service.Stop()
+	testLocalHost := "http://localhost"
+	testMethod := "POST"
+	testURL := "/api/shorten"
+	userID := uint64(1)
 
-// 	listOfURL := []aliasentity.AliasURLModel{
-// 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
-// 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
-// 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
-// 	}
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
 
-// 	for i, nodeURL := range listOfURL {
-// 		if err := service.Storage.Save(&aliasentity.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
-// 			require.NotNil(t, err)
-// 		}
-// 	}
-// 	//service := aliasmaker.NewAliasMakerServise(testStor)
+	userManager := mocks.NewMockUserManager(mockController)
+	shortner := mocks.NewMockShortner(mockController)
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(t, err)
 
-// 	testConfig := config.NewConfig()
+	testServer := httptest.NewServer(NewRouter(New(userManager, shortner, logger, testLocalHost)))
+	defer testServer.Close()
 
-// 	testCases := []struct {
-// 		name       string
-// 		requestURI string
-// 		want       struct {
-// 			code        int
-// 			contentType string
-// 			response    string
-// 		}
-// 	}{
-// 		//----------------------------------
-// 		//	1. simple test
-// 		{
-// 			name:       "simple test",
-// 			requestURI: fmt.Sprintf("{\"url\":\"%s\"}", listOfURL[0].LongURL),
-// 			want: struct {
-// 				code        int
-// 				contentType string
-// 				response    string
-// 			}{
-// 				code:        http.StatusConflict,
-// 				contentType: appJSON,
-// 				response:    fmt.Sprintf("{\"result\":\"%s/%s\"}", testConfig.BaseURL(), listOfURL[0].ShortKey),
-// 			},
-// 		},
-// 	}
+	testCases := []struct {
+		name string
+		requestBody string
+		getShortKeyOut struct {
+			requestURL string
+			shortKey string
+			err error
+		}
+		want struct {
+			
+			statusCode int
+			responseBody string
+		}
+	}{
+		{
+			name: "simple test",
+			requestBody: `{"url": "https://ya.ru"}`,
+			getShortKeyOut: struct{requestURL string; shortKey string; err error}{
+				requestURL: "https://ya.ru",
+				shortKey: "000000001",
+				err: nil,
+			},
+			want: struct{statusCode int; responseBody string}{
+				statusCode: http.StatusCreated,
+				responseBody: `{"result":"` + testLocalHost + `/000000001"}`,
+			},
+		},
+		{
+			name: "conflict test",
+			requestBody: `{"url": "https://ya.ru"}`,
+			getShortKeyOut: struct{requestURL string; shortKey string; err error}{
+				requestURL: "https://ya.ru",
+				shortKey: "000000001",
+				err: aliasmaker.ErrConflictURL,
+			},
+			want: struct{statusCode int; responseBody string}{
+				statusCode: http.StatusConflict,
+				responseBody: `{"result":"` + testLocalHost + `/000000001"}`,
+			},
+		},
+		{
+			name: "not found test",
+			requestBody: `{"url": "https://ya.ru"}`,
+			getShortKeyOut: struct{requestURL string; shortKey string; err error}{
+				requestURL: "https://ya.ru",
+				shortKey: "",
+				err: aliasmaker.ErrInternal,
+			},
+			want: struct{statusCode int; responseBody string}{
+				statusCode: http.StatusBadRequest,
+				responseBody: aliasmaker.ErrInternal.Error(),
+			},
+		},
+	}
 
-// 	//	Start test cases
-// 	for _, tt := range testCases {
-// 		t.Run(tt.name, func(t *testing.T) {
 
-// 			service.Logger.Infow(
-// 				"Response URL",
-// 				"URL", tt.requestURI,
-// 				"test", fmt.Sprintf("\"url\": \"%v\"", listOfURL[0].LongURL),
-// 			)
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
 
-// 			request := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(tt.requestURI))
-// 			request.Header.Add("Content-type", appJSON)
+			userManager.EXPECT().CreateUser().Return(userID, nil)
+			shortner.EXPECT().GetShortKey(gomock.Any(), userID, test.getShortKeyOut.requestURL).Return(test.getShortKeyOut.shortKey, test.getShortKeyOut.err)
 
-// 			recorder := httptest.NewRecorder()
-// 			h := New(service).APIShortenHandlerPost
-// 			ctx := context.WithValue(request.Context(), UserID, uint64(0))
 
-// 			h(recorder, request.WithContext(ctx))
+			request, err := http.NewRequest(testMethod, testServer.URL + testURL, strings.NewReader(test.requestBody))
+			require.NoError(t, err)
+			request.Header.Add("Content-type", "application/json")
 
-// 			result := recorder.Result()
+			client := testServer.Client()
+			transport := &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DisableCompression: true,
+			} 
+			client.Transport = transport			
 
-// 			//	check status code
-// 			assert.Equal(t, tt.want.code, result.StatusCode)
+			response, err := client.Do(request)
+			require.NoError(t, err)
 
-// 			//	check response
-// 			data, err := io.ReadAll(recorder.Body)
-// 			require.NoError(t, err)
-// 			err = result.Body.Close()
-// 			require.NoError(t, err)
+			//	check status code
+			assert.Equal(t, test.want.statusCode, response.StatusCode)
 
-// 			assert.Equal(t, tt.want.response, string(data))
+			data, err := io.ReadAll(response.Body)
+			require.NoError(t, err)
+			err = response.Body.Close()
+			require.NoError(t, err)
 
-// 			assert.Contains(t, recorder.Header().Get("Content-type"), tt.want.contentType)
-// 		})
-// 	}
-// }
+			if response.StatusCode != http.StatusBadRequest {
+				assert.Equal(t, test.want.responseBody, string(data))
+			}
+		})
+	}
+}
 
-// func Test_ApiShortenBatchHandlerPost(t *testing.T) {
+func Benchmark_apiGetShortURL(b *testing.B) {
 
-// 	service := newService(t)
-// 	defer service.Stop()
+	testLocalHost := "http://localhost"
+	testMethod := "POST"
+	testURL := "/api/shorten"
+	userID := uint64(1)
 
-// 	listOfURL := []aliasentity.AliasURLModel{
-// 		{ID: 0, LongURL: "https://ya.ru", ShortKey: "123456789"},
-// 		{ID: 1, LongURL: "https://google.com", ShortKey: "987654321"},
-// 		{ID: 2, LongURL: "https://go.dev", ShortKey: ""},
-// 	}
+	mockController := gomock.NewController(b)
+	defer mockController.Finish()
 
-// 	for i, nodeURL := range listOfURL {
-// 		if err := service.Storage.Save(&aliasentity.AliasURLModel{ID: uint64(i), LongURL: nodeURL.LongURL, ShortKey: nodeURL.ShortKey}); err != nil {
-// 			require.NotNil(t, err)
-// 		}
-// 	}
+	storage := mocks.NewMockStorager(mockController)
+	storage.EXPECT().GetLastShortKey().Return("000000001").AnyTimes()
+	storage.EXPECT().CreateUser().Return(userID, nil).AnyTimes()
+	storage.EXPECT().FindByLongURL(gomock.Any(), "https://ya.ru").Return(nil, errors.New("")).AnyTimes()
+	storage.EXPECT().Save(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-// 	testCases := []struct {
-// 		testName string
-// 		data     string
-// 		want     struct {
-// 			code        int
-// 			contentType string
-// 			response    string
-// 		}
-// 	}{
-// 		//	memstor simple test
-// 		{
-// 			testName: "memstor_simple_test",
-// 			data: `[
-// 				{
-// 					"correlation_id": "1",
-// 					"original_url": "https://ya.ru"
-// 				},
-// 				{
-// 					"correlation_id": "2",
-// 					"original_url": "https://google.com"
-// 				}
-// 			]`,
-// 			want: struct {
-// 				code        int
-// 				contentType string
-// 				response    string
-// 			}{
-// 				code:        http.StatusCreated,
-// 				contentType: appJSON,
-// 				response: fmt.Sprintf(`[{"correlation_id":"1","short_url":"%s/123456789"},{"correlation_id":"2","short_url":"%s/987654321"}]`,
-// 					service.Config.BaseURL(),
-// 					service.Config.BaseURL(),
-// 				),
-// 			},
-// 		},
-// 	}
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(b, err)
 
-// 	for _, test := range testCases {
-// 		t.Run(test.testName, func(t *testing.T) {
+	service, err := aliasmaker.New(storage, logger)
+	require.NoError(b, err)
 
-// 			request := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", strings.NewReader(test.data))
-// 			request.Header.Add(contentType, appJSON)
+	for i := 0; i < b.N; i++ {
 
-// 			recorder := httptest.NewRecorder()
-// 			h := New(service).APIShortenBatchHandlerPost
+		request, err := http.NewRequest(testMethod, testURL, strings.NewReader(`{"url": "https://ya.ru"}`))
+		require.NoError(b, err)
+		request.Header.Add("Content-type", "application/json")
 
-// 			ctx := context.WithValue(request.Context(), UserID, uint64(0))
-// 			h(recorder, request.WithContext(ctx))
 
-// 			result := recorder.Result()
+		recorder := httptest.NewRecorder()
+		h := New(service, service, logger, testLocalHost).apiGetShortURL
 
-// 			//	check status code
-// 			assert.Equal(t, test.want.code, result.StatusCode)
+		h(recorder, request.WithContext(context.WithValue(request.Context(), UserID, userID)))
+	}
+}
 
-// 			//	check contentType
-// 			assert.Contains(t, recorder.Header().Get("Content-type"), test.want.contentType)
+func Test_apiGetBatchShortURL(t *testing.T) {
 
-// 			//	check response
-// 			data, err := io.ReadAll(recorder.Body)
-// 			require.NoError(t, err)
-// 			err = result.Body.Close()
-// 			require.NoError(t, err)
+	testLocalHost := "http://localhost"
+	testMethod := "POST"
+	testURL := "/api/shorten/batch"
+	userID := uint64(1)
 
-// 			assert.Equal(t, test.want.response, string(data))
-// 		})
-// 	}
-// }
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	userManager := mocks.NewMockUserManager(mockController)
+	shortner := mocks.NewMockShortner(mockController)
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(t, err)
+
+	testServer := httptest.NewServer(NewRouter(New(userManager, shortner, logger, testLocalHost)))
+	defer testServer.Close()
+
+	testCases := []struct {
+		name string
+		requestBody string
+		getBatchShortURLOut struct {
+			batchRequestURL []string
+			batchRsponseKey []string
+			err error
+		}
+		want struct {
+			
+			statusCode int
+			responseBody string
+		}
+	}{
+		{
+			name: "simple test",
+			requestBody:  `[{"correlation_id": "1","original_url": "https://ya.ru"},{"correlation_id": "2","original_url": "https://google.com"}]`,
+			getBatchShortURLOut: struct{batchRequestURL []string; batchRsponseKey []string; err error}{
+				batchRequestURL: []string{"https://ya.ru", "https://google.com"},
+				batchRsponseKey: []string{"000000001", "000000002"},
+				err: nil,
+			},
+			want: struct{statusCode int; responseBody string}{
+				statusCode: http.StatusCreated,
+				responseBody: `[{"correlation_id":"1","short_url":"http://localhost/000000001"},{"correlation_id":"2","short_url":"http://localhost/000000002"}]`,
+			},
+		},
+		{
+			name: "bad request test",
+			requestBody:  `[{"correlation_id": "1","original_url": "https://ya.ru"},{"correlation_id": "2","original_url": "https://google.com"}]`,
+			getBatchShortURLOut: struct{batchRequestURL []string; batchRsponseKey []string; err error}{
+				batchRequestURL: []string{"https://ya.ru", "https://google.com"},
+				batchRsponseKey: []string{"000000001", "000000002"},
+				err: errors.New(""),
+			},
+			want: struct{statusCode int; responseBody string}{
+				statusCode: http.StatusBadRequest,
+				responseBody: ``,
+			},
+		},
+	}
+	
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+
+			userManager.EXPECT().CreateUser().Return(userID, nil)
+			shortner.EXPECT().GetBatchShortURL(gomock.Any(), userID, test.getBatchShortURLOut.batchRequestURL).Return(test.getBatchShortURLOut.batchRsponseKey, test.getBatchShortURLOut.err)
+
+
+			request, err := http.NewRequest(testMethod, testServer.URL + testURL, strings.NewReader(test.requestBody))
+			require.NoError(t, err)
+			request.Header.Add("Content-type", "application/json")
+
+			client := testServer.Client()
+			transport := &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DisableCompression: true,
+			} 
+			client.Transport = transport			
+
+			response, err := client.Do(request)
+			require.NoError(t, err)
+
+			//	check status code
+			assert.Equal(t, test.want.statusCode, response.StatusCode)
+
+			data, err := io.ReadAll(response.Body)
+			require.NoError(t, err)
+			err = response.Body.Close()
+			require.NoError(t, err)
+
+			if response.StatusCode != http.StatusBadRequest {
+				assert.Equal(t, test.want.responseBody, string(data))
+			}
+		})
+	}
+}
+
+func Benchmark_apiGetBatchShortURL(b *testing.B) {
+
+	testLocalHost := "http://localhost"
+	testMethod := "POST"
+	testURL := "/api/shorten/batch"
+	userID := uint64(1)
+
+	mockController := gomock.NewController(b)
+	defer mockController.Finish()
+
+	storage := mocks.NewMockStorager(mockController)
+	storage.EXPECT().GetLastShortKey().Return("000000001").AnyTimes()
+	storage.EXPECT().CreateUser().Return(userID, nil).AnyTimes()
+	storage.EXPECT().FindByLongURL(gomock.Any(), gomock.Any()).Return(nil, errors.New("")).AnyTimes()
+	storage.EXPECT().SaveAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(b, err)
+
+	service, err := aliasmaker.New(storage, logger)
+	require.NoError(b, err)
+
+	for i := 0; i < b.N; i++ {
+
+		request, err := http.NewRequest(testMethod, testURL, strings.NewReader(`[{"correlation_id": "1","original_url": "https://ya.ru"},{"correlation_id": "2","original_url": "https://google.com"}]`))
+		require.NoError(b, err)
+		request.Header.Add("Content-type", "application/json")
+
+
+		recorder := httptest.NewRecorder()
+		h := New(service, service, logger, testLocalHost).apiGetBatchShortURL
+
+		h(recorder, request.WithContext(context.WithValue(request.Context(), UserID, userID)))
+	}
+}
+
+func Test_apiGetUserAliases(t *testing.T) {
+
+	testLocalHost := "http://localhost"
+	testMethod := "GET"
+	testURL := "/api/user/urls"
+	userID := uint64(1)
+
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	userManager := mocks.NewMockUserManager(mockController)
+	shortner := mocks.NewMockShortner(mockController)
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(t, err)
+
+	testServer := httptest.NewServer(NewRouter(New(userManager, shortner, logger, testLocalHost)))
+	defer testServer.Close()
+
+	testCases := []struct {
+		name string
+		getUserAliasesOut struct {
+			nodesOut []aliasentity.AliasURLModel
+			err error
+		}
+		want struct {
+			
+			statusCode int
+			responseBody string
+		}
+	}{
+		{
+			name: "simple test",
+			getUserAliasesOut: struct{nodesOut []aliasentity.AliasURLModel; err error}{
+				nodesOut: []aliasentity.AliasURLModel{
+					{
+						ShortKey: "000000001",
+						LongURL: "https://ya.ru",
+					},
+					{
+						ShortKey: "000000002",
+						LongURL: "https://goo.com",
+					},
+				},
+				err: nil,
+			},
+			want: struct{statusCode int; responseBody string}{
+				statusCode: http.StatusOK,
+				responseBody: `[{"short_url":"http://localhost/000000001","original_url":"https://ya.ru"},{"short_url":"http://localhost/000000002","original_url":"https://goo.com"}]`,
+			},
+		},
+		{
+			name: "not found test",
+			getUserAliasesOut: struct{nodesOut []aliasentity.AliasURLModel; err error}{
+				nodesOut: []aliasentity.AliasURLModel{},
+				err: nil,
+			},
+			want: struct{statusCode int; responseBody string}{
+				statusCode: http.StatusNoContent,
+				responseBody: ``,
+			},
+		},
+	}
+	
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+
+			userManager.EXPECT().GetUserAliases(gomock.Any(), userID).Return(test.getUserAliasesOut.nodesOut, test.getUserAliasesOut.err)
+
+			request, err := http.NewRequest(testMethod, testServer.URL + testURL, nil)
+			require.NoError(t, err)
+			request.Header.Add("Content-type", "application/json")
+			tokenString, err := createTokenJWT(userID)
+			require.NoError(t, err)
+			request.AddCookie(&http.Cookie{
+				Name:  authorization,
+				Value: tokenString,
+			})
+
+
+			client := testServer.Client()
+			transport := &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DisableCompression: true,
+			} 
+			client.Transport = transport			
+
+			response, err := client.Do(request)
+			require.NoError(t, err)
+
+			//	check status code
+			assert.Equal(t, test.want.statusCode, response.StatusCode)
+
+			data, err := io.ReadAll(response.Body)
+			require.NoError(t, err)
+			err = response.Body.Close()
+			require.NoError(t, err)
+
+			if response.StatusCode != http.StatusBadRequest {
+				assert.Equal(t, test.want.responseBody, string(data))
+			}
+		})
+	}
+}
+
+func Benchmark_apiGetUserAliases(b *testing.B) {
+
+	testLocalHost := "http://localhost"
+	testMethod := "GET"
+	testURL := "/api/user/urls"
+	userID := uint64(1)
+
+	mockController := gomock.NewController(b)
+	defer mockController.Finish()
+
+	storage := mocks.NewMockStorager(mockController)
+	storage.EXPECT().GetLastShortKey().Return("000000001").AnyTimes()
+	storage.EXPECT().FindByUserID(gomock.Any(), userID).Return([]aliasentity.AliasURLModel{{ShortKey: "000000001",LongURL: "https://ya.ru"},{ShortKey: "000000002",LongURL: "https://goo.com"}}, nil).AnyTimes()
+
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(b, err)
+
+	service, err := aliasmaker.New(storage, logger)
+	require.NoError(b, err)
+
+	for i := 0; i < b.N; i++ {
+
+		request, err := http.NewRequest(testMethod, testURL, nil)
+		require.NoError(b, err)
+		request.Header.Add("Content-type", "application/json")
+		tokenString, err := createTokenJWT(userID)
+		require.NoError(b, err)
+		request.AddCookie(&http.Cookie{
+			Name:  authorization,
+			Value: tokenString,
+		})
+
+		recorder := httptest.NewRecorder()
+		h := New(service, service, logger, testLocalHost).apiGetUserAliases
+
+		h(recorder, request.WithContext(context.WithValue(request.Context(), UserID, userID)))
+	}
+}
+
+func Test_aipDeleteUserAliases(t *testing.T) {
+
+	testLocalHost := "http://localhost"
+	testMethod := "DELETE"
+	testURL := "/api/user/urls"
+	userID := uint64(1)
+
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	userManager := mocks.NewMockUserManager(mockController)
+	shortner := mocks.NewMockShortner(mockController)
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(t, err)
+
+	testServer := httptest.NewServer(NewRouter(New(userManager, shortner, logger, testLocalHost)))
+	defer testServer.Close()
+
+	testCases := []struct {
+		name string
+		getUserAliasesOut struct {
+			nodesOut []aliasentity.AliasURLModel
+			err error
+		}
+		want struct {
+			
+			statusCode int
+			responseBody string
+		}
+	}{
+		{
+			name: "simple test",
+			getUserAliasesOut: struct{nodesOut []aliasentity.AliasURLModel; err error}{
+				nodesOut: []aliasentity.AliasURLModel{
+					{
+						ShortKey: "000000001",
+						LongURL: "https://ya.ru",
+					},
+					{
+						ShortKey: "000000002",
+						LongURL: "https://goo.com",
+					},
+				},
+				err: nil,
+			},
+			want: struct{statusCode int; responseBody string}{
+				statusCode: http.StatusOK,
+				responseBody: `[{"short_url":"http://localhost/000000001","original_url":"https://ya.ru"},{"short_url":"http://localhost/000000002","original_url":"https://goo.com"}]`,
+			},
+		},
+		{
+			name: "not found test",
+			getUserAliasesOut: struct{nodesOut []aliasentity.AliasURLModel; err error}{
+				nodesOut: []aliasentity.AliasURLModel{},
+				err: nil,
+			},
+			want: struct{statusCode int; responseBody string}{
+				statusCode: http.StatusNoContent,
+				responseBody: ``,
+			},
+		},
+	}
+	
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+
+			userManager.EXPECT().GetUserAliases(gomock.Any(), userID).Return(test.getUserAliasesOut.nodesOut, test.getUserAliasesOut.err)
+
+			request, err := http.NewRequest(testMethod, testServer.URL + testURL, nil)
+			require.NoError(t, err)
+			request.Header.Add("Content-type", "application/json")
+			tokenString, err := createTokenJWT(userID)
+			require.NoError(t, err)
+			request.AddCookie(&http.Cookie{
+				Name:  authorization,
+				Value: tokenString,
+			})
+
+
+			client := testServer.Client()
+			transport := &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DisableCompression: true,
+			} 
+			client.Transport = transport			
+
+			response, err := client.Do(request)
+			require.NoError(t, err)
+
+			//	check status code
+			assert.Equal(t, test.want.statusCode, response.StatusCode)
+
+			data, err := io.ReadAll(response.Body)
+			require.NoError(t, err)
+			err = response.Body.Close()
+			require.NoError(t, err)
+
+			if response.StatusCode != http.StatusBadRequest {
+				assert.Equal(t, test.want.responseBody, string(data))
+			}
+		})
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // func Test_APIUserURLsHandlerDelete(t *testing.T) {
 

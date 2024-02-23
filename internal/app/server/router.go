@@ -28,7 +28,7 @@ func NewRouter(handler *Server) http.Handler/*chi.Mux*/ {
 
 		r.Use(m.WithVerification)
 		r.Get("/api/user/urls", handler.apiGetUserAliases)
-		r.Delete("/api/user/urls", handler.APIUserURLsHandlerDelete)
+		r.Delete("/api/user/urls", handler.aipDeleteUserAliases)
 	})
 
 	return r

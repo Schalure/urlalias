@@ -12,10 +12,10 @@ import (
 	"github.com/Schalure/urlalias/internal/app/interpreter"
 )
 
-//	Handler retuns short URL by original URL. Handler can returns three HTTP statuses:
-//	1. StatusBadRequest (400) - if an internal service error occurred;
-//	2. StatusConflict (409) - if the original URL is already saved in the service;
-//	3. StatusCreated (201) - if original URL is saved successfully and alias is created.
+// Handler retuns short URL by original URL. Handler can returns three HTTP statuses:
+// 1. StatusBadRequest (400) - if an internal service error occurred;
+// 2. StatusConflict (409) - if the original URL is already saved in the service;
+// 3. StatusCreated (201) - if original URL is saved successfully and alias is created.
 func (h *Server) apiGetShortURL(w http.ResponseWriter, r *http.Request) {
 
 	type (
@@ -67,7 +67,6 @@ func (h *Server) apiGetShortURL(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf)
 }
 
-
 func (h *Server) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 
 	type (
@@ -108,8 +107,8 @@ func (h *Server) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 	batchShortKey, err := h.shortner.GetBatchShortURL(r.Context(), userID, batchOriginalURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		h.logger.Infow("Can't save to storage", "err", err.Error(),)
-		return		
+		h.logger.Infow("Can't save to storage", "err", err.Error())
+		return
 	}
 
 	responseJSON = make([]ResponseJSON, len(requestJSON))
@@ -117,7 +116,6 @@ func (h *Server) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 		responseJSON[i].ID = requestJSON[i].ID
 		responseJSON[i].ShortURL = h.baseURL + "/" + shortKey
 	}
-
 
 	buf, err := json.Marshal(&responseJSON)
 	if err != nil {
@@ -130,7 +128,6 @@ func (h *Server) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	w.Write(buf)
 }
-
 
 func (h *Server) apiGetUserAliases(w http.ResponseWriter, r *http.Request) {
 
@@ -147,8 +144,7 @@ func (h *Server) apiGetUserAliases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second * 1)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*1)
 	defer cancel()
 
 	nodes, err := h.userManager.GetUserAliases(ctx, userID)
@@ -181,7 +177,6 @@ func (h *Server) apiGetUserAliases(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf)
 }
 
-
 func (h *Server) aipDeleteUserAliases(w http.ResponseWriter, r *http.Request) {
 
 	var (
@@ -200,7 +195,7 @@ func (h *Server) aipDeleteUserAliases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second * 5)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 	defer cancel()
 	if err := h.shortner.AddAliasesToDelete(ctx, userID, aliases...); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

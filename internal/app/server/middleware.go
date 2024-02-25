@@ -5,7 +5,7 @@ import "github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 // Middleware type
 type Middleware struct {
 	userManager UserManager
-	logger *zaplogger.ZapLogger
+	logger      *zaplogger.ZapLogger
 }
 
 // ------------------------------------------------------------
@@ -19,6 +19,6 @@ func NewMiddleware(userManager UserManager, logger *zaplogger.ZapLogger) *Middle
 
 	return &Middleware{
 		userManager: userManager,
-		logger: logger,
+		logger:      logger,
 	}
 }

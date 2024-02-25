@@ -30,54 +30,75 @@ func Test_redirect(t *testing.T) {
 
 	//	originalURL, err := h.shortner.GetOriginalURL(r.Context(), shortKey)
 	testCases := []struct {
-		name string
-		requesURI string
+		name                 string
+		requesURI            string
 		getOriginalURLParams struct {
 			inpURI string
 			outURL string
 			outErr error
 		}
 		want struct {
-			statusCode int
+			statusCode  int
 			responseURL string
 		}
 	}{
 		{
-			name: "simple test",
+			name:      "simple test",
 			requesURI: "/000000000",
-			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
+			getOriginalURLParams: struct {
+				inpURI string
+				outURL string
+				outErr error
+			}{
 				inpURI: "000000000",
 				outURL: "https://ya.ru",
 				outErr: nil,
 			},
-			want: struct{statusCode int; responseURL string}{
-				statusCode: http.StatusTemporaryRedirect,
+			want: struct {
+				statusCode  int
+				responseURL string
+			}{
+				statusCode:  http.StatusTemporaryRedirect,
 				responseURL: "https://ya.ru",
 			},
 		},
 		{
-			name: "deleted test",
+			name:      "deleted test",
 			requesURI: "/000000000",
-			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
+			getOriginalURLParams: struct {
+				inpURI string
+				outURL string
+				outErr error
+			}{
 				inpURI: "000000000",
 				outURL: "",
 				outErr: aliasmaker.ErrURLWasDeleted,
 			},
-			want: struct{statusCode int; responseURL string}{
-				statusCode: http.StatusGone,
+			want: struct {
+				statusCode  int
+				responseURL string
+			}{
+				statusCode:  http.StatusGone,
 				responseURL: "",
 			},
 		},
 		{
-			name: "not found test",
+			name:      "not found test",
 			requesURI: "/000000000",
-			getOriginalURLParams: struct{inpURI string; outURL string; outErr error}{
+			getOriginalURLParams: struct {
+				inpURI string
+				outURL string
+				outErr error
+			}{
 				inpURI: "000000000",
 				outURL: "",
 				outErr: aliasmaker.ErrURLNotFound,
 			},
-			want: struct{statusCode int; responseURL string}{
-				statusCode: http.StatusBadRequest,
+			want: struct {
+				statusCode  int
+				responseURL string
+			}{
+				statusCode:  http.StatusBadRequest,
 				responseURL: "",
 			},
 		},
@@ -119,10 +140,10 @@ func Benchmark_redirect(b *testing.B) {
 	storage.EXPECT().GetLastShortKey().Return("000000001").AnyTimes()
 	storage.EXPECT().CreateUser().Return(userID, nil).AnyTimes()
 	storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
-		ID: 1,
-		UserID: userID,
-		ShortKey: "000000002",
-		LongURL: "https://ya.ru",
+		ID:          1,
+		UserID:      userID,
+		ShortKey:    "000000002",
+		LongURL:     "https://ya.ru",
 		DeletedFlag: false,
 	}, nil).AnyTimes()
 
@@ -163,55 +184,72 @@ func Test_getShortURL(t *testing.T) {
 	defer testServer.Close()
 
 	testCases := []struct {
-		name string
-		requestURL string
+		name           string
+		requestURL     string
 		getShortKeyOut struct {
 			shortKey string
-			err error
+			err      error
 		}
 		want struct {
-			statusCode int
+			statusCode  int
 			responseURL string
 		}
 	}{
 		{
-			name: "simple test",
+			name:       "simple test",
 			requestURL: "https://ya.ru",
-			getShortKeyOut: struct{shortKey string; err error}{
+			getShortKeyOut: struct {
+				shortKey string
+				err      error
+			}{
 				shortKey: "000000001",
-				err: nil,
+				err:      nil,
 			},
-			want: struct{statusCode int; responseURL string}{
-				statusCode: http.StatusCreated,
+			want: struct {
+				statusCode  int
+				responseURL string
+			}{
+				statusCode:  http.StatusCreated,
 				responseURL: testLocalHost + "/000000001",
 			},
 		},
 		{
-			name: "conflict test",
+			name:       "conflict test",
 			requestURL: "https://ya.ru",
-			getShortKeyOut: struct{shortKey string; err error}{
+			getShortKeyOut: struct {
+				shortKey string
+				err      error
+			}{
 				shortKey: "000000001",
-				err: aliasmaker.ErrConflictURL,
+				err:      aliasmaker.ErrConflictURL,
 			},
-			want: struct{statusCode int; responseURL string}{
-				statusCode: http.StatusConflict,
+			want: struct {
+				statusCode  int
+				responseURL string
+			}{
+				statusCode:  http.StatusConflict,
 				responseURL: testLocalHost + "/000000001",
 			},
 		},
 		{
-			name: "not found test",
+			name:       "not found test",
 			requestURL: "https://ya.ru",
-			getShortKeyOut: struct{shortKey string; err error}{
+			getShortKeyOut: struct {
+				shortKey string
+				err      error
+			}{
 				shortKey: "",
-				err: aliasmaker.ErrInternal,
+				err:      aliasmaker.ErrInternal,
 			},
-			want: struct{statusCode int; responseURL string}{
-				statusCode: http.StatusBadRequest,
+			want: struct {
+				statusCode  int
+				responseURL string
+			}{
+				statusCode:  http.StatusBadRequest,
 				responseURL: aliasmaker.ErrInternal.Error(),
 			},
 		},
 	}
-
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -219,17 +257,16 @@ func Test_getShortURL(t *testing.T) {
 			userManager.EXPECT().CreateUser().Return(userID, nil)
 			shortner.EXPECT().GetShortKey(gomock.Any(), userID, test.requestURL).Return(test.getShortKeyOut.shortKey, test.getShortKeyOut.err)
 
-
-			request, err := http.NewRequest(testMethod, testServer.URL + testURL, strings.NewReader(test.requestURL))
+			request, err := http.NewRequest(testMethod, testServer.URL+testURL, strings.NewReader(test.requestURL))
 			require.NoError(t, err)
 			request.Header.Add("Content-type", "text/plain")
 
 			client := testServer.Client()
 			transport := &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
+				Proxy:              http.ProxyFromEnvironment,
 				DisableCompression: true,
-			} 
-			client.Transport = transport			
+			}
+			client.Transport = transport
 
 			response, err := client.Do(request)
 			require.NoError(t, err)
@@ -282,7 +319,6 @@ func Benchmark_getShortURL(b *testing.B) {
 		h(recorder, request.WithContext(context.WithValue(request.Context(), UserID, userID)))
 	}
 }
-
 
 // &aliasentity.AliasURLModel{
 // 	ID: 1,

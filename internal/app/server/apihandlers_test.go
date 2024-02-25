@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_apiGetShortURL(t *testing.T)  {
+func Test_apiGetShortURL(t *testing.T) {
 
 	testLocalHost := "http://localhost"
 	testMethod := "POST"
@@ -37,60 +37,79 @@ func Test_apiGetShortURL(t *testing.T)  {
 	defer testServer.Close()
 
 	testCases := []struct {
-		name string
-		requestBody string
+		name           string
+		requestBody    string
 		getShortKeyOut struct {
 			requestURL string
-			shortKey string
-			err error
+			shortKey   string
+			err        error
 		}
 		want struct {
-			
-			statusCode int
+			statusCode   int
 			responseBody string
 		}
 	}{
 		{
-			name: "simple test",
+			name:        "simple test",
 			requestBody: `{"url": "https://ya.ru"}`,
-			getShortKeyOut: struct{requestURL string; shortKey string; err error}{
+			getShortKeyOut: struct {
+				requestURL string
+				shortKey   string
+				err        error
+			}{
 				requestURL: "https://ya.ru",
-				shortKey: "000000001",
-				err: nil,
+				shortKey:   "000000001",
+				err:        nil,
 			},
-			want: struct{statusCode int; responseBody string}{
-				statusCode: http.StatusCreated,
+			want: struct {
+				statusCode   int
+				responseBody string
+			}{
+				statusCode:   http.StatusCreated,
 				responseBody: `{"result":"` + testLocalHost + `/000000001"}`,
 			},
 		},
 		{
-			name: "conflict test",
+			name:        "conflict test",
 			requestBody: `{"url": "https://ya.ru"}`,
-			getShortKeyOut: struct{requestURL string; shortKey string; err error}{
+			getShortKeyOut: struct {
+				requestURL string
+				shortKey   string
+				err        error
+			}{
 				requestURL: "https://ya.ru",
-				shortKey: "000000001",
-				err: aliasmaker.ErrConflictURL,
+				shortKey:   "000000001",
+				err:        aliasmaker.ErrConflictURL,
 			},
-			want: struct{statusCode int; responseBody string}{
-				statusCode: http.StatusConflict,
+			want: struct {
+				statusCode   int
+				responseBody string
+			}{
+				statusCode:   http.StatusConflict,
 				responseBody: `{"result":"` + testLocalHost + `/000000001"}`,
 			},
 		},
 		{
-			name: "not found test",
+			name:        "not found test",
 			requestBody: `{"url": "https://ya.ru"}`,
-			getShortKeyOut: struct{requestURL string; shortKey string; err error}{
+			getShortKeyOut: struct {
+				requestURL string
+				shortKey   string
+				err        error
+			}{
 				requestURL: "https://ya.ru",
-				shortKey: "",
-				err: aliasmaker.ErrInternal,
+				shortKey:   "",
+				err:        aliasmaker.ErrInternal,
 			},
-			want: struct{statusCode int; responseBody string}{
-				statusCode: http.StatusBadRequest,
+			want: struct {
+				statusCode   int
+				responseBody string
+			}{
+				statusCode:   http.StatusBadRequest,
 				responseBody: aliasmaker.ErrInternal.Error(),
 			},
 		},
 	}
-
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -98,17 +117,16 @@ func Test_apiGetShortURL(t *testing.T)  {
 			userManager.EXPECT().CreateUser().Return(userID, nil)
 			shortner.EXPECT().GetShortKey(gomock.Any(), userID, test.getShortKeyOut.requestURL).Return(test.getShortKeyOut.shortKey, test.getShortKeyOut.err)
 
-
-			request, err := http.NewRequest(testMethod, testServer.URL + testURL, strings.NewReader(test.requestBody))
+			request, err := http.NewRequest(testMethod, testServer.URL+testURL, strings.NewReader(test.requestBody))
 			require.NoError(t, err)
 			request.Header.Add("Content-type", "application/json")
 
 			client := testServer.Client()
 			transport := &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
+				Proxy:              http.ProxyFromEnvironment,
 				DisableCompression: true,
-			} 
-			client.Transport = transport			
+			}
+			client.Transport = transport
 
 			response, err := client.Do(request)
 			require.NoError(t, err)
@@ -156,7 +174,6 @@ func Benchmark_apiGetShortURL(b *testing.B) {
 		require.NoError(b, err)
 		request.Header.Add("Content-type", "application/json")
 
-
 		recorder := httptest.NewRecorder()
 		h := New(service, service, logger, testLocalHost).apiGetShortURL
 
@@ -183,47 +200,59 @@ func Test_apiGetBatchShortURL(t *testing.T) {
 	defer testServer.Close()
 
 	testCases := []struct {
-		name string
-		requestBody string
+		name                string
+		requestBody         string
 		getBatchShortURLOut struct {
 			batchRequestURL []string
 			batchRsponseKey []string
-			err error
+			err             error
 		}
 		want struct {
-			
-			statusCode int
+			statusCode   int
 			responseBody string
 		}
 	}{
 		{
-			name: "simple test",
-			requestBody:  `[{"correlation_id": "1","original_url": "https://ya.ru"},{"correlation_id": "2","original_url": "https://google.com"}]`,
-			getBatchShortURLOut: struct{batchRequestURL []string; batchRsponseKey []string; err error}{
+			name:        "simple test",
+			requestBody: `[{"correlation_id": "1","original_url": "https://ya.ru"},{"correlation_id": "2","original_url": "https://google.com"}]`,
+			getBatchShortURLOut: struct {
+				batchRequestURL []string
+				batchRsponseKey []string
+				err             error
+			}{
 				batchRequestURL: []string{"https://ya.ru", "https://google.com"},
 				batchRsponseKey: []string{"000000001", "000000002"},
-				err: nil,
+				err:             nil,
 			},
-			want: struct{statusCode int; responseBody string}{
-				statusCode: http.StatusCreated,
+			want: struct {
+				statusCode   int
+				responseBody string
+			}{
+				statusCode:   http.StatusCreated,
 				responseBody: `[{"correlation_id":"1","short_url":"http://localhost/000000001"},{"correlation_id":"2","short_url":"http://localhost/000000002"}]`,
 			},
 		},
 		{
-			name: "bad request test",
-			requestBody:  `[{"correlation_id": "1","original_url": "https://ya.ru"},{"correlation_id": "2","original_url": "https://google.com"}]`,
-			getBatchShortURLOut: struct{batchRequestURL []string; batchRsponseKey []string; err error}{
+			name:        "bad request test",
+			requestBody: `[{"correlation_id": "1","original_url": "https://ya.ru"},{"correlation_id": "2","original_url": "https://google.com"}]`,
+			getBatchShortURLOut: struct {
+				batchRequestURL []string
+				batchRsponseKey []string
+				err             error
+			}{
 				batchRequestURL: []string{"https://ya.ru", "https://google.com"},
 				batchRsponseKey: []string{"000000001", "000000002"},
-				err: errors.New(""),
+				err:             errors.New(""),
 			},
-			want: struct{statusCode int; responseBody string}{
-				statusCode: http.StatusBadRequest,
+			want: struct {
+				statusCode   int
+				responseBody string
+			}{
+				statusCode:   http.StatusBadRequest,
 				responseBody: ``,
 			},
 		},
 	}
-	
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -231,17 +260,16 @@ func Test_apiGetBatchShortURL(t *testing.T) {
 			userManager.EXPECT().CreateUser().Return(userID, nil)
 			shortner.EXPECT().GetBatchShortURL(gomock.Any(), userID, test.getBatchShortURLOut.batchRequestURL).Return(test.getBatchShortURLOut.batchRsponseKey, test.getBatchShortURLOut.err)
 
-
-			request, err := http.NewRequest(testMethod, testServer.URL + testURL, strings.NewReader(test.requestBody))
+			request, err := http.NewRequest(testMethod, testServer.URL+testURL, strings.NewReader(test.requestBody))
 			require.NoError(t, err)
 			request.Header.Add("Content-type", "application/json")
 
 			client := testServer.Client()
 			transport := &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
+				Proxy:              http.ProxyFromEnvironment,
 				DisableCompression: true,
-			} 
-			client.Transport = transport			
+			}
+			client.Transport = transport
 
 			response, err := client.Do(request)
 			require.NoError(t, err)
@@ -289,7 +317,6 @@ func Benchmark_apiGetBatchShortURL(b *testing.B) {
 		require.NoError(b, err)
 		request.Header.Add("Content-type", "application/json")
 
-
 		recorder := httptest.NewRecorder()
 		h := New(service, service, logger, testLocalHost).apiGetBatchShortURL
 
@@ -316,57 +343,67 @@ func Test_apiGetUserAliases(t *testing.T) {
 	defer testServer.Close()
 
 	testCases := []struct {
-		name string
+		name              string
 		getUserAliasesOut struct {
 			nodesOut []aliasentity.AliasURLModel
-			err error
+			err      error
 		}
 		want struct {
-			
-			statusCode int
+			statusCode   int
 			responseBody string
 		}
 	}{
 		{
 			name: "simple test",
-			getUserAliasesOut: struct{nodesOut []aliasentity.AliasURLModel; err error}{
+			getUserAliasesOut: struct {
+				nodesOut []aliasentity.AliasURLModel
+				err      error
+			}{
 				nodesOut: []aliasentity.AliasURLModel{
 					{
 						ShortKey: "000000001",
-						LongURL: "https://ya.ru",
+						LongURL:  "https://ya.ru",
 					},
 					{
 						ShortKey: "000000002",
-						LongURL: "https://goo.com",
+						LongURL:  "https://goo.com",
 					},
 				},
 				err: nil,
 			},
-			want: struct{statusCode int; responseBody string}{
-				statusCode: http.StatusOK,
+			want: struct {
+				statusCode   int
+				responseBody string
+			}{
+				statusCode:   http.StatusOK,
 				responseBody: `[{"short_url":"http://localhost/000000001","original_url":"https://ya.ru"},{"short_url":"http://localhost/000000002","original_url":"https://goo.com"}]`,
 			},
 		},
 		{
 			name: "not found test",
-			getUserAliasesOut: struct{nodesOut []aliasentity.AliasURLModel; err error}{
+			getUserAliasesOut: struct {
+				nodesOut []aliasentity.AliasURLModel
+				err      error
+			}{
 				nodesOut: []aliasentity.AliasURLModel{},
-				err: nil,
+				err:      nil,
 			},
-			want: struct{statusCode int; responseBody string}{
-				statusCode: http.StatusNoContent,
+			want: struct {
+				statusCode   int
+				responseBody string
+			}{
+				statusCode:   http.StatusNoContent,
 				responseBody: ``,
 			},
 		},
 	}
-	
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 
 			userManager.EXPECT().GetUserAliases(gomock.Any(), userID).Return(test.getUserAliasesOut.nodesOut, test.getUserAliasesOut.err)
 
-			request, err := http.NewRequest(testMethod, testServer.URL + testURL, nil)
+			request, err := http.NewRequest(testMethod, testServer.URL+testURL, nil)
 			require.NoError(t, err)
 			request.Header.Add("Content-type", "application/json")
 			tokenString, err := createTokenJWT(userID)
@@ -376,13 +413,12 @@ func Test_apiGetUserAliases(t *testing.T) {
 				Value: tokenString,
 			})
 
-
 			client := testServer.Client()
 			transport := &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
+				Proxy:              http.ProxyFromEnvironment,
 				DisableCompression: true,
-			} 
-			client.Transport = transport			
+			}
+			client.Transport = transport
 
 			response, err := client.Do(request)
 			require.NoError(t, err)
@@ -414,7 +450,7 @@ func Benchmark_apiGetUserAliases(b *testing.B) {
 
 	storage := mocks.NewMockStorager(mockController)
 	storage.EXPECT().GetLastShortKey().Return("000000001").AnyTimes()
-	storage.EXPECT().FindByUserID(gomock.Any(), userID).Return([]aliasentity.AliasURLModel{{ShortKey: "000000001",LongURL: "https://ya.ru"},{ShortKey: "000000002",LongURL: "https://goo.com"}}, nil).AnyTimes()
+	storage.EXPECT().FindByUserID(gomock.Any(), userID).Return([]aliasentity.AliasURLModel{{ShortKey: "000000001", LongURL: "https://ya.ru"}, {ShortKey: "000000002", LongURL: "https://goo.com"}}, nil).AnyTimes()
 
 	logger, err := zaplogger.NewZapLogger("")
 	require.NoError(b, err)
@@ -460,36 +496,38 @@ func Test_aipDeleteUserAliases(t *testing.T) {
 	defer testServer.Close()
 
 	testCases := []struct {
-		name string
-		requestBody string
+		name                     string
+		requestBody              string
 		addAliasesToDeleteParams struct {
 			aliases []string
-			err error
+			err     error
 		}
-		want struct {			
+		want struct {
 			statusCode int
 		}
 	}{
 		{
-			name: "simple test",
+			name:        "simple test",
 			requestBody: `["6qxTVvsy","RTfd56hn","Jlfd67ds"]`,
-			addAliasesToDeleteParams: struct{aliases []string; err error}{
+			addAliasesToDeleteParams: struct {
+				aliases []string
+				err     error
+			}{
 				aliases: []string{"6qxTVvsy", "RTfd56hn", "Jlfd67ds"},
-				err: nil,
+				err:     nil,
 			},
-			want: struct{statusCode int}{
+			want: struct{ statusCode int }{
 				statusCode: http.StatusAccepted,
 			},
 		},
 	}
-	
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 
 			shortner.EXPECT().AddAliasesToDelete(gomock.Any(), userID, test.addAliasesToDeleteParams.aliases).Return(test.addAliasesToDeleteParams.err)
 
-			request, err := http.NewRequest(testMethod, testServer.URL + testURL, strings.NewReader(test.requestBody))
+			request, err := http.NewRequest(testMethod, testServer.URL+testURL, strings.NewReader(test.requestBody))
 			require.NoError(t, err)
 			request.Header.Add("Content-type", "application/json")
 			tokenString, err := createTokenJWT(userID)
@@ -499,13 +537,12 @@ func Test_aipDeleteUserAliases(t *testing.T) {
 				Value: tokenString,
 			})
 
-
 			client := testServer.Client()
 			transport := &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
+				Proxy:              http.ProxyFromEnvironment,
 				DisableCompression: true,
-			} 
-			client.Transport = transport			
+			}
+			client.Transport = transport
 
 			response, err := client.Do(request)
 			require.NoError(t, err)
@@ -516,33 +553,6 @@ func Test_aipDeleteUserAliases(t *testing.T) {
 		})
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // func Test_APIUserURLsHandlerDelete(t *testing.T) {
 

@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func NewRouter(handler *Server) http.Handler/*chi.Mux*/ {
+func NewRouter(handler *Server) http.Handler /*chi.Mux*/ {
 
 	r := chi.NewRouter()
 	m := NewMiddleware(handler.userManager, handler.logger)

@@ -44,44 +44,41 @@ type UserManager interface {
 	GetUserAliases(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error)
 }
 
-
 type Server struct {
 	userManager UserManager
-	shortner Shortner
+	shortner    Shortner
 
 	logger *zaplogger.ZapLogger
 
 	baseURL string
 }
 
-
-//	Constructor of Handler type
+// Constructor of Handler type
 func New(userManager UserManager, shortner Shortner, logger *zaplogger.ZapLogger, baseURL string) *Server {
 
 	return &Server{
 		userManager: userManager,
-		shortner: shortner,
-		logger: logger,
-		baseURL: baseURL,
+		shortner:    shortner,
+		logger:      logger,
+		baseURL:     baseURL,
 	}
 }
 
-
-//	Handler retuns original URL by short key in HTTP header "Location" and redirect status code (307).
-//	If URL not found or was deleted, returns error
+// Handler retuns original URL by short key in HTTP header "Location" and redirect status code (307).
+// If URL not found or was deleted, returns error
 func (h *Server) redirect(w http.ResponseWriter, r *http.Request) {
 
 	shortKey := r.RequestURI[1:]
 
 	originalURL, err := h.shortner.GetOriginalURL(r.Context(), shortKey)
 	if err != nil {
-		if errors.Is(err, aliasmaker.ErrURLNotFound){
+		if errors.Is(err, aliasmaker.ErrURLNotFound) {
 			http.Error(w, fmt.Sprintf("the url alias not found by key \"%s\"", shortKey), http.StatusBadRequest)
 			return
 		}
-		if errors.Is(err, aliasmaker.ErrURLWasDeleted){
+		if errors.Is(err, aliasmaker.ErrURLWasDeleted) {
 			http.Error(w, fmt.Sprintf("the url alias was deleted \"%s\"", shortKey), http.StatusGone)
-			return		
+			return
 		}
 	}
 
@@ -89,11 +86,10 @@ func (h *Server) redirect(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-
-//	Handler retuns short URL by original URL. Handler can returns three HTTP statuses:
-//	1. StatusBadRequest (400) - if an internal service error occurred;
-//	2. StatusConflict (409) - if the original URL is already saved in the service;
-//	3. StatusCreated (201) - if original URL is saved successfully and alias is created.
+// Handler retuns short URL by original URL. Handler can returns three HTTP statuses:
+// 1. StatusBadRequest (400) - if an internal service error occurred;
+// 2. StatusConflict (409) - if the original URL is already saved in the service;
+// 3. StatusCreated (201) - if original URL is saved successfully and alias is created.
 func (h *Server) getShortURL(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := h.getUserIDFromContext(r.Context())
@@ -107,7 +103,6 @@ func (h *Server) getShortURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Errorf("can`t read request body: %s", err.Error()).Error(), http.StatusBadRequest)
 		return
 	}
-
 
 	var statusCode int
 	shortURL, err := h.shortner.GetShortKey(r.Context(), userID, string(originalURL))
@@ -128,8 +123,7 @@ func (h *Server) getShortURL(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.baseURL + "/" + shortURL))
 }
 
-
-//	Get state of database service
+// Get state of database service
 func (h *Server) PingGet(w http.ResponseWriter, r *http.Request) {
 
 	if !h.shortner.IsDatabaseActive() {
@@ -138,7 +132,6 @@ func (h *Server) PingGet(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 }
-
 
 // Get User ID from request context
 func (h *Server) getUserIDFromContext(ctx context.Context) (uint64, error) {

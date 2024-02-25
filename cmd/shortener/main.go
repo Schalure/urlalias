@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"
 	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
 	"github.com/Schalure/urlalias/internal/app/server"
 	"github.com/Schalure/urlalias/internal/app/storage"
-
-	_ "net/http/pprof"
 )
 
 // ------------------------------------------------------------

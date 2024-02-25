@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
 	_ "net/http/pprof"
 
 	"github.com/Schalure/urlalias/cmd/shortener/config"

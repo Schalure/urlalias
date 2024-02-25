@@ -8,8 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	aliasentity "github.com/Schalure/urlalias/internal/app/models/aliasentity"
 	gomock "github.com/golang/mock/gomock"
+
+	aliasentity "github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
 // MockUserManager is a mock of UserManager interface.

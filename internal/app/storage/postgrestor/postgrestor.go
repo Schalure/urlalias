@@ -7,10 +7,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
 type Storage struct {

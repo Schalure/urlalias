@@ -6,9 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
 func TestFileStorage_Save(t *testing.T) {

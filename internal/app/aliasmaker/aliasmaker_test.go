@@ -96,7 +96,6 @@ func Test_deleteAliasesSimple(t *testing.T) {
 	require.NoError(t, err)
 
 	test := struct {
-		userId uint64
 		aliasesToDelete []string
 		findByShortKey1 *gomock.Call
 		findByShortKey2 *gomock.Call
@@ -106,7 +105,6 @@ func Test_deleteAliasesSimple(t *testing.T) {
 			AliasesToDelete []string
 		}
 	}{
-		userId: uint64(1),
 		findByShortKey1: storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
 			ID: uint64(1),
 			UserID: userID,
@@ -170,7 +168,6 @@ func Test_deleteAliasesOtherUserID(t *testing.T) {
 			AliasesToDelete []string
 		}
 	}{
-		userId: uint64(1),
 		findByShortKey1: storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
 			ID: uint64(1),
 			UserID: userID,

@@ -509,6 +509,7 @@ func Test_aipDeleteUserAliases(t *testing.T) {
 
 			response, err := client.Do(request)
 			require.NoError(t, err)
+			response.Body.Close()
 
 			//	check status code
 			assert.Equal(t, test.want.statusCode, response.StatusCode)

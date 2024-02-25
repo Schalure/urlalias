@@ -461,45 +461,24 @@ func Test_aipDeleteUserAliases(t *testing.T) {
 
 	testCases := []struct {
 		name string
-		getUserAliasesOut struct {
-			nodesOut []aliasentity.AliasURLModel
+		requestBody string
+		addAliasesToDeleteParams struct {
+			aliases []string
 			err error
 		}
-		want struct {
-			
+		want struct {			
 			statusCode int
-			responseBody string
 		}
 	}{
 		{
 			name: "simple test",
-			getUserAliasesOut: struct{nodesOut []aliasentity.AliasURLModel; err error}{
-				nodesOut: []aliasentity.AliasURLModel{
-					{
-						ShortKey: "000000001",
-						LongURL: "https://ya.ru",
-					},
-					{
-						ShortKey: "000000002",
-						LongURL: "https://goo.com",
-					},
-				},
+			requestBody: `["6qxTVvsy","RTfd56hn","Jlfd67ds"]`,
+			addAliasesToDeleteParams: struct{aliases []string; err error}{
+				aliases: []string{"6qxTVvsy", "RTfd56hn", "Jlfd67ds"},
 				err: nil,
 			},
-			want: struct{statusCode int; responseBody string}{
-				statusCode: http.StatusOK,
-				responseBody: `[{"short_url":"http://localhost/000000001","original_url":"https://ya.ru"},{"short_url":"http://localhost/000000002","original_url":"https://goo.com"}]`,
-			},
-		},
-		{
-			name: "not found test",
-			getUserAliasesOut: struct{nodesOut []aliasentity.AliasURLModel; err error}{
-				nodesOut: []aliasentity.AliasURLModel{},
-				err: nil,
-			},
-			want: struct{statusCode int; responseBody string}{
-				statusCode: http.StatusNoContent,
-				responseBody: ``,
+			want: struct{statusCode int}{
+				statusCode: http.StatusAccepted,
 			},
 		},
 	}
@@ -508,9 +487,9 @@ func Test_aipDeleteUserAliases(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 
-			userManager.EXPECT().GetUserAliases(gomock.Any(), userID).Return(test.getUserAliasesOut.nodesOut, test.getUserAliasesOut.err)
+			shortner.EXPECT().AddAliasesToDelete(gomock.Any(), userID, test.addAliasesToDeleteParams.aliases).Return(test.addAliasesToDeleteParams.err)
 
-			request, err := http.NewRequest(testMethod, testServer.URL + testURL, nil)
+			request, err := http.NewRequest(testMethod, testServer.URL + testURL, strings.NewReader(test.requestBody))
 			require.NoError(t, err)
 			request.Header.Add("Content-type", "application/json")
 			tokenString, err := createTokenJWT(userID)
@@ -533,15 +512,6 @@ func Test_aipDeleteUserAliases(t *testing.T) {
 
 			//	check status code
 			assert.Equal(t, test.want.statusCode, response.StatusCode)
-
-			data, err := io.ReadAll(response.Body)
-			require.NoError(t, err)
-			err = response.Body.Close()
-			require.NoError(t, err)
-
-			if response.StatusCode != http.StatusBadRequest {
-				assert.Equal(t, test.want.responseBody, string(data))
-			}
 		})
 	}
 }

@@ -229,7 +229,7 @@ func (s *AliasMakerServise) deleteWorker(ctx context.Context) {
 }
 
 
-func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, shortKeys []string) {
+func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, shortKeys []string) []string {
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -318,16 +318,26 @@ func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, sh
 
 	//	mark deleted
 	aliasesID := make([]uint64, 0)
+	deleteAliases := make([]string, 0)
 	for aliasNode := range outCh {
-		if aliasNode.UserID == userID {
-			aliasesID = append(aliasesID, aliasNode.ID)
+		if aliasNode.UserID != userID {
 			s.logger.Infow(
-				"DeleteUserURLs choose to delete",
-				"user ID", aliasNode.UserID,
+				"Can't delete alias due to ID mismatch",
+				"expected user ID", userID,
+				"actual user ID", aliasNode.UserID,
 				"alias ID", aliasNode.ID,
 				"original URL", aliasNode.LongURL,
 			)
+			continue
 		}
+		aliasesID = append(aliasesID, aliasNode.ID)
+		deleteAliases = append(deleteAliases, aliasNode.ShortKey)
+		s.logger.Infow(
+			"DeleteUserURLs choose to delete",
+			"user ID", aliasNode.UserID,
+			"alias ID", aliasNode.ID,
+			"original URL", aliasNode.LongURL,
+		)	
 	}
 
 	ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
@@ -343,6 +353,7 @@ func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, sh
 	if err != nil {
 		s.logger.Info(err)
 	}
+	return deleteAliases
 }
 
 

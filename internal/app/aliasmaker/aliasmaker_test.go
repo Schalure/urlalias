@@ -97,34 +97,10 @@ func Test_deleteAliasesSimple(t *testing.T) {
 
 	test := struct {
 		aliasesToDelete []string
-		findByShortKey1 *gomock.Call
-		findByShortKey2 *gomock.Call
-		findByShortKey3 *gomock.Call
-		findByShortKey4 *gomock.Call
 		want struct {
 			AliasesToDelete []string
 		}
 	}{
-		findByShortKey1: storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
-			ID: uint64(1),
-			UserID: userID,
-			ShortKey: "000000001",
-		}, nil).AnyTimes(),
-		findByShortKey2: storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
-			ID: uint64(2),
-			UserID: userID,
-			ShortKey: "000000002",
-		}, nil).AnyTimes(),
-		findByShortKey3: storage.EXPECT().FindByShortKey(gomock.Any(), "000000003").Return(&aliasentity.AliasURLModel{
-			ID: uint64(3),
-			UserID: userID,
-			ShortKey: "000000003",
-		}, nil).AnyTimes(),
-		findByShortKey4: storage.EXPECT().FindByShortKey(gomock.Any(), "000000004").Return(&aliasentity.AliasURLModel{
-			ID: uint64(4),
-			UserID: userID,
-			ShortKey: "000000004",
-		}, nil).AnyTimes(),
 
 		aliasesToDelete: []string{"000000001", "000000002", "000000003", "000000004"},
 		want: struct{AliasesToDelete []string}{
@@ -132,6 +108,26 @@ func Test_deleteAliasesSimple(t *testing.T) {
 		},
 	}
 
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
+		ID: uint64(1),
+		UserID: userID,
+		ShortKey: "000000001",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
+		ID: uint64(2),
+		UserID: userID,
+		ShortKey: "000000002",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000003").Return(&aliasentity.AliasURLModel{
+		ID: uint64(3),
+		UserID: userID,
+		ShortKey: "000000003",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000004").Return(&aliasentity.AliasURLModel{
+		ID: uint64(4),
+		UserID: userID,
+		ShortKey: "000000004",
+	}, nil).AnyTimes()
 
 	result := service.deleteAliases(context.Background(), userID, test.aliasesToDelete)
 
@@ -158,7 +154,6 @@ func Test_deleteAliasesOtherUserID(t *testing.T) {
 	require.NoError(t, err)
 
 	test := struct {
-		userId uint64
 		aliasesToDelete []string
 		findByShortKey1 *gomock.Call
 		findByShortKey2 *gomock.Call
@@ -168,33 +163,32 @@ func Test_deleteAliasesOtherUserID(t *testing.T) {
 			AliasesToDelete []string
 		}
 	}{
-		findByShortKey1: storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
-			ID: uint64(1),
-			UserID: userID,
-			ShortKey: "000000001",
-		}, nil).AnyTimes(),
-		findByShortKey2: storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
-			ID: uint64(2),
-			UserID: userID,
-			ShortKey: "000000002",
-		}, nil).AnyTimes(),
-		findByShortKey3: storage.EXPECT().FindByShortKey(gomock.Any(), "000000003").Return(&aliasentity.AliasURLModel{
-			ID: uint64(3),
-			UserID: userID,
-			ShortKey: "000000003",
-		}, nil).AnyTimes(),
-		findByShortKey4: storage.EXPECT().FindByShortKey(gomock.Any(), "000000004").Return(&aliasentity.AliasURLModel{
-			ID: uint64(4),
-			UserID: uint64(2),
-			ShortKey: "000000004",
-		}, nil).AnyTimes(),
-	
 		aliasesToDelete: []string{"000000001", "000000002", "000000003", "000000004"},
 		want: struct{AliasesToDelete []string}{
 			AliasesToDelete: []string{"000000001", "000000002", "000000003"},
 		},
 	}
 	
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
+		ID: uint64(1),
+		UserID: userID,
+		ShortKey: "000000001",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
+		ID: uint64(2),
+		UserID: userID,
+		ShortKey: "000000002",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000003").Return(&aliasentity.AliasURLModel{
+		ID: uint64(3),
+		UserID: userID,
+		ShortKey: "000000003",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000004").Return(&aliasentity.AliasURLModel{
+		ID: uint64(4),
+		UserID: uint64(2),
+		ShortKey: "000000004",
+	}, nil).AnyTimes()
 
 
 	result := service.deleteAliases(context.Background(), userID, test.aliasesToDelete)
@@ -227,32 +221,34 @@ func Benchmark_deleteAliasesSimple(b *testing.B) {
 		findByShortKey3 *gomock.Call
 		findByShortKey4 *gomock.Call
 	}{
-		findByShortKey1: storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
-			ID: uint64(1),
-			UserID: userID,
-			ShortKey: "000000001",
-		}, nil).AnyTimes(),
-		findByShortKey2: storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
-			ID: uint64(2),
-			UserID: userID,
-			ShortKey: "000000002",
-		}, nil).AnyTimes(),
-		findByShortKey3: storage.EXPECT().FindByShortKey(gomock.Any(), "000000003").Return(&aliasentity.AliasURLModel{
-			ID: uint64(3),
-			UserID: userID,
-			ShortKey: "000000003",
-		}, nil).AnyTimes(),
-		findByShortKey4: storage.EXPECT().FindByShortKey(gomock.Any(), "000000004").Return(&aliasentity.AliasURLModel{
-			ID: uint64(4),
-			UserID: userID,
-			ShortKey: "000000004",
-		}, nil).AnyTimes(),
-
 		aliasesToDelete: []string{"000000001", "000000002", "000000003", "000000004"},
 	}
 
 
+
 	for i := 0; i < b.N; i++ {
+
+		storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
+			ID: uint64(1),
+			UserID: userID,
+			ShortKey: "000000001",
+		}, nil).AnyTimes()
+		storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
+			ID: uint64(2),
+			UserID: userID,
+			ShortKey: "000000002",
+		}, nil).AnyTimes()
+		storage.EXPECT().FindByShortKey(gomock.Any(), "000000003").Return(&aliasentity.AliasURLModel{
+			ID: uint64(3),
+			UserID: userID,
+			ShortKey: "000000003",
+		}, nil).AnyTimes()
+		storage.EXPECT().FindByShortKey(gomock.Any(), "000000004").Return(&aliasentity.AliasURLModel{
+			ID: uint64(4),
+			UserID: userID,
+			ShortKey: "000000004",
+		}, nil).AnyTimes()
+
 		service.deleteAliases(context.Background(), userID, test.aliasesToDelete)
 	}
 }

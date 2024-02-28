@@ -14,15 +14,6 @@ import (
 
 const aliasKeyLen int = 9
 
-// //go:generate mockgen -destination=../mocks/mock_loggerer.go -package=mocks github.com/Schalure/urlalias/internal/app/aliasmaker Loggerer
-// type Loggerer interface {
-// 	Info(args ...interface{})
-// 	Infow(msg string, keysAndValues ...interface{})
-// 	Errorw(msg string, keysAndValues ...interface{})
-// 	Fatalw(msg string, keysAndValues ...interface{})
-// 	Close()
-// }
-
 // Access interface to storage
 //
 //go:generate mockgen -destination=../mocks/mock_storager.go -package=mocks github.com/Schalure/urlalias/internal/app/aliasmaker Storager
@@ -39,17 +30,21 @@ type Storager interface {
 	Close() error
 }
 
-type Deleter struct {
+type deleter struct {
 	userID  uint64
 	aliases []string
 }
 
 // Type of service
 type AliasMakerServise struct {
+	//	logger - object for outputting and saving logs
 	logger  *zaplogger.ZapLogger
+	//	storage - object for interaction with the storage
 	storage Storager
 
-	deleterCh chan Deleter
+	//	deleterCh - channel for deleting aliases
+	deleterCh chan deleter
+	//	lastKey - last key created
 	lastKey   string
 }
 
@@ -61,7 +56,7 @@ func New(s Storager, l *zaplogger.ZapLogger) (*AliasMakerServise, error) {
 		logger:  l,
 
 		lastKey:   s.GetLastShortKey(),
-		deleterCh: make(chan Deleter, 50),
+		deleterCh: make(chan deleter, 50),
 	}, nil
 }
 
@@ -88,7 +83,7 @@ func (s *AliasMakerServise) GetOriginalURL(ctx context.Context, shortKey string)
 	return node.LongURL, nil
 }
 
-// AddNewURL add new URL to service and return alias entity
+// GetShortKey add new URL to service and return alias entity
 func (s *AliasMakerServise) GetShortKey(ctx context.Context, userID uint64, originalURL string) (string, error) {
 
 	ctxFind, cancelFind := context.WithTimeout(ctx, time.Second*1)
@@ -144,7 +139,7 @@ func (s *AliasMakerServise) GetBatchShortURL(ctx context.Context, userID uint64,
 	return batchShortURL, nil
 }
 
-// Create new user
+// CreateUser creates a new user
 func (s *AliasMakerServise) CreateUser() (uint64, error) {
 
 	userID, err := s.storage.CreateUser()
@@ -168,25 +163,26 @@ func (s *AliasMakerServise) GetUserAliases(ctx context.Context, userID uint64) (
 	return nodes, nil
 }
 
-// Add aliases to delete
+// AddAliasesToDelete adds aliases to delete
 func (s *AliasMakerServise) AddAliasesToDelete(ctx context.Context, userID uint64, aliases ...string) error {
 
 	select {
 	case <-ctx.Done():
 		s.logger.Infow("AddAliasesToDelete: context Done", "userID", userID, "aliases", aliases)
 		return fmt.Errorf("can't create a delete request, try again later")
-	case s.deleterCh <- Deleter{userID: userID, aliases: aliases}:
+	case s.deleterCh <- deleter{userID: userID, aliases: aliases}:
 		s.logger.Infow("AddAliasesToDelete: add aliases to delete", "userID", userID, "aliases", aliases)
 	}
 	return nil
 }
 
+//	IsDatabaseActive checks the database connection and returns true or false
 func (s *AliasMakerServise) IsDatabaseActive() bool {
 
 	return s.storage.IsConnected()
 }
 
-// Create new URL pair
+// NewAliasEntity creates a new URL pair
 func (s *AliasMakerServise) NewAliasEntity(userID uint64, longURL string) (*aliasentity.AliasURLModel, error) {
 
 	newAliasKey, err := createAliasKey(s.lastKey)
@@ -201,6 +197,7 @@ func (s *AliasMakerServise) NewAliasEntity(userID uint64, longURL string) (*alia
 	}, nil
 }
 
+//	deleteWorker is a task that reads s.deleterCh and runs the delete aliases function
 func (s *AliasMakerServise) deleteWorker(ctx context.Context) {
 
 	go func() {
@@ -216,6 +213,7 @@ func (s *AliasMakerServise) deleteWorker(ctx context.Context) {
 	}()
 }
 
+//	deleteAliases marks aliases deleted if they are assigned to a user and returns a slise of marked aliases
 func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, shortKeys []string) []string {
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -343,6 +341,7 @@ func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, sh
 	return deleteAliases
 }
 
+//	Run runs s.deleteWorker
 func (s *AliasMakerServise) Run(ctx context.Context) {
 	s.deleteWorker(ctx)
 }

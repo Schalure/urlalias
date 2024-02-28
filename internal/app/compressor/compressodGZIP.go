@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-// ========================================================================================================================
+// DecompressorGZIP type
 type DecompressorGZIP struct {
 	zr *gzip.Reader
 }
@@ -29,19 +29,22 @@ func NewDecompressorGZIP(r io.Reader) (*DecompressorGZIP, error) {
 	}, nil
 }
 
+// Read
 func (c *DecompressorGZIP) Read(p []byte) (n int, err error) {
 	return c.zr.Read(p)
 }
 
+// Close
 func (c *DecompressorGZIP) Close() error {
 	return c.zr.Close()
 }
 
+// Type
 func (c *DecompressorGZIP) Type() string {
 	return "gzip"
 }
 
-// ========================================================================================================================
+// CompressorGZIP type
 type CompressorGZIP struct {
 	zw *gzip.Writer
 }
@@ -61,14 +64,17 @@ func NewCompressorGZIP(w io.Writer) *CompressorGZIP {
 	}
 }
 
+// Write
 func (c *CompressorGZIP) Write(p []byte) (n int, err error) {
 	return c.zw.Write(p)
 }
 
+// Close
 func (c *CompressorGZIP) Close() error {
 	return c.zw.Close()
 }
 
+// Type
 func (c *CompressorGZIP) Type() string {
 	return "gzip"
 }

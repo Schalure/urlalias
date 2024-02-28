@@ -14,11 +14,12 @@ import (
 	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
+// Storage type
 type Storage struct {
-	//db *sql.DB
 	db *pgxpool.Pool
 }
 
+// Storage constructor
 func NewStorage(dbConnectionString string) (*Storage, error) {
 
 	db, err := pgxpool.New(context.Background(), dbConnectionString)
@@ -54,6 +55,7 @@ func NewStorage(dbConnectionString string) (*Storage, error) {
 	}, nil
 }
 
+// CreateUser
 func (s *Storage) CreateUser() (uint64, error) {
 
 	lastID := 0
@@ -149,6 +151,7 @@ func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasenti
 	return aliasNode, nil
 }
 
+// FindByUserID
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {
 
 	rows, err := s.db.Query(ctx, `select original_url, short_key from aliases where user_id=$1`, userID)

@@ -22,14 +22,17 @@ const (
 	dbConnectionEnvKey = string("DATABASE_DSN")                 //	key for "dbConnection in environment variables
 )
 
+// Enumeration type for Storage
 type StorageType int
 
+// Storage enumeration
 const (
 	MemoryStor StorageType = iota
 	FileStor
 	DataBaseStor
 )
 
+// String returns the name of the Storage type
 func (s StorageType) String() string {
 	return [...]string{"MemoryStor", "FileStor", "DataBaseStor"}[s]
 }

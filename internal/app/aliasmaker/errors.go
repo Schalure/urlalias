@@ -2,6 +2,7 @@ package aliasmaker
 
 import "errors"
 
+// Aliasmaker errors
 var (
 	ErrInternal = errors.New("something went wrong")
 

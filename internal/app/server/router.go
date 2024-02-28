@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// New router constructor
 func NewRouter(handler *Server) http.Handler /*chi.Mux*/ {
 
 	r := chi.NewRouter()

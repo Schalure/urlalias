@@ -24,6 +24,7 @@ const (
 	appJSON   = "application/json"
 )
 
+// ContentTypeToCompress
 var ContentTypeToCompress = []string{
 	textPlain,
 	appJSON,
@@ -44,13 +45,12 @@ type UserManager interface {
 	GetUserAliases(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error)
 }
 
+// Server type
 type Server struct {
 	userManager UserManager
 	shortner    Shortner
-
-	logger *zaplogger.ZapLogger
-
-	baseURL string
+	logger      *zaplogger.ZapLogger
+	baseURL     string
 }
 
 // Constructor of Handler type

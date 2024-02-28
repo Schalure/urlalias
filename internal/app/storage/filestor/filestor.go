@@ -12,6 +12,7 @@ import (
 	"github.com/Schalure/urlalias/internal/app/models/userentity"
 )
 
+// Storage type
 type Storage struct {
 	aliasesFileName string
 	usersFileName   string
@@ -237,6 +238,7 @@ func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasenti
 	return nil, fmt.Errorf("not found")
 }
 
+// FindByUserID
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {
 
 	file, err := os.OpenFile(s.aliasesFileName, os.O_RDONLY, 0644)

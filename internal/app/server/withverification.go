@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// WithVerification middleware
 func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

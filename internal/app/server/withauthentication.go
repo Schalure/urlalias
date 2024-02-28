@@ -10,18 +10,22 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+// ContextKey type
 type ContextKey string
 
+// UserID ContextKey
 const UserID ContextKey = "userID"
 
 const tokenExp = time.Hour * 3
 const secretKey = "supersecretkey"
 
+// Claims type
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID uint64
 }
 
+// WithAuthentication middleware
 func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

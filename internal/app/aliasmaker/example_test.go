@@ -27,7 +27,7 @@ func Example() {
 	}
 
 	userID := uint64(1)
-	
+
 	//	Get short key by original URL
 	shortKey, err := service.GetShortKey(context.Background(), userID, "https://example.com")
 	if err != nil {

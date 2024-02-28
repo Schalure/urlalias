@@ -37,24 +37,18 @@ type deleter struct {
 
 // Type of service
 type AliasMakerServise struct {
-	//	logger - object for outputting and saving logs
-	logger  *zaplogger.ZapLogger
-	//	storage - object for interaction with the storage
-	storage Storager
-
-	//	deleterCh - channel for deleting aliases
-	deleterCh chan deleter
-	//	lastKey - last key created
-	lastKey   string
+	logger    *zaplogger.ZapLogger //	logger - object for outputting and saving logs
+	storage   Storager             //	storage - object for interaction with the storage
+	deleterCh chan deleter         //	deleterCh - channel for deleting aliases
+	lastKey   string               //	lastKey - last key created
 }
 
 // Constructor
 func New(s Storager, l *zaplogger.ZapLogger) (*AliasMakerServise, error) {
 
 	return &AliasMakerServise{
-		storage: s,
-		logger:  l,
-
+		storage:   s,
+		logger:    l,
 		lastKey:   s.GetLastShortKey(),
 		deleterCh: make(chan deleter, 50),
 	}, nil
@@ -176,7 +170,7 @@ func (s *AliasMakerServise) AddAliasesToDelete(ctx context.Context, userID uint6
 	return nil
 }
 
-//	IsDatabaseActive checks the database connection and returns true or false
+// IsDatabaseActive checks the database connection and returns true or false
 func (s *AliasMakerServise) IsDatabaseActive() bool {
 
 	return s.storage.IsConnected()
@@ -197,7 +191,7 @@ func (s *AliasMakerServise) NewAliasEntity(userID uint64, longURL string) (*alia
 	}, nil
 }
 
-//	deleteWorker is a task that reads s.deleterCh and runs the delete aliases function
+// deleteWorker is a task that reads s.deleterCh and runs the delete aliases function
 func (s *AliasMakerServise) deleteWorker(ctx context.Context) {
 
 	go func() {
@@ -213,7 +207,7 @@ func (s *AliasMakerServise) deleteWorker(ctx context.Context) {
 	}()
 }
 
-//	deleteAliases marks aliases deleted if they are assigned to a user and returns a slise of marked aliases
+// deleteAliases marks aliases deleted if they are assigned to a user and returns a slise of marked aliases
 func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, shortKeys []string) []string {
 
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -341,7 +335,7 @@ func (s *AliasMakerServise) deleteAliases(ctx context.Context, userID uint64, sh
 	return deleteAliases
 }
 
-//	Run runs s.deleteWorker
+// Run runs s.deleteWorker
 func (s *AliasMakerServise) Run(ctx context.Context) {
 	s.deleteWorker(ctx)
 }

@@ -1,4 +1,4 @@
-// Configuration appliation github.com/Schalure/urlalias
+// Package config describes the configuration for github.com/Schalure/urlalias
 package config
 
 import (
@@ -22,7 +22,7 @@ const (
 	dbConnectionEnvKey = string("DATABASE_DSN")                 //	key for "dbConnection in environment variables
 )
 
-// Enumeration type for Storage
+// StorageType - enumeration type for Storage
 type StorageType int
 
 // Storage enumeration

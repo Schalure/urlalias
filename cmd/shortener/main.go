@@ -21,6 +21,9 @@ import (
 //	Main function
 func main() {
 
+	configUrl := "123"
+	fmt.Println(configUrl)
+
 	log.Println("Start initialize application...")
 	ctxStop, cancelStop := context.WithCancel(context.Background())
 	defer cancelStop()

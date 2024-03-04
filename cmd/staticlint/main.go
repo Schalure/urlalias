@@ -15,6 +15,7 @@ import (
 	"honnef.co/go/tools/staticcheck"
 )
 
+// main function of statickint
 func main() {
 
 	checks := []*analysis.Analyzer{
@@ -38,14 +39,14 @@ func main() {
 	multichecker.Main(checks...)
 }
 
-//	MainExitAnalyzer checks if there is a direct call to os.Exit in the main package
+// MainExitAnalyzer checks if there is a direct call to os.Exit in the main package
 var MainExitAnalyzer = &analysis.Analyzer{
 	Name: "osexitcheck",
 	Doc:  "checks if there is a direct call to os.Exit in the main package",
 	Run:  runOsExitCheck,
 }
 
-//	runOsExitCheck is run function of MainExitAnalyzer
+// runOsExitCheck is run function of MainExitAnalyzer
 func runOsExitCheck(pass *analysis.Pass) (interface{}, error) {
 
 	for _, file := range pass.Files {

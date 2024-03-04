@@ -16,12 +16,12 @@ import (
 
 func main() {
 
-	checks := []*analysis.Analyzer {
+	checks := []*analysis.Analyzer{
 		//	standart analyzers
 		printf.Analyzer,
-        shadow.Analyzer,
-        shift.Analyzer,
-        structtag.Analyzer,	
+		shadow.Analyzer,
+		shift.Analyzer,
+		structtag.Analyzer,
 
 		//	custom analyzers
 		MainExitAnalyzer,
@@ -39,11 +39,11 @@ func main() {
 
 var MainExitAnalyzer = &analysis.Analyzer{
 	Name: "osexitcheck",
-	Doc: "checks if there is a direct call to os.Exit in the main package",
-	Run: runOsExitCheck,
+	Doc:  "checks if there is a direct call to os.Exit in the main package",
+	Run:  runOsExitCheck,
 }
 
-func runOsExitCheck (pass *analysis.Pass) (interface{}, error) {
+func runOsExitCheck(pass *analysis.Pass) (interface{}, error) {
 
 	for _, file := range pass.Files {
 		if file.Name.Name != "main" {
@@ -53,7 +53,7 @@ func runOsExitCheck (pass *analysis.Pass) (interface{}, error) {
 			if c, ok := node.(*ast.CallExpr); ok {
 				if s, ok := c.Fun.(*ast.SelectorExpr); ok {
 					var packName string
-					pack, ok := s.X.(*ast.Ident); 
+					pack, ok := s.X.(*ast.Ident)
 					if ok {
 						packName = pack.Name
 					}

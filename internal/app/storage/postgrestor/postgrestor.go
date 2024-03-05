@@ -152,18 +152,22 @@ func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasenti
 	return aliasNode, nil
 }
 
+// FindAllByLongURLs find all aliases by slice of original URL and return map[original_url] aliasentity.AliasURLModel or error
+func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[string]aliasentity.AliasURLModel, error) {
 
-//	FindAllByLongURLs find all aliases by slice of original URL and return map[original_url] aliasentity.AliasURLModel or error
-func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[string] aliasentity.AliasURLModel, error) {
-
-	rows, err := s.db.Query(ctx, `SELECT original_url, short_key FROM aliases where original_url IN (` + strings.Join(longURL, ", ") + `);`)
+	params := make([]string, len(longURL))
+	for i, u := range longURL {
+		params[i] = `'` + u + `'`
+	}
+	rows, err := s.db.Query(ctx, `SELECT original_url, short_key FROM aliases where original_url IN (`+strings.Join(params, ", ")+`);`)
+	//rows, err := s.db.Query(ctx, `SELECT original_url, short_key FROM aliases where original_url IN ($1);` )
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	node := aliasentity.AliasURLModel{}
-	nodes := map[string] aliasentity.AliasURLModel{}
+	nodes := map[string]aliasentity.AliasURLModel{}
 	for rows.Next() {
 		err = rows.Scan(&node.LongURL, &node.ShortKey)
 		if err != nil {
@@ -173,7 +177,6 @@ func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[
 	}
 	return nodes, nil
 }
-
 
 // FindByUserID
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {

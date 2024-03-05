@@ -153,7 +153,7 @@ func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasenti
 }
 
 // FindAllByLongURLs find all aliases by slice of original URL and return map[original_url] aliasentity.AliasURLModel or error
-func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[string]aliasentity.AliasURLModel, error) {
+func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[string]*aliasentity.AliasURLModel, error) {
 
 	params := make([]string, len(longURL))
 	for i, u := range longURL {
@@ -167,13 +167,13 @@ func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[
 	defer rows.Close()
 
 	node := aliasentity.AliasURLModel{}
-	nodes := map[string]aliasentity.AliasURLModel{}
+	nodes := map[string]*aliasentity.AliasURLModel{}
 	for rows.Next() {
 		err = rows.Scan(&node.LongURL, &node.ShortKey)
 		if err != nil {
 			return nil, err
 		}
-		nodes[node.LongURL] = node
+		nodes[node.LongURL] = &node
 	}
 	return nodes, nil
 }

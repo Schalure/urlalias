@@ -8,9 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
-
 	aliasentity "github.com/Schalure/urlalias/internal/app/models/aliasentity"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockStorager is a mock of Storager interface.
@@ -66,10 +65,10 @@ func (mr *MockStoragerMockRecorder) CreateUser() *gomock.Call {
 }
 
 // FindAllByLongURLs mocks base method.
-func (m *MockStorager) FindAllByLongURLs(arg0 context.Context, arg1 []string) (map[string]aliasentity.AliasURLModel, error) {
+func (m *MockStorager) FindAllByLongURLs(arg0 context.Context, arg1 []string) (map[string]*aliasentity.AliasURLModel, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAllByLongURLs", arg0, arg1)
-	ret0, _ := ret[0].(map[string]aliasentity.AliasURLModel)
+	ret0, _ := ret[0].(map[string]*aliasentity.AliasURLModel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

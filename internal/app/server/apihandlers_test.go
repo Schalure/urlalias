@@ -303,7 +303,7 @@ func Benchmark_apiGetBatchShortURL(b *testing.B) {
 	storage := mocks.NewMockStorager(mockController)
 	storage.EXPECT().GetLastShortKey().Return("000000001").AnyTimes()
 	storage.EXPECT().CreateUser().Return(userID, nil).AnyTimes()
-	storage.EXPECT().FindByLongURL(gomock.Any(), gomock.Any()).Return(nil, errors.New("")).AnyTimes()
+	storage.EXPECT().FindAllByLongURLs(gomock.Any(), gomock.Any()).Return(map[string]aliasentity.AliasURLModel{}, nil).AnyTimes()
 	storage.EXPECT().SaveAll(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	logger, err := zaplogger.NewZapLogger("")

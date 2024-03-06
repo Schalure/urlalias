@@ -155,12 +155,14 @@ func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasenti
 // FindAllByLongURLs find all aliases by slice of original URL and return map[original_url] aliasentity.AliasURLModel or error
 func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[string]*aliasentity.AliasURLModel, error) {
 
+	paramsString := make([]string, len(longURL))
 	params := make([]string, len(longURL))
 	for i, u := range longURL {
-		params[i] = `'` + u + `'`
+		paramsString[i] = fmt.Sprintf(`'$%d'`, i + 1)
+		params[i] = u
 	}
-	rows, err := s.db.Query(ctx, `SELECT original_url, short_key FROM aliases where original_url IN (`+strings.Join(params, ", ")+`);`)
-	//rows, err := s.db.Query(ctx, `SELECT original_url, short_key FROM aliases where original_url IN ($1);` )
+	stmt := fmt.Sprintf("SELECT original_url, short_key FROM aliases where original_url IN (%s);", strings.Join(paramsString, ", "))
+	rows, err := s.db.Query(ctx, stmt, params)
 	if err != nil {
 		return nil, err
 	}
@@ -177,6 +179,7 @@ func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[
 	}
 	return nodes, nil
 }
+
 
 // FindByUserID
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {

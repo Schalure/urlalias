@@ -131,21 +131,6 @@ func (s *AliasMakerServise) GetBatchShortURL(ctx context.Context, userID uint64,
 		batchShortURL[i] = node.ShortKey
 	}
 
-	// for i, originalURL := range batchOriginalURL {
-	// 	ctxFind, cancelFind := context.WithTimeout(ctx, time.Second*1)
-	// 	node, err := s.storage.FindByLongURL(ctxFind, originalURL)
-	// 	cancelFind()
-	// 	if err != nil {
-	// 		node, err = s.NewAliasEntity(userID, originalURL)
-	// 		if err != nil {
-	// 			s.logger.Errorw("error by create new short key", "error", err, "last key", s.lastKey)
-	// 			return nil, ErrInternal
-	// 		}
-	// 		batchNodesToSave = append(batchNodesToSave, *node)
-	// 	}
-	// 	batchShortURL[i] = node.ShortKey
-	// }
-
 	ctxSaveAll, cancelSaveAll := context.WithTimeout(ctx, time.Second*1)
 	defer cancelSaveAll()
 	if err := s.storage.SaveAll(ctxSaveAll, batchNodesToSave); err != nil {

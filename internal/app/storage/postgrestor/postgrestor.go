@@ -162,7 +162,7 @@ func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[
 		params[i] = u
 	}
 	stmt := fmt.Sprintf("SELECT original_url, short_key FROM aliases where original_url IN (%s);", strings.Join(paramsString, ","))
-	rows, err := s.db.Query(ctx, stmt, params)
+	rows, err := s.db.Query(ctx, stmt, params...)
 	if err != nil {
 		return nil, err
 	}

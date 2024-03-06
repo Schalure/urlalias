@@ -156,12 +156,12 @@ func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasenti
 func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[string]*aliasentity.AliasURLModel, error) {
 
 	paramsString := make([]string, len(longURL))
-	params := make([]string, len(longURL))
+	params := make([]interface{}, len(longURL))
 	for i, u := range longURL {
-		paramsString[i] = fmt.Sprintf(`'$%d'`, i + 1)
+		paramsString[i] = fmt.Sprintf("$%d", i + 1)
 		params[i] = u
 	}
-	stmt := fmt.Sprintf("SELECT original_url, short_key FROM aliases where original_url IN (%s);", strings.Join(paramsString, ", "))
+	stmt := fmt.Sprintf("SELECT original_url, short_key FROM aliases where original_url IN (%s);", strings.Join(paramsString, ","))
 	rows, err := s.db.Query(ctx, stmt, params)
 	if err != nil {
 		return nil, err

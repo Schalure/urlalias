@@ -158,7 +158,7 @@ func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[
 	paramsString := make([]string, len(longURL))
 	params := make([]interface{}, len(longURL))
 	for i, u := range longURL {
-		paramsString[i] = fmt.Sprintf("$%d", i + 1)
+		paramsString[i] = fmt.Sprintf("$%d", i+1)
 		params[i] = u
 	}
 	stmt := fmt.Sprintf("SELECT original_url, short_key FROM aliases where original_url IN (%s);", strings.Join(paramsString, ","))
@@ -179,7 +179,6 @@ func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[
 	}
 	return nodes, nil
 }
-
 
 // FindByUserID
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {

@@ -23,6 +23,7 @@ type Storager interface {
 	SaveAll(ctx context.Context, urlAliasNodes []aliasentity.AliasURLModel) error
 	FindByShortKey(ctx context.Context, shortKey string) (*aliasentity.AliasURLModel, error)
 	FindByLongURL(ctx context.Context, longURL string) (*aliasentity.AliasURLModel, error)
+	FindAllByLongURLs(ctx context.Context, longURL []string) (map[string]*aliasentity.AliasURLModel, error)
 	FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error)
 	MarkDeleted(ctx context.Context, aliasesID []uint64) error
 	GetLastShortKey() string
@@ -105,20 +106,27 @@ func (s *AliasMakerServise) GetShortKey(ctx context.Context, userID uint64, orig
 // GetBatchShortURL create batch of aliases and return batch of short keys
 func (s *AliasMakerServise) GetBatchShortURL(ctx context.Context, userID uint64, batchOriginalURL []string) ([]string, error) {
 
+	ctxFind, cancelFind := context.WithTimeout(ctx, time.Second*1)
+	nodes, err := s.storage.FindAllByLongURLs(ctxFind, batchOriginalURL)
+	cancelFind()
+	if err != nil {
+		s.logger.Errorw("error where FindAllByLongURLs", "error", err)
+		return nil, err
+	}
+
 	batchShortURL := make([]string, len(batchOriginalURL))
-	var batchNodesToSave []aliasentity.AliasURLModel
+	batchNodesToSave := make([]aliasentity.AliasURLModel, len(batchShortURL)-len(nodes))
 
 	for i, originalURL := range batchOriginalURL {
-		ctxFind, cancelFind := context.WithTimeout(ctx, time.Second*1)
-		node, err := s.storage.FindByLongURL(ctxFind, originalURL)
-		cancelFind()
-		if err != nil {
+		var err error
+		node, ok := nodes[originalURL]
+		if !ok {
 			node, err = s.NewAliasEntity(userID, originalURL)
 			if err != nil {
 				s.logger.Errorw("error by create new short key", "error", err, "last key", s.lastKey)
 				return nil, ErrInternal
 			}
-			batchNodesToSave = append(batchNodesToSave, *node)
+			batchNodesToSave[i] = *node
 		}
 		batchShortURL[i] = node.ShortKey
 	}

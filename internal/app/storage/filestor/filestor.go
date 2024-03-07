@@ -238,6 +238,11 @@ func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasenti
 	return nil, fmt.Errorf("not found")
 }
 
+// FindAllByLongURLs find all aliases by slice of original URL and return map[original_url] aliasentity.AliasURLModel or error
+func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[string]*aliasentity.AliasURLModel, error) {
+	return nil, fmt.Errorf("no implemented")
+}
+
 // FindByUserID
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {
 

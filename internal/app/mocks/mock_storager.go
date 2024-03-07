@@ -65,6 +65,21 @@ func (mr *MockStoragerMockRecorder) CreateUser() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockStorager)(nil).CreateUser))
 }
 
+// FindAllByLongURLs mocks base method.
+func (m *MockStorager) FindAllByLongURLs(arg0 context.Context, arg1 []string) (map[string]*aliasentity.AliasURLModel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindAllByLongURLs", arg0, arg1)
+	ret0, _ := ret[0].(map[string]*aliasentity.AliasURLModel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindAllByLongURLs indicates an expected call of FindAllByLongURLs.
+func (mr *MockStoragerMockRecorder) FindAllByLongURLs(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindAllByLongURLs", reflect.TypeOf((*MockStorager)(nil).FindAllByLongURLs), arg0, arg1)
+}
+
 // FindByLongURL mocks base method.
 func (m *MockStorager) FindByLongURL(arg0 context.Context, arg1 string) (*aliasentity.AliasURLModel, error) {
 	m.ctrl.T.Helper()

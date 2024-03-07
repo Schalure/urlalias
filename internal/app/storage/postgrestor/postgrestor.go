@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -151,10 +152,38 @@ func (s *Storage) FindByLongURL(ctx context.Context, longURL string) (*aliasenti
 	return aliasNode, nil
 }
 
+// FindAllByLongURLs find all aliases by slice of original URL and return map[original_url] aliasentity.AliasURLModel or error
+func (s *Storage) FindAllByLongURLs(ctx context.Context, longURL []string) (map[string]*aliasentity.AliasURLModel, error) {
+
+	paramsString := make([]string, len(longURL))
+	params := make([]interface{}, len(longURL))
+	for i, u := range longURL {
+		paramsString[i] = fmt.Sprintf("$%d", i+1)
+		params[i] = u
+	}
+	stmt := fmt.Sprintf("SELECT original_url, short_key FROM aliases where original_url IN (%s);", strings.Join(paramsString, ","))
+	rows, err := s.db.Query(ctx, stmt, params...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	node := aliasentity.AliasURLModel{}
+	nodes := map[string]*aliasentity.AliasURLModel{}
+	for rows.Next() {
+		err = rows.Scan(&node.LongURL, &node.ShortKey)
+		if err != nil {
+			return nil, err
+		}
+		nodes[node.LongURL] = &node
+	}
+	return nodes, nil
+}
+
 // FindByUserID
 func (s *Storage) FindByUserID(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error) {
 
-	rows, err := s.db.Query(ctx, `select original_url, short_key from aliases where user_id=$1`, userID)
+	rows, err := s.db.Query(ctx, `select original_url, short_key from aliases where user_id=$1;`, userID)
 	if err != nil {
 		return nil, err
 	}

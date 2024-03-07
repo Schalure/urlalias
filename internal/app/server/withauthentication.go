@@ -1,4 +1,4 @@
-package handlers
+package server
 
 import (
 	"context"
@@ -10,18 +10,22 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+// ContextKey type
 type ContextKey string
 
+// UserID ContextKey
 const UserID ContextKey = "userID"
 
 const tokenExp = time.Hour * 3
 const secretKey = "supersecretkey"
 
+// Claims type
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID uint64
 }
 
+// WithAuthentication middleware
 func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -30,12 +34,12 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 
 		tokenCookie, err := r.Cookie(authorization)
 		if err != nil {
-			m.service.Logger.Infow(
+			m.logger.Infow(
 				"WithAuthentication: tokenCookie, err := r.Cookie(authorization)",
 				"error", err,
 			)
-			if userID, err = m.service.CreateUser(); err != nil {
-				m.service.Logger.Infow(
+			if userID, err = m.userManager.CreateUser(); err != nil {
+				m.logger.Infow(
 					"WithAuthentication: userID, err = m.service.CreateUser()",
 					"error", err,
 				)
@@ -44,7 +48,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 			}
 			tokenString, err = createTokenJWT(userID)
 			if err != nil {
-				m.service.Logger.Infow(
+				m.logger.Infow(
 					"WithAuthentication: tokenString, err = createTokenJWT(userID)",
 					"error", err,
 				)
@@ -52,7 +56,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 				return
 			}
 
-			m.service.Logger.Infow(
+			m.logger.Infow(
 				"Add new user",
 				"userID", userID,
 			)
@@ -62,12 +66,12 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 			})
 
 		} else if userID, err = getUserID(tokenCookie.Value); err != nil {
-			m.service.Logger.Infow(
+			m.logger.Infow(
 				"WithAuthentication: userID, err = getUserID(tokenCookie.Value)",
 				"error", err,
 			)
-			if userID, err = m.service.CreateUser(); err != nil {
-				m.service.Logger.Infow(
+			if userID, err = m.userManager.CreateUser(); err != nil {
+				m.logger.Infow(
 					"WithAuthentication: userID, err = m.service.CreateUser()",
 					"error", err,
 				)
@@ -76,7 +80,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 			}
 			tokenString, err = createTokenJWT(userID)
 			if err != nil {
-				m.service.Logger.Infow(
+				m.logger.Infow(
 					"WithAuthentication: tokenString, err = createTokenJWT(userID)",
 					"error", err,
 				)
@@ -84,7 +88,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 				return
 			}
 
-			m.service.Logger.Infow(
+			m.logger.Infow(
 				"Add new user",
 				"userID", userID,
 			)
@@ -97,7 +101,7 @@ func (m *Middleware) WithAuthentication(h http.Handler) http.Handler {
 			http.SetCookie(w, authCookie)
 		}
 
-		m.service.Logger.Infow(
+		m.logger.Infow(
 			"Request from user",
 			"userID", userID,
 		)

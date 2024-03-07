@@ -6,8 +6,10 @@ import (
 	"io"
 )
 
+// InterpreterJSON type
 type InterpreterJSON struct{}
 
+// Unmarshal
 func (i *InterpreterJSON) Unmarshal(r io.Reader, v interface{}) error {
 
 	var buf bytes.Buffer
@@ -20,6 +22,7 @@ func (i *InterpreterJSON) Unmarshal(r io.Reader, v interface{}) error {
 	return json.Unmarshal(buf.Bytes(), &v)
 }
 
+// Decode
 func (i *InterpreterJSON) Decode(r io.Reader, v interface{}) error {
 
 	return json.NewDecoder(r).Decode(v)

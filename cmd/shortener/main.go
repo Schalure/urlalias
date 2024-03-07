@@ -2,14 +2,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 
+	_ "net/http/pprof"
+
 	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/internal/app/aliaslogger"
+	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
 	"github.com/Schalure/urlalias/internal/app/aliasmaker"
-	"github.com/Schalure/urlalias/internal/app/handlers"
+	"github.com/Schalure/urlalias/internal/app/server"
 	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
@@ -19,12 +22,14 @@ import (
 func main() {
 
 	log.Println("Start initialize application...")
+	ctxStop, cancelStop := context.WithCancel(context.Background())
+	defer cancelStop()
 
 	log.Println("Cofiguration initialize...")
 	conf := config.NewConfig()
 
 	log.Println("Logger initialize...")
-	logger, err := aliaslogger.NewLogger(aliaslogger.LoggerTypeZap)
+	logger, err := zaplogger.NewZapLogger("")
 	if err != nil {
 		log.Fatalln("Error, while initialization logger!", err)
 	}
@@ -36,16 +41,17 @@ func main() {
 	}
 
 	log.Println("Alias maker service initialize...")
-	service, err := aliasmaker.NewAliasMakerServise(conf, stor, logger)
+	service, err := aliasmaker.New(stor, logger)
 	if err != nil {
 		log.Fatalln("Error, while initialization Alias maker service!", err)
 	}
+	service.Run(ctxStop)
 	defer service.Stop()
 
 	log.Println("Router initialize...")
-	router := handlers.NewRouter(handlers.NewHandlers(service))
+	router := server.NewRouter(server.New(service, service, logger, conf.BaseURL()))
 
-	service.Logger.Infow(
+	logger.Infow(
 		fmt.Sprintf("%s service have been started...", config.AppName),
 		"Server address", conf.Host(),
 		"Base URL", conf.BaseURL(),
@@ -56,7 +62,7 @@ func main() {
 	)
 
 	err = http.ListenAndServe(conf.Host(), router)
-	service.Logger.Fatalw(
+	logger.Fatalw(
 		"aliasURL service stoped!",
 		"error", err,
 	)

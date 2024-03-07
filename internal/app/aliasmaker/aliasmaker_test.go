@@ -1,26 +1,19 @@
 package aliasmaker
 
 import (
+	"context"
 	"errors"
+	"sort"
 	"testing"
 
-	"github.com/Schalure/urlalias/cmd/shortener/config"
-	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
-	"github.com/Schalure/urlalias/internal/app/storage/memstor"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Schalure/urlalias/internal/app/aliaslogger/zaplogger"
+	"github.com/Schalure/urlalias/internal/app/mocks"
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
-
-func newService(t *testing.T) *AliasMakerServise {
-
-	logger, err := zaplogger.NewZapLogger("")
-	require.NoError(t, err)
-	stor, err := memstor.NewStorage()
-	require.NoError(t, err)
-	s, err := NewAliasMakerServise(config.NewConfig(), stor, logger)
-	require.NoError(t, err)
-	return s
-}
 
 func Test_createAliasKey(t *testing.T) {
 
@@ -70,15 +63,188 @@ func Test_createAliasKey(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 
-			s := newService(t)
-			defer s.Stop()
-
-			s.lastKey = test.lastKey
-
-			aliasKey, err := s.createAliasKey()
+			aliasKey, err := createAliasKey(test.lastKey)
 
 			assert.Equal(t, aliasKey, test.want.newKey)
 			assert.Equal(t, err, test.want.err)
 		})
+	}
+}
+
+func Benchmark_createAliasKey(b *testing.B) {
+
+	for i := 0; i < b.N; i++ {
+		createAliasKey("YZZZZZZZZ")
+	}
+}
+
+func Test_deleteAliasesSimple(t *testing.T) {
+
+	userID := uint64(1)
+
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	storage := mocks.NewMockStorager(mockController)
+	storage.EXPECT().GetLastShortKey().Return("000000001").AnyTimes()
+	storage.EXPECT().MarkDeleted(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(t, err)
+
+	service, err := New(storage, logger)
+	require.NoError(t, err)
+
+	test := struct {
+		aliasesToDelete []string
+		want            struct {
+			AliasesToDelete []string
+		}
+	}{
+
+		aliasesToDelete: []string{"000000001", "000000002", "000000003", "000000004"},
+		want: struct{ AliasesToDelete []string }{
+			AliasesToDelete: []string{"000000001", "000000002", "000000003", "000000004"},
+		},
+	}
+
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
+		ID:       uint64(1),
+		UserID:   userID,
+		ShortKey: "000000001",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
+		ID:       uint64(2),
+		UserID:   userID,
+		ShortKey: "000000002",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000003").Return(&aliasentity.AliasURLModel{
+		ID:       uint64(3),
+		UserID:   userID,
+		ShortKey: "000000003",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000004").Return(&aliasentity.AliasURLModel{
+		ID:       uint64(4),
+		UserID:   userID,
+		ShortKey: "000000004",
+	}, nil).AnyTimes()
+
+	result := service.deleteAliases(context.Background(), userID, test.aliasesToDelete)
+
+	sort.Strings(result)
+	assert.Equal(t, test.want.AliasesToDelete, result)
+}
+
+func Test_deleteAliasesOtherUserID(t *testing.T) {
+
+	userID := uint64(1)
+
+	mockController := gomock.NewController(t)
+	defer mockController.Finish()
+
+	storage := mocks.NewMockStorager(mockController)
+	storage.EXPECT().GetLastShortKey().Return("000000001").AnyTimes()
+	storage.EXPECT().MarkDeleted(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(t, err)
+
+	service, err := New(storage, logger)
+	require.NoError(t, err)
+
+	test := struct {
+		aliasesToDelete []string
+		findByShortKey1 *gomock.Call
+		findByShortKey2 *gomock.Call
+		findByShortKey3 *gomock.Call
+		findByShortKey4 *gomock.Call
+		want            struct {
+			AliasesToDelete []string
+		}
+	}{
+		aliasesToDelete: []string{"000000001", "000000002", "000000003", "000000004"},
+		want: struct{ AliasesToDelete []string }{
+			AliasesToDelete: []string{"000000001", "000000002", "000000003"},
+		},
+	}
+
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
+		ID:       uint64(1),
+		UserID:   userID,
+		ShortKey: "000000001",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
+		ID:       uint64(2),
+		UserID:   userID,
+		ShortKey: "000000002",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000003").Return(&aliasentity.AliasURLModel{
+		ID:       uint64(3),
+		UserID:   userID,
+		ShortKey: "000000003",
+	}, nil).AnyTimes()
+	storage.EXPECT().FindByShortKey(gomock.Any(), "000000004").Return(&aliasentity.AliasURLModel{
+		ID:       uint64(4),
+		UserID:   uint64(2),
+		ShortKey: "000000004",
+	}, nil).AnyTimes()
+
+	result := service.deleteAliases(context.Background(), userID, test.aliasesToDelete)
+
+	sort.Strings(result)
+	assert.Equal(t, test.want.AliasesToDelete, result)
+}
+
+func Benchmark_deleteAliasesSimple(b *testing.B) {
+
+	userID := uint64(1)
+
+	mockController := gomock.NewController(b)
+	defer mockController.Finish()
+
+	storage := mocks.NewMockStorager(mockController)
+	storage.EXPECT().GetLastShortKey().Return("000000001").AnyTimes()
+	storage.EXPECT().MarkDeleted(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	logger, err := zaplogger.NewZapLogger("")
+	require.NoError(b, err)
+
+	service, err := New(storage, logger)
+	require.NoError(b, err)
+
+	test := struct {
+		aliasesToDelete []string
+		findByShortKey1 *gomock.Call
+		findByShortKey2 *gomock.Call
+		findByShortKey3 *gomock.Call
+		findByShortKey4 *gomock.Call
+	}{
+		aliasesToDelete: []string{"000000001", "000000002", "000000003", "000000004"},
+	}
+
+	for i := 0; i < b.N; i++ {
+
+		storage.EXPECT().FindByShortKey(gomock.Any(), "000000001").Return(&aliasentity.AliasURLModel{
+			ID:       uint64(1),
+			UserID:   userID,
+			ShortKey: "000000001",
+		}, nil).AnyTimes()
+		storage.EXPECT().FindByShortKey(gomock.Any(), "000000002").Return(&aliasentity.AliasURLModel{
+			ID:       uint64(2),
+			UserID:   userID,
+			ShortKey: "000000002",
+		}, nil).AnyTimes()
+		storage.EXPECT().FindByShortKey(gomock.Any(), "000000003").Return(&aliasentity.AliasURLModel{
+			ID:       uint64(3),
+			UserID:   userID,
+			ShortKey: "000000003",
+		}, nil).AnyTimes()
+		storage.EXPECT().FindByShortKey(gomock.Any(), "000000004").Return(&aliasentity.AliasURLModel{
+			ID:       uint64(4),
+			UserID:   userID,
+			ShortKey: "000000004",
+		}, nil).AnyTimes()
+
+		service.deleteAliases(context.Background(), userID, test.aliasesToDelete)
 	}
 }

@@ -2,12 +2,14 @@ package filestor
 
 import (
 	"bufio"
+	"context"
 	"os"
 	"testing"
 
-	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Schalure/urlalias/internal/app/models/aliasentity"
 )
 
 func TestFileStorage_Save(t *testing.T) {
@@ -53,7 +55,7 @@ func TestFileStorage_Save(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
 
-			err := stor.Save(&test.storNode)
+			err := stor.Save(context.Background(), &test.storNode)
 			if err != nil {
 				assert.Equal(t, test.want.err, err)
 				return

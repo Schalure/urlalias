@@ -1,4 +1,4 @@
-package handlers
+package server
 
 import (
 	"net/http"
@@ -73,7 +73,7 @@ func (m *Middleware) WithLogging(h http.Handler) http.Handler {
 			responseData:   responseData,
 		}
 
-		m.service.Logger.Infow("Information about request",
+		m.logger.Infow("Information about request",
 			"Request URI", r.RequestURI,
 			"Request method", r.Method,
 			"Request headers", r.Header,
@@ -84,7 +84,7 @@ func (m *Middleware) WithLogging(h http.Handler) http.Handler {
 		h.ServeHTTP(&lw, r)
 		duration := time.Since(start)
 
-		m.service.Logger.Infow(
+		m.logger.Infow(
 			"Information about response",
 			"Response status", responseData.status,
 			"Response headers", lw.ResponseWriter.Header(),

@@ -1,4 +1,4 @@
-package handlers
+package server
 
 import (
 	"context"
@@ -6,12 +6,13 @@ import (
 	"net/http"
 )
 
+// WithVerification middleware
 func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		tokenCookie, err := r.Cookie(authorization)
 		if err != nil {
-			m.service.Logger.Infow(
+			m.logger.Infow(
 				"WithVerification: tokenCookie, err := r.Cookie(authorization)",
 				"error", err,
 			)
@@ -21,7 +22,7 @@ func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 
 		userID, err := getUserID(tokenCookie.Value)
 		if err != nil {
-			m.service.Logger.Infow(
+			m.logger.Infow(
 				"WithVerification: userID, err = getUserID(tokenCookie.Value)",
 				"error", err,
 				"user", userID,
@@ -34,7 +35,7 @@ func (m *Middleware) WithVerification(h http.Handler) http.Handler {
 		authCookie, _ := r.Cookie(authorization)
 		http.SetCookie(w, authCookie)
 
-		m.service.Logger.Infow(
+		m.logger.Infow(
 			"Request from user",
 			"userID", userID,
 		)

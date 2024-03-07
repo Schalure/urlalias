@@ -1,4 +1,4 @@
-package handlers
+package server
 
 import (
 	"fmt"
@@ -7,8 +7,10 @@ import (
 	"github.com/Schalure/urlalias/internal/app/compressor"
 )
 
+// Compress type
 type CompressType string
 
+// Compress type enumeration
 const (
 	TypeGZIP   CompressType = "gzip"
 	TypeLZW    CompressType = "compress"
@@ -17,16 +19,19 @@ const (
 	TypeNone   CompressType = ""
 )
 
+// PossibleCompressionTypes
 var PossibleCompressionTypes = []CompressType{
 	TypeGZIP,
 }
 
+// Decompressorer interface
 type Decompressorer interface {
 	Read(p []byte) (n int, err error)
 	Close() error
 	Type() string
 }
 
+// Decompressorer constructor
 func NewDecompressorer(r io.Reader, compressType CompressType) (Decompressorer, error) {
 
 	var err error

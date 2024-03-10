@@ -10,16 +10,29 @@
 //	.\<path to staticlint> ./...
 //
 // Description of the analyzers used:
-// 1. Appends analyzer - Package appends defines an Analyzer that detects if there is only one variable in append.
-// 2. Assign analyzer - Package assign defines an Analyzer that detects useless assignments.
-// 3. Bools analyzer - Package bools defines an Analyzer that detects common mistakes involving boolean operators.
-// 4. Buildtag analyzer - Package buildtag defines an Analyzer that checks build tags.
-// 5. Copylock analyzer - Package copylock defines an Analyzer that checks for locks erroneously passed by value.
-// 6. Defers analyzer - Package defers defines an Analyzer that checks for common mistakes in defer statements.
-// 7. Fieldalignment analyzer - Package fieldalignment defines an Analyzer that detects structs that would use less memory if their fields were sorted.
-// 8. Nilfunc analyzer - Package nilfunc defines an Analyzer that checks for useless comparisons against nil.
+// 1. appends.Analyzer - Package appends defines an Analyzer that detects if there is only one variable in append.
+// 2. assign.Analyzer - Package assign defines an Analyzer that detects useless assignments.
+// 3. bools.Analyzer - Package bools defines an Analyzer that detects common mistakes involving boolean operators.
+// 4. buildtag.Analyzer - Package buildtag defines an Analyzer that checks build tags.
+// 5. copylock.Analyzer - Package copylock defines an Analyzer that checks for locks erroneously passed by value.
+// 6. defers.Analyzer - Package defers defines an Analyzer that checks for common mistakes in defer statements.
+// 7. fieldalignment.Analyzer - Package fieldalignment defines an Analyzer that detects structs that would use less memory if their fields were sorted.
+// 8. nilfunc.Analyzer - Package nilfunc defines an Analyzer that checks for useless comparisons against nil.
+// 9. printf.Analyzer - Package printf defines an Analyzer that checks consistency of Printf format strings and arguments
+// 10. shadow.Analyzer - Package shadow defines an Analyzer that checks for shadowed variables.
+// 11. shift.Analyzer - Package shift defines an Analyzer that checks for shifts that exceed the width of an integer
+// 12. slog.Analyzer - Package slog defines an Analyzer that checks for mismatched key-value pairs in log/slog calls
+// 13. sortslice.Analyzer - Package sortslice defines an Analyzer that checks for calls to sort.Slice that do not use a slice type as first argument
+// 14. structtag.Analyzer - Package structtag defines an Analyzer that checks struct field tags are well formed
+// 15. tests.Analyzer - Package tests defines an Analyzer that checks for common mistaken usages of tests and examples
 //
-// For more inforation about analyzers see: https://pkg.go.dev/golang.org/x/tools/go/analysis#section-sourcefiles
+// 16. MainExitAnalyzer - MainExitAnalyzer checks if there is a direct call to os.Exit in the main package
+//
+// 17. statickint uses all staticcheck analizers SA and ST groups
+//
+// For more inforation about analyzers see:
+// https://pkg.go.dev/golang.org/x/tools/go/analysis#section-sourcefiles
+// https://staticcheck.dev/docs/checks/
 package main
 
 import (
@@ -40,7 +53,10 @@ import (
 	"golang.org/x/tools/go/analysis/passes/printf"
 	"golang.org/x/tools/go/analysis/passes/shadow"
 	"golang.org/x/tools/go/analysis/passes/shift"
+	"golang.org/x/tools/go/analysis/passes/slog"
+	"golang.org/x/tools/go/analysis/passes/sortslice"
 	"golang.org/x/tools/go/analysis/passes/structtag"
+	"golang.org/x/tools/go/analysis/passes/tests"
 	"honnef.co/go/tools/staticcheck"
 )
 
@@ -60,7 +76,10 @@ func main() {
 		printf.Analyzer,
 		shadow.Analyzer,
 		shift.Analyzer,
+		slog.Analyzer,
+		sortslice.Analyzer,
 		structtag.Analyzer,
+		tests.Analyzer,
 
 		//	custom analyzers
 		MainExitAnalyzer,

@@ -16,10 +16,21 @@ import (
 	"github.com/Schalure/urlalias/internal/app/storage"
 )
 
+var (
+	//	buildVersion is last build version of shortner service
+	buildVersion string = "N/A"
+	//	buildDate is last build date of shortner service
+	buildDate string = "N/A"
+	//	buildCommit is last commit of shortner service
+	buildCommit string = "N/A"
+)
+
 // ------------------------------------------------------------
 //
 //	Main function
 func main() {
+	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
+
 	log.Println("Start initialize application...")
 	ctxStop, cancelStop := context.WithCancel(context.Background())
 	defer cancelStop()

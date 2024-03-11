@@ -1,3 +1,29 @@
+# Запуск сервиса URL aliases
+
+Для запуска сервиса используйте команду:
+
+```
+go run cmd/shortner/main.go
+```
+Команда поддерживает несколько флагов линковки:
+1. `buildVersion` - Версия сборки
+2. `buildDate` - Дата сборки
+3. `buildCommit` - Коммит сборки
+
+Для использования сервиса с флагами линковки запустите команду:
+
+```
+go run -ldflags "-X main.buildVersion=<version> -X main.buildDate=<date> -X main.buildCommit=<commit>" cmd/shortner/main.go
+```
+
+В результате после запуска сервиса в консоле выведется:
+
+```
+Build version: <version> (или "N/A" при отсутствии значения)
+Build date: <date> (или "N/A" при отсутствии значения)
+Build commit: <commit> (или "N/A" при отсутствии значения) 
+```
+
 # go-musthave-shortener-tpl
 
 Шаблон репозитория для трека «Сервис сокращения URL».

@@ -36,7 +36,6 @@
 package main
 
 import (
-	"fmt"
 	"go/ast"
 	"strings"
 
@@ -105,25 +104,51 @@ var MainExitAnalyzer = &analysis.Analyzer{
 // runOsExitCheck is run function of MainExitAnalyzer
 func runOsExitCheck(pass *analysis.Pass) (interface{}, error) {
 
-	for _, file := range pass.Files {
+	//	search main package
+	var file *ast.File
+	for _, file = range pass.Files {
 		if file.Name.Name != "main" {
 			continue
 		}
-		ast.Inspect(file, func(node ast.Node) bool {
-			if c, ok := node.(*ast.CallExpr); ok {
-				if s, ok := c.Fun.(*ast.SelectorExpr); ok {
-					var packName string
-					pack, ok := s.X.(*ast.Ident)
-					if ok {
-						packName = pack.Name
-					}
-					if packName == "os" && s.Sel.Name == "Exit" {
-						fmt.Printf("%v: Direct call to os.Exit from the main package\n", pass.Fset.Position(pack.Pos()).String())
-					}
-				}
-			}
-			return true
-		})
+		break
 	}
+
+	//	search main function
+	var mainBody ast.Node
+	ast.Inspect(file, func(node ast.Node) bool {
+		if f, ok := node.(*ast.FuncDecl); ok {
+			if f.Name.Name != "main" {
+				return true
+			}
+			mainBody = f.Body
+			return false
+		}
+		return true
+	})
+
+	if mainBody == nil {
+		return nil, nil
+	}
+
+	//	search os.Exit in main function
+	ast.Inspect(mainBody, func(node ast.Node) bool {
+
+		if c, ok := node.(*ast.CallExpr); ok {
+			s, ok := c.Fun.(*ast.SelectorExpr)
+			if ! ok {
+				return true
+			}
+
+			iX, ok := s.X.(*ast.Ident)
+			if ! ok {
+				return true
+			}
+
+			if iX.Name == "os" && s.Sel.Name == "Exit" {
+				pass.Reportf(iX.Pos(), "Direct call to os.Exit from the main function\n")
+			}
+		}	
+		return true				
+	})
 	return nil, nil
 }

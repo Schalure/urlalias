@@ -135,20 +135,20 @@ func runOsExitCheck(pass *analysis.Pass) (interface{}, error) {
 
 		if c, ok := node.(*ast.CallExpr); ok {
 			s, ok := c.Fun.(*ast.SelectorExpr)
-			if ! ok {
+			if !ok {
 				return true
 			}
 
 			iX, ok := s.X.(*ast.Ident)
-			if ! ok {
+			if !ok {
 				return true
 			}
 
 			if iX.Name == "os" && s.Sel.Name == "Exit" {
 				pass.Reportf(iX.Pos(), "Direct call to os.Exit from the main function\n")
 			}
-		}	
-		return true				
+		}
+		return true
 	})
 	return nil, nil
 }

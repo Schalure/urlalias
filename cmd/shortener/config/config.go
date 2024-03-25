@@ -20,6 +20,7 @@ const (
 	baseURLEnvKey      = string("BASE_URL")                     //	key for "baseURL" in environment variables
 	storageFileEnvKey  = string("FILE_STORAGE_PATH")            //	key for "storageFile" in environment variables
 	dbConnectionEnvKey = string("DATABASE_DSN")                 //	key for "dbConnection in environment variables
+	EnableHTTPS = string("ENABLE_HTTPS")	//	key for "EnableHTTPS in environment variables
 )
 
 // StorageType - enumeration type for Storage
@@ -46,6 +47,7 @@ const (
 	aliasesFileDefault = "/tmp/short-url-db.json"        //	Default file name of URLs storage
 	usersFileDefault   = "/tmp/users-db.json"
 	logToFileDefault   = false //	How to save log default value
+	enableHTTPSDefault = false	// Default value for EnableHTTPS
 )
 
 // ------------------------------------------------------------
@@ -54,6 +56,7 @@ const (
 type Configuration struct {
 	host    string //	Server addres
 	baseURL string //	Base URL for create alias
+	enableHTTPS bool	//	Flag for enable HTTPS
 
 	aliasesFile  string // File name of URLs storage
 	usersFile    string
@@ -157,7 +160,12 @@ func (c *Configuration) StorageType() StorageType {
 //	Output:
 //		c.baseURL string
 func (c *Configuration) LogToFile() bool {
-	return bool(c.logToFile)
+	return c.logToFile
+}
+
+// Getter for enableHTTPS
+func (c *Configuration) EnableHTTPS() bool {
+	return c.enableHTTPS
 }
 
 // ------------------------------------------------------------
@@ -168,6 +176,7 @@ func (c *Configuration) parseFlags() {
 	host := flag.String("a", hostDefault, "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
 	baseURL := flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
 	logToFile := flag.Bool("l", logToFileDefault, "Variant of logger: true - save log to file, false - print log to console")
+	enableHTTPS := flag.Bool("s", enableHTTPSDefault, "Variant HTTP connect: true - HTTPS, false - HTTP")
 
 	storageFile := ""
 	flag.Func("f", "File name of URLs storage. Specify the full name of the file", func(s string) error {
@@ -198,6 +207,7 @@ func (c *Configuration) parseFlags() {
 	c.dbConnection = *dbConnection
 	c.aliasesFile = storageFile
 	c.usersFile = storageFile + "-users"
+	c.enableHTTPS = *enableHTTPS
 }
 
 // ------------------------------------------------------------
@@ -231,6 +241,12 @@ func (c *Configuration) parseEnv() {
 	//	get storage file from environment variables
 	if dbConnection, ok := os.LookupEnv(dbConnectionEnvKey); ok {
 		c.dbConnection = dbConnection
+	}
+
+	if enableHTTPS, ok := os.LookupEnv(EnableHTTPS); ok {
+		if isEnableHTTPS, err := strconv.ParseBool(enableHTTPS); err != nil {
+			c.enableHTTPS = isEnableHTTPS
+		}
 	}
 }
 

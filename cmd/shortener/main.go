@@ -72,17 +72,16 @@ func main() {
 		"Is HTTPS", conf.EnableHTTPS(),
 	)
 
-
 	if conf.EnableHTTPS() {
 		server := &http.Server{
-			Addr:      ":443",
-			Handler:   router,
+			Addr:    ":443",
+			Handler: router,
 		}
 		err = server.ListenAndServeTLS("", "")
 	} else {
 		err = http.ListenAndServe(conf.Host(), router)
 	}
-	
+
 	logger.Fatalw(
 		"aliasURL service stoped!",
 		"error", err,

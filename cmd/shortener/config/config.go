@@ -20,7 +20,7 @@ const (
 	baseURLEnvKey      = string("BASE_URL")                     //	key for "baseURL" in environment variables
 	storageFileEnvKey  = string("FILE_STORAGE_PATH")            //	key for "storageFile" in environment variables
 	dbConnectionEnvKey = string("DATABASE_DSN")                 //	key for "dbConnection in environment variables
-	EnableHTTPS = string("ENABLE_HTTPS")	//	key for "EnableHTTPS in environment variables
+	EnableHTTPS        = string("ENABLE_HTTPS")                 //	key for "EnableHTTPS in environment variables
 )
 
 // StorageType - enumeration type for Storage
@@ -47,16 +47,16 @@ const (
 	aliasesFileDefault = "/tmp/short-url-db.json"        //	Default file name of URLs storage
 	usersFileDefault   = "/tmp/users-db.json"
 	logToFileDefault   = false //	How to save log default value
-	enableHTTPSDefault = false	// Default value for EnableHTTPS
+	enableHTTPSDefault = false // Default value for EnableHTTPS
 )
 
 // ------------------------------------------------------------
 //
 //	Struct of configuration vars
 type Configuration struct {
-	host    string //	Server addres
-	baseURL string //	Base URL for create alias
-	enableHTTPS bool	//	Flag for enable HTTPS
+	host        string //	Server addres
+	baseURL     string //	Base URL for create alias
+	enableHTTPS bool   //	Flag for enable HTTPS
 
 	aliasesFile  string // File name of URLs storage
 	usersFile    string

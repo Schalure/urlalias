@@ -69,9 +69,19 @@ func main() {
 		"Storage file", conf.AliasesFile(),
 		"DB connection string", conf.DBConnection(),
 		"Storage type", conf.StorageType().String(),
+		"Is HTTPS", conf.EnableHTTPS(),
 	)
 
-	err = http.ListenAndServe(conf.Host(), router)
+	if conf.EnableHTTPS() {
+		server := &http.Server{
+			Addr:    ":443",
+			Handler: router,
+		}
+		err = server.ListenAndServeTLS("", "")
+	} else {
+		err = http.ListenAndServe(conf.Host(), router)
+	}
+
 	logger.Fatalw(
 		"aliasURL service stoped!",
 		"error", err,

@@ -222,7 +222,7 @@ func (c *Configuration) setConfiguration(defaultConfig ConfigurationData, config
 	}
 
 	for _, config := range configs {
-		if !config.enableHTTPS {
+		if config.enableHTTPS {
 			c.enableHTTPS = config.enableHTTPS
 			break
 		}

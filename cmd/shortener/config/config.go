@@ -2,6 +2,7 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -11,16 +12,15 @@ import (
 	"strings"
 )
 
-// ------------------------------------------------------------
-//
-//	Application constants
+// Application constants
 const (
 	AppName            = string("github.com/Schalure/urlalias") //	Application name
 	hostEnvKey         = string("SERVER_ADDRESS")               //	key for "host" in environment variables
 	baseURLEnvKey      = string("BASE_URL")                     //	key for "baseURL" in environment variables
 	storageFileEnvKey  = string("FILE_STORAGE_PATH")            //	key for "storageFile" in environment variables
 	dbConnectionEnvKey = string("DATABASE_DSN")                 //	key for "dbConnection in environment variables
-	EnableHTTPS        = string("ENABLE_HTTPS")                 //	key for "EnableHTTPS in environment variables
+	enableHTTPSKey     = string("ENABLE_HTTPS")                 //	key for "EnableHTTPS in environment variables
+	configFilePathKey  = string("CONFIG")                       //	key for "configFilePath in environment variables
 )
 
 // StorageType - enumeration type for Storage
@@ -38,21 +38,18 @@ func (s StorageType) String() string {
 	return [...]string{"MemoryStor", "FileStor", "DataBaseStor"}[s]
 }
 
-// ------------------------------------------------------------
-//
-//	Default values
+// Default values
 const (
-	hostDefault        = string("localhost:8080")        //	Host default value
-	baseURLDefault     = string("http://localhost:8080") //	Base URL default value
-	aliasesFileDefault = "/tmp/short-url-db.json"        //	Default file name of URLs storage
-	usersFileDefault   = "/tmp/users-db.json"
-	logToFileDefault   = false //	How to save log default value
-	enableHTTPSDefault = false // Default value for EnableHTTPS
+	hostDefault           = string("localhost:8080")        //	Host default value
+	baseURLDefault        = string("http://localhost:8080") //	Base URL default value
+	aliasesFileDefault    = "/tmp/short-url-db.json"        //	Default file name of URLs storage
+	usersFileDefault      = "/tmp/users-db.json"
+	logToFileDefault      = false //	How to save log default value
+	enableHTTPSDefault    = false // Default value for enableHTTPS
+	configFilePathDefault = ""    // Default value for configFilePath
 )
 
-// ------------------------------------------------------------
-//
-//	Struct of configuration vars
+// Struct of configuration vars
 type Configuration struct {
 	host        string //	Server addres
 	baseURL     string //	Base URL for create alias
@@ -67,30 +64,48 @@ type Configuration struct {
 	logToFile bool //	true - save log to file, false - print log to console
 }
 
+// ConfigurationData for different configuration sources
+type ConfigurationData struct {
+	host         string
+	baseURL      string
+	aliasesFile  string
+	usersFile    string
+	dbConnection string
+	enableHTTPS  bool
+	configFile   string
+}
+
 // Common config variable
 var config *Configuration
 
-// ------------------------------------------------------------
-//
-//	Constructor of Config type
-//	Output:
-//		*Config
+// NewConfig - constructor of Config type
 func NewConfig() *Configuration {
 
 	if config != nil {
 		return config
 	}
 
-	config = new(Configuration)
+	defaultConfig := ConfigurationData{
+		host:         hostDefault,
+		baseURL:      baseURLDefault,
+		aliasesFile:  aliasesFileDefault,
+		usersFile:    usersFileDefault,
+		dbConnection: "",
+		enableHTTPS:  false,
+		configFile:   "",
+	}
 
-	//	Fill default values
-	config.host = hostDefault
-	config.baseURL = baseURLDefault
-	config.logToFile = logToFileDefault
-	config.storageType = MemoryStor
+	flagConfig := parseFlags()
+	envConfig := parseEnv()
+	fileConfig := ConfigurationData{}
 
-	config.parseFlags()
-	config.parseEnv()
+	if envConfig.configFile != "" {
+		fileConfig = parseConfigFile(envConfig.configFile)
+	} else if flagConfig.configFile != "" {
+		fileConfig = parseConfigFile(flagConfig.configFile)
+	}
+
+	config.setConfiguration(envConfig, flagConfig, fileConfig, defaultConfig)
 
 	config.chooseStorageType()
 
@@ -110,55 +125,37 @@ func NewConfig() *Configuration {
 	return config
 }
 
-// ------------------------------------------------------------
-//
-//	Getter "Configuration.host"
-//	Output:
-//		c.host string
+// Host - getter "Configuration.host"
 func (c *Configuration) Host() string {
 	return c.host
 }
 
-// ------------------------------------------------------------
-//
-//	Getter "Configuration.baseURL"
+// BaseURL - getter "Configuration.baseURL"
 func (c *Configuration) BaseURL() string {
 	return c.baseURL
 }
 
-// ------------------------------------------------------------
-//
-//	Getter "Configuration.AliasesFile"
+// AliasesFile - getter "Configuration.AliasesFile"
 func (c *Configuration) AliasesFile() string {
 	return c.aliasesFile
 }
 
-// ------------------------------------------------------------
-//
-//	Getter "Configuration.UsersFile"
+// UsersFile - getter "Configuration.UsersFile"
 func (c *Configuration) UsersFile() string {
 	return c.usersFile
 }
 
-// ------------------------------------------------------------
-//
-//	Getter "Configuration.DBConnection"
+// DBConnection - getter "Configuration.DBConnection"
 func (c *Configuration) DBConnection() string {
 	return c.dbConnection
 }
 
-// ------------------------------------------------------------
-//
-//	Getter "Configuration.StorageType"
+// StorageType - getter "Configuration.StorageType"
 func (c *Configuration) StorageType() StorageType {
 	return c.storageType
 }
 
-// ------------------------------------------------------------
-//
-//	Getter "Configuration.logSaver"
-//	Output:
-//		c.baseURL string
+// LogToFile - getter "Configuration.logSaver"
 func (c *Configuration) LogToFile() bool {
 	return c.logToFile
 }
@@ -168,15 +165,94 @@ func (c *Configuration) EnableHTTPS() bool {
 	return c.enableHTTPS
 }
 
-// ------------------------------------------------------------
-//
-//	Parse flags method of "Config" type
-func (c *Configuration) parseFlags() {
+// setConfiguration sets configurations from different sources. The configurations are installed in priority order.
+// The highest priority is the 0th item in the `configs` list. If any fields are left empty, they are filled
+// with default values from `defaultConfig`
+func (c *Configuration) setConfiguration(defaultConfig ConfigurationData, configs ...ConfigurationData) {
 
-	host := flag.String("a", hostDefault, "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
-	baseURL := flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
-	logToFile := flag.Bool("l", logToFileDefault, "Variant of logger: true - save log to file, false - print log to console")
-	enableHTTPS := flag.Bool("s", enableHTTPSDefault, "Variant HTTP connect: true - HTTPS, false - HTTP")
+	for _, config := range configs {
+		if config.host != "" {
+			c.host = config.host
+			break
+		}
+	}
+	if c.host == "" {
+		c.host = defaultConfig.host
+	}
+
+	for _, config := range configs {
+		if config.baseURL != "" {
+			c.baseURL = config.baseURL
+			break
+		}
+	}
+	if c.baseURL == "" {
+		c.baseURL = defaultConfig.baseURL
+	}
+
+	for _, config := range configs {
+		if config.aliasesFile != "" {
+			c.aliasesFile = config.aliasesFile
+			break
+		}
+	}
+	if c.aliasesFile == "" {
+		c.aliasesFile = defaultConfig.aliasesFile
+	}
+
+	for _, config := range configs {
+		if config.usersFile != "" {
+			c.usersFile = config.usersFile
+			break
+		}
+	}
+	if c.usersFile == "" {
+		c.usersFile = defaultConfig.usersFile
+	}
+
+	for _, config := range configs {
+		if config.dbConnection != "" {
+			c.dbConnection = config.dbConnection
+			break
+		}
+	}
+	if c.dbConnection == "" {
+		c.dbConnection = defaultConfig.dbConnection
+	}
+
+	for _, config := range configs {
+		if config.enableHTTPS != true {
+			c.enableHTTPS = config.enableHTTPS
+			break
+		}
+	}
+	if c.enableHTTPS == true {
+		c.enableHTTPS = defaultConfig.enableHTTPS
+	}
+}
+
+// chooseStorageType choose storage type
+func (c *Configuration) chooseStorageType() {
+
+	if c.dbConnection != "" {
+		c.storageType = DataBaseStor
+	} else if c.aliasesFile != "" {
+		c.storageType = FileStor
+	} else {
+		c.storageType = MemoryStor
+	}
+}
+
+// parseFlags parses flags method of "Config" type
+func parseFlags() ConfigurationData {
+
+	configData := ConfigurationData{}
+
+	configData.host = *flag.String("a", hostDefault, "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
+	configData.baseURL = *flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
+	configData.dbConnection = *flag.String("d", "", "data base connection string")
+	configData.enableHTTPS = *flag.Bool("s", enableHTTPSDefault, "Variant HTTP connect: true - HTTPS, false - HTTP")
+	configData.configFile = *flag.String("c", configFilePathDefault, "Configuration file path")
 
 	storageFile := ""
 	flag.Func("f", "File name of URLs storage. Specify the full name of the file", func(s string) error {
@@ -190,34 +266,30 @@ func (c *Configuration) parseFlags() {
 		return nil
 	})
 
-	dbConnection := flag.String("d", "", "data base connection string")
-
 	flag.Parse()
 
-	if err := checkServerAddres(*host); err == nil {
-		c.host = *host
+	if err := checkServerAddres(configData.host); err != nil {
+		configData.host = hostDefault
 	}
 
-	if err := checkBaseURL(*baseURL); err == nil {
-		c.baseURL = *baseURL
+	if err := checkBaseURL(configData.baseURL); err != nil {
+		configData.baseURL = baseURLDefault
 	}
 
-	c.logToFile = *logToFile
+	configData.aliasesFile = storageFile
+	configData.usersFile = storageFile + "-users"
 
-	c.dbConnection = *dbConnection
-	c.aliasesFile = storageFile
-	c.usersFile = storageFile + "-users"
-	c.enableHTTPS = *enableHTTPS
+	return configData
 }
 
-// ------------------------------------------------------------
-//
-//	Parse environment variables method of "Config" type
-func (c *Configuration) parseEnv() {
+// parseEnv parses environment variables method of "Config" type
+func parseEnv() ConfigurationData {
+
+	configData := ConfigurationData{}
 
 	if host, ok := os.LookupEnv(hostEnvKey); ok {
 		if err := checkServerAddres(host); err == nil {
-			c.host = host
+			configData.host = host
 		} else {
 			log.Printf("The environment variable \"%s\" is written in the wrong format: %s", hostEnvKey, host)
 		}
@@ -226,7 +298,7 @@ func (c *Configuration) parseEnv() {
 	//	get baseURL from environment variables
 	if baseURL, ok := os.LookupEnv(baseURLEnvKey); ok {
 		if err := checkBaseURL(baseURL); err == nil {
-			c.baseURL = baseURL
+			configData.baseURL = baseURL
 		} else {
 			log.Printf("The environment variable \"%s\" is written in the wrong format: %s", baseURLEnvKey, baseURL)
 		}
@@ -234,43 +306,85 @@ func (c *Configuration) parseEnv() {
 
 	//	get storage file from environment variables
 	if storageFile, ok := os.LookupEnv(storageFileEnvKey); ok {
-		c.aliasesFile = storageFile
-		c.usersFile = storageFile + "-users"
+		configData.aliasesFile = storageFile
+		configData.usersFile = storageFile + "-users"
 	}
 
 	//	get storage file from environment variables
 	if dbConnection, ok := os.LookupEnv(dbConnectionEnvKey); ok {
-		c.dbConnection = dbConnection
+		configData.dbConnection = dbConnection
 	}
 
-	if enableHTTPS, ok := os.LookupEnv(EnableHTTPS); ok {
+	if enableHTTPS, ok := os.LookupEnv(enableHTTPSKey); ok {
 		if isEnableHTTPS, err := strconv.ParseBool(enableHTTPS); err != nil {
-			c.enableHTTPS = isEnableHTTPS
+			configData.enableHTTPS = isEnableHTTPS
 		}
 	}
-}
 
-// ------------------------------------------------------------
-//
-//	Choose storage type
-func (c *Configuration) chooseStorageType() {
-
-	if c.dbConnection != "" {
-		c.storageType = DataBaseStor
-	} else if c.aliasesFile != "" {
-		c.storageType = FileStor
-	} else {
-		c.storageType = MemoryStor
+	if configFile, ok := os.LookupEnv(configFilePathKey); ok {
+		configData.configFile = configFile
 	}
+
+	return configData
 }
 
-// ------------------------------------------------------------
-//
-//	Check format IP addres and port.
-//	Input:
-//		addres string - for example 127.0.0.1:8080
-//	Output:
-//		err error
+// setConfigurationFromFile reads configuration file and set configuration parametrs
+func parseConfigFile(filePath string) ConfigurationData {
+
+	type ConfigurationFileData struct {
+		Host         string `json:"server_address"`
+		BaseURL      string `json:"base_url"`
+		DBFile       string `json:"file_storage_path"`
+		ConnectionDB string `json:"database_dsn"`
+		EnableHTTPS  bool   `json:"enable_https"`
+	}
+	var configurationFileData ConfigurationFileData
+	configData := ConfigurationData{}
+
+	if filePath == "" {
+		return ConfigurationData{}
+	}
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return ConfigurationData{}
+	}
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil || fileInfo.Size() == 0 {
+		return ConfigurationData{}
+	}
+
+	data := make([]byte, fileInfo.Size())
+
+	if _, err = file.Read(data); err != nil {
+		return ConfigurationData{}
+	}
+
+	if err := json.Unmarshal(data, &configurationFileData); err != nil {
+		return ConfigurationData{}
+	}
+
+	if err := checkServerAddres(configurationFileData.Host); err == nil {
+		configData.host = configurationFileData.Host
+	}
+	if err := checkBaseURL(configurationFileData.BaseURL); err == nil {
+		configData.baseURL = configurationFileData.BaseURL
+	}
+	if configurationFileData.DBFile != "" {
+		configData.aliasesFile = configurationFileData.DBFile
+		configData.usersFile = configurationFileData.DBFile + "-users"
+	}
+	if configurationFileData.ConnectionDB != "" {
+		configData.dbConnection = configurationFileData.ConnectionDB
+	}
+	configData.enableHTTPS = configurationFileData.EnableHTTPS
+
+	return configData
+}
+
+// checkServerAddres checks format IP addres and port.
 func checkServerAddres(addres string) error {
 
 	args := strings.Split(addres, ":")
@@ -288,13 +402,7 @@ func checkServerAddres(addres string) error {
 	return nil
 }
 
-// ------------------------------------------------------------
-//
-//	Check format base URL IP addres and port.
-//	Input:
-//		addres string - for example https://127.0.0.1:8080
-//	Output:
-//		err error
+// checkBaseURL checks format base URL IP addres and port.
 func checkBaseURL(baseURLFromOpt string) error {
 
 	var strs = strings.SplitAfterN(baseURLFromOpt, "//", 2)
@@ -304,19 +412,6 @@ func checkBaseURL(baseURLFromOpt string) error {
 
 	if strs[0] != "http://" && strs[0] != "https://" {
 		return fmt.Errorf("base url in not right format: %s. for example: http://192.168.1.2:port", baseURLFromOpt)
-	}
-
-	args := strings.Split(strs[1], ":")
-	if len(args) != 2 {
-		return fmt.Errorf("ip addres and port in not right format: %s. for example: 192.168.1.2:port", strs[1])
-	}
-
-	if args[0] != "localhost" && net.ParseIP(args[0]) == nil {
-		return fmt.Errorf("ip addres in not right format: %s. for example: http://192.168.1.2:port", baseURLFromOpt)
-	}
-
-	if _, err := strconv.Atoi(args[1]); err != nil {
-		return fmt.Errorf("ort in not right format: %s. for example: http://addres:80", baseURLFromOpt)
 	}
 
 	return nil

@@ -249,11 +249,11 @@ func parseFlags() ConfigurationData {
 
 	configData := ConfigurationData{}
 
-	configData.host = *flag.String("a", hostDefault, "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
-	configData.baseURL = *flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
-	configData.dbConnection = *flag.String("d", "", "data base connection string")
-	configData.enableHTTPS = *flag.Bool("s", enableHTTPSDefault, "Variant HTTP connect: true - HTTPS, false - HTTP")
-	configData.configFile = *flag.String("c", configFilePathDefault, "Configuration file path")
+	host := flag.String("a", hostDefault, "Server IP addres and port for server starting.\n\tFor example: 192.168.1.2:80")
+	baseURL := flag.String("b", baseURLDefault, "Response base addres for alias URL.\n\tFor example: http://192.168.1.2")
+	dbConnection := flag.String("d", "", "data base connection string")
+	enableHTTPS := flag.Bool("s", enableHTTPSDefault, "Variant HTTP connect: true - HTTPS, false - HTTP")
+	configFile := flag.String("c", configFilePathDefault, "Configuration file path")
 
 	storageFile := ""
 	flag.Func("f", "File name of URLs storage. Specify the full name of the file", func(s string) error {
@@ -268,6 +268,11 @@ func parseFlags() ConfigurationData {
 	})
 
 	flag.Parse()
+	configData.host = *host
+	configData.baseURL = *baseURL
+	configData.dbConnection = *dbConnection
+	configData.enableHTTPS = *enableHTTPS
+	configData.configFile = *configFile
 
 	if err := checkServerAddres(configData.host); err != nil {
 		configData.host = hostDefault

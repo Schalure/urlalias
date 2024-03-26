@@ -40,11 +40,11 @@ func (s StorageType) String() string {
 
 // Default values
 const (
-	hostDefault           = string("localhost:8080")        //	Host default value
-	baseURLDefault        = string("http://localhost:8080") //	Base URL default value
-	aliasesFileDefault    = "/tmp/short-url-db.json"        //	Default file name of URLs storage
-	usersFileDefault      = "/tmp/users-db.json"
-	logToFileDefault      = false //	How to save log default value
+	hostDefault           = string("localhost:8080")        // Host default value
+	baseURLDefault        = string("http://localhost:8080") // Base URL default value
+	aliasesFileDefault    = ""                              // Default file name of URLs storage
+	usersFileDefault      = ""
+	logToFileDefault      = false // How to save log default value
 	enableHTTPSDefault    = false // Default value for enableHTTPS
 	configFilePathDefault = ""    // Default value for configFilePath
 )

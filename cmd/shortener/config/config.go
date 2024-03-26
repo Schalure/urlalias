@@ -84,6 +84,7 @@ func NewConfig() *Configuration {
 	if config != nil {
 		return config
 	}
+	config = &Configuration{}
 
 	defaultConfig := ConfigurationData{
 		host:         hostDefault,
@@ -105,7 +106,7 @@ func NewConfig() *Configuration {
 		fileConfig = parseConfigFile(flagConfig.configFile)
 	}
 
-	config.setConfiguration(envConfig, flagConfig, fileConfig, defaultConfig)
+	config.setConfiguration(defaultConfig, envConfig, flagConfig, fileConfig)
 
 	config.chooseStorageType()
 
@@ -221,12 +222,12 @@ func (c *Configuration) setConfiguration(defaultConfig ConfigurationData, config
 	}
 
 	for _, config := range configs {
-		if config.enableHTTPS != true {
+		if !config.enableHTTPS {
 			c.enableHTTPS = config.enableHTTPS
 			break
 		}
 	}
-	if c.enableHTTPS == true {
+	if c.enableHTTPS {
 		c.enableHTTPS = defaultConfig.enableHTTPS
 	}
 }
@@ -276,8 +277,10 @@ func parseFlags() ConfigurationData {
 		configData.baseURL = baseURLDefault
 	}
 
-	configData.aliasesFile = storageFile
-	configData.usersFile = storageFile + "-users"
+	if storageFile != "" {
+		configData.aliasesFile = storageFile
+		configData.usersFile = storageFile + "-users"
+	}
 
 	return configData
 }

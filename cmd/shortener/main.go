@@ -88,7 +88,7 @@ func main() {
 		)
 
 		shutdownCtx, shutdownCancel := context.WithTimeout(ctxStop, 30*time.Second)
-		go func ()  {
+		go func() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {
 				logger.Fatalw(
@@ -109,9 +109,8 @@ func main() {
 		logger.Info("server shutdowned...")
 	}()
 
-
 	err = server.Run(conf.EnableHTTPS())
-	logger.Fatalw(
+	logger.Infow(
 		"aliasURL service stoped!",
 		"error", err,
 	)

@@ -12,15 +12,12 @@ import (
 type Server struct {
 	router http.Handler
 	server *http.Server
-
-	host string
 }
 
 // Constructor of Handler type
 func New(host string, handler *Handler, midleware *Middleware) *Server {
 
 	r := chi.NewRouter()
-
 
 	r.Use(midleware.WithLogging, midleware.WithCompress)
 
@@ -42,31 +39,23 @@ func New(host string, handler *Handler, midleware *Middleware) *Server {
 		r.Delete("/api/user/urls", handler.aipDeleteUserAliases)
 	})
 
-
-
 	return &Server{
 		router: r,
 		server: &http.Server{Addr: host, Handler: r},
-
-		host: host,
 	}
 }
 
-//	Run starts server in HTTP/HTTPS mode
+// Run starts server in HTTP/HTTPS mode
 func (s *Server) Run(isHTTPS bool) error {
 
 	if isHTTPS {
-		server := &http.Server{
-			Addr:    ":443",
-			Handler: s.router,
-		}
-		return server.ListenAndServeTLS("", "")
+		return s.server.ListenAndServeTLS("", "")
 	} else {
-		return http.ListenAndServe(s.host, s.router)
-	}	
+		return s.server.ListenAndServe()
+	}
 }
 
-//	Stop stops server
+// Stop stops server
 func (s *Server) Stop(ctx context.Context) error {
 	log.Println("server shutdown...")
 	return s.server.Shutdown(ctx)

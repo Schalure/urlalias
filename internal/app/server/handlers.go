@@ -47,7 +47,7 @@ type UserManager interface {
 
 type Handler struct {
 	userManager UserManager
-	shortner Shortner
+	shortner    Shortner
 	logger      *zaplogger.ZapLogger
 	baseURL     string
 }

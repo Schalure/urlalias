@@ -42,6 +42,7 @@ type AliasMakerServise struct {
 	storage   Storager             //	storage - object for interaction with the storage
 	deleterCh chan deleter         //	deleterCh - channel for deleting aliases
 	lastKey   string               //	lastKey - last key created
+	wg        sync.WaitGroup
 }
 
 // Constructor
@@ -202,16 +203,24 @@ func (s *AliasMakerServise) NewAliasEntity(userID uint64, longURL string) (*alia
 // deleteWorker is a task that reads s.deleterCh and runs the delete aliases function
 func (s *AliasMakerServise) deleteWorker(ctx context.Context) {
 
+	s.wg.Add(1)
 	go func() {
+	LOOP:
 		for {
 			select {
 			case <-ctx.Done():
 				s.logger.Info("deleteWorker stopped by ctx.Done()")
-				return
+				close(s.deleterCh)
+				break LOOP
 			case deleter := <-s.deleterCh:
 				s.deleteAliases(ctx, deleter.userID, deleter.aliases)
 			}
 		}
+
+		for deleter := range s.deleterCh {
+			s.deleteAliases(ctx, deleter.userID, deleter.aliases)
+		}
+		s.wg.Done()
 	}()
 }
 
@@ -351,6 +360,7 @@ func (s *AliasMakerServise) Run(ctx context.Context) {
 // Stop service and full release
 func (s *AliasMakerServise) Stop() {
 
+	s.wg.Wait()
 	s.storage.Close()
 	s.logger.Close()
 }

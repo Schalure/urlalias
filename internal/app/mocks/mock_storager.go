@@ -8,9 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
-
 	aliasentity "github.com/Schalure/urlalias/internal/app/models/aliasentity"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockStorager is a mock of Storager interface.

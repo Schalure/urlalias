@@ -16,7 +16,7 @@ import (
 // 1. StatusBadRequest (400) - if an internal service error occurred;
 // 2. StatusConflict (409) - if the original URL is already saved in the service;
 // 3. StatusCreated (201) - if original URL is saved successfully and alias is created.
-func (h *Server) apiGetShortURL(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) apiGetShortURL(w http.ResponseWriter, r *http.Request) {
 
 	type (
 		RequestJSON struct {
@@ -67,7 +67,7 @@ func (h *Server) apiGetShortURL(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf)
 }
 
-func (h *Server) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 
 	type (
 		RequestJSON struct {
@@ -129,7 +129,7 @@ func (h *Server) apiGetBatchShortURL(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf)
 }
 
-func (h *Server) apiGetUserAliases(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) apiGetUserAliases(w http.ResponseWriter, r *http.Request) {
 
 	type responseModel struct {
 		ShortURL    string `json:"short_url"`
@@ -177,7 +177,7 @@ func (h *Server) apiGetUserAliases(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf)
 }
 
-func (h *Server) aipDeleteUserAliases(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) aipDeleteUserAliases(w http.ResponseWriter, r *http.Request) {
 
 	var (
 		aliases []string

@@ -45,6 +45,7 @@ type UserManager interface {
 	GetUserAliases(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error)
 }
 
+// Handler type describes the type of request handlers
 type Handler struct {
 	userManager UserManager
 	shortner    Shortner

@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// Server struct for server object
 type Server struct {
 	router http.Handler
 	server *http.Server

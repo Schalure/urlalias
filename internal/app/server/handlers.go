@@ -45,18 +45,17 @@ type UserManager interface {
 	GetUserAliases(ctx context.Context, userID uint64) ([]aliasentity.AliasURLModel, error)
 }
 
-// Server type
-type Server struct {
+type Handler struct {
 	userManager UserManager
-	shortner    Shortner
+	shortner Shortner
 	logger      *zaplogger.ZapLogger
 	baseURL     string
 }
 
 // Constructor of Handler type
-func New(userManager UserManager, shortner Shortner, logger *zaplogger.ZapLogger, baseURL string) *Server {
+func NewHandler(userManager UserManager, shortner Shortner, logger *zaplogger.ZapLogger, baseURL string) *Handler {
 
-	return &Server{
+	return &Handler{
 		userManager: userManager,
 		shortner:    shortner,
 		logger:      logger,
@@ -66,7 +65,7 @@ func New(userManager UserManager, shortner Shortner, logger *zaplogger.ZapLogger
 
 // Handler retuns original URL by short key in HTTP header "Location" and redirect status code (307).
 // If URL not found or was deleted, returns error
-func (h *Server) redirect(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) redirect(w http.ResponseWriter, r *http.Request) {
 
 	shortKey := r.RequestURI[1:]
 
@@ -90,7 +89,7 @@ func (h *Server) redirect(w http.ResponseWriter, r *http.Request) {
 // 1. StatusBadRequest (400) - if an internal service error occurred;
 // 2. StatusConflict (409) - if the original URL is already saved in the service;
 // 3. StatusCreated (201) - if original URL is saved successfully and alias is created.
-func (h *Server) getShortURL(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) getShortURL(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := h.getUserIDFromContext(r.Context())
 	if err != nil {
@@ -124,7 +123,7 @@ func (h *Server) getShortURL(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get state of database service
-func (h *Server) PingGet(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) PingGet(w http.ResponseWriter, r *http.Request) {
 
 	if !h.shortner.IsDatabaseActive() {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -134,7 +133,7 @@ func (h *Server) PingGet(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get User ID from request context
-func (h *Server) getUserIDFromContext(ctx context.Context) (uint64, error) {
+func (h *Handler) getUserIDFromContext(ctx context.Context) (uint64, error) {
 
 	userID := ctx.Value(UserID)
 	ID, ok := userID.(uint64)

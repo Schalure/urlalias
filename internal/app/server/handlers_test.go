@@ -113,7 +113,7 @@ func Test_redirect(t *testing.T) {
 			request := httptest.NewRequest(http.MethodGet, test.requesURI, nil)
 
 			recorder := httptest.NewRecorder()
-			h := New(userManager, shortner, logger, "http://localhost/").redirect
+			h := NewHandler(userManager, shortner, logger, "http://localhost/").redirect
 			h(recorder, request)
 
 			resp := recorder.Result()
@@ -158,7 +158,7 @@ func Benchmark_redirect(b *testing.B) {
 	request.Header.Add("Content-type", "text/plain")
 
 	recorder := httptest.NewRecorder()
-	h := New(service, service, logger, testLocalHost).redirect
+	h := NewHandler(service, service, logger, testLocalHost).redirect
 
 	for i := 0; i < b.N; i++ {
 
@@ -181,7 +181,8 @@ func Test_getShortURL(t *testing.T) {
 	logger, err := zaplogger.NewZapLogger("")
 	require.NoError(t, err)
 
-	testServer := httptest.NewServer(NewRouter(New(userManager, shortner, logger, testLocalHost)))
+	server := New(testLocalHost, NewHandler(userManager, shortner, logger, testLocalHost), NewMiddleware(userManager, logger))
+	testServer := httptest.NewServer(server.router)
 	defer testServer.Close()
 
 	testCases := []struct {
@@ -315,15 +316,8 @@ func Benchmark_getShortURL(b *testing.B) {
 		request.Header.Add("Content-type", "text/plain")
 
 		recorder := httptest.NewRecorder()
-		h := New(service, service, logger, testLocalHost).getShortURL
+		h := NewHandler(service, service, logger, testLocalHost).getShortURL
 
 		h(recorder, request.WithContext(context.WithValue(request.Context(), UserID, userID)))
 	}
 }
-
-// &aliasentity.AliasURLModel{
-// 	ID: 1,
-// 	UserID: userID,
-// 	ShortKey: "000000002",
-// 	LongURL: "https://ya.ru",
-// 	DeletedFlag: false,

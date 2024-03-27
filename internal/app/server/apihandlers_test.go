@@ -34,7 +34,8 @@ func Test_apiGetShortURL(t *testing.T) {
 	logger, err := zaplogger.NewZapLogger("")
 	require.NoError(t, err)
 
-	testServer := httptest.NewServer(NewRouter(New(userManager, shortner, logger, testLocalHost)))
+	server := New(testLocalHost, NewHandler(userManager, shortner, logger, testLocalHost), NewMiddleware(userManager, logger))
+	testServer := httptest.NewServer(server.router)
 	defer testServer.Close()
 
 	testCases := []struct {
@@ -176,7 +177,7 @@ func Benchmark_apiGetShortURL(b *testing.B) {
 		request.Header.Add("Content-type", "application/json")
 
 		recorder := httptest.NewRecorder()
-		h := New(service, service, logger, testLocalHost).apiGetShortURL
+		h := NewHandler(service, service, logger, testLocalHost).apiGetShortURL
 
 		h(recorder, request.WithContext(context.WithValue(request.Context(), UserID, userID)))
 	}
@@ -197,7 +198,8 @@ func Test_apiGetBatchShortURL(t *testing.T) {
 	logger, err := zaplogger.NewZapLogger("")
 	require.NoError(t, err)
 
-	testServer := httptest.NewServer(NewRouter(New(userManager, shortner, logger, testLocalHost)))
+	server := New(testLocalHost, NewHandler(userManager, shortner, logger, testLocalHost), NewMiddleware(userManager, logger))
+	testServer := httptest.NewServer(server.router)
 	defer testServer.Close()
 
 	testCases := []struct {
@@ -319,7 +321,7 @@ func Benchmark_apiGetBatchShortURL(b *testing.B) {
 		request.Header.Add("Content-type", "application/json")
 
 		recorder := httptest.NewRecorder()
-		h := New(service, service, logger, testLocalHost).apiGetBatchShortURL
+		h := NewHandler(service, service, logger, testLocalHost).apiGetBatchShortURL
 
 		h(recorder, request.WithContext(context.WithValue(request.Context(), UserID, userID)))
 	}
@@ -340,7 +342,8 @@ func Test_apiGetUserAliases(t *testing.T) {
 	logger, err := zaplogger.NewZapLogger("")
 	require.NoError(t, err)
 
-	testServer := httptest.NewServer(NewRouter(New(userManager, shortner, logger, testLocalHost)))
+	server := New(testLocalHost, NewHandler(userManager, shortner, logger, testLocalHost), NewMiddleware(userManager, logger))
+	testServer := httptest.NewServer(server.router)
 	defer testServer.Close()
 
 	testCases := []struct {
@@ -472,7 +475,7 @@ func Benchmark_apiGetUserAliases(b *testing.B) {
 		})
 
 		recorder := httptest.NewRecorder()
-		h := New(service, service, logger, testLocalHost).apiGetUserAliases
+		h := NewHandler(service, service, logger, testLocalHost).apiGetUserAliases
 
 		h(recorder, request.WithContext(context.WithValue(request.Context(), UserID, userID)))
 	}
@@ -493,7 +496,8 @@ func Test_aipDeleteUserAliases(t *testing.T) {
 	logger, err := zaplogger.NewZapLogger("")
 	require.NoError(t, err)
 
-	testServer := httptest.NewServer(NewRouter(New(userManager, shortner, logger, testLocalHost)))
+	server := New(testLocalHost, NewHandler(userManager, shortner, logger, testLocalHost), NewMiddleware(userManager, logger))
+	testServer := httptest.NewServer(server.router)
 	defer testServer.Close()
 
 	testCases := []struct {

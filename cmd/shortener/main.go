@@ -5,7 +5,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	_ "net/http/pprof"
 
@@ -58,8 +61,10 @@ func main() {
 	service.Run(ctxStop)
 	defer service.Stop()
 
-	log.Println("Router initialize...")
-	router := server.NewRouter(server.New(service, service, logger, conf.BaseURL()))
+	log.Println("Server initialize...")
+	handler := server.NewHandler(service, service, logger, conf.BaseURL())
+	midleware := server.NewMiddleware(service, logger)
+	server := server.New(conf.Host(), handler, midleware)
 
 	logger.Infow(
 		fmt.Sprintf("%s service have been started...", config.AppName),
@@ -72,18 +77,43 @@ func main() {
 		"Is HTTPS", conf.EnableHTTPS(),
 	)
 
-	if conf.EnableHTTPS() {
-		server := &http.Server{
-			Addr:    ":443",
-			Handler: router,
-		}
-		err = server.ListenAndServeTLS("", "")
-	} else {
-		err = http.ListenAndServe(conf.Host(), router)
-	}
+	//	shutdown
+	go func() {
+		exit := make(chan os.Signal, 1)
+		signal.Notify(exit, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+		stopSignal := <-exit
+		logger.Infow(
+			"Application stoped by stop signal",
+			"Signal", stopSignal,
+		)
 
+		shutdownCtx, shutdownCancel := context.WithTimeout(ctxStop, 30*time.Second)
+		go func ()  {
+			<-shutdownCtx.Done()
+			if shutdownCtx.Err() == context.DeadlineExceeded {
+				logger.Fatalw(
+					"graceful shutdown timed out.. forcing exit",
+					"Error", shutdownCtx.Err(),
+				)
+			}
+		}()
+		err := server.Stop(shutdownCtx)
+		if err != nil {
+			logger.Fatalw(
+				"Server have been stoped with error",
+				"Error", err,
+			)
+		}
+		shutdownCancel()
+		cancelStop()
+		logger.Info("server shutdowned...")
+	}()
+
+
+	err = server.Run(conf.EnableHTTPS())
 	logger.Fatalw(
 		"aliasURL service stoped!",
 		"error", err,
 	)
+	<-ctxStop.Done()
 }
